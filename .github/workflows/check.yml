@@ -1,3 +1,4 @@
+
 name: Forex Sniper Check
 
 on:
@@ -24,9 +25,10 @@ jobs:
         run: npm install
 
       - name: Check JavaScript
-        run: node src/index.js
+        run: npm run check
 
-      - name: Start project
+      - name: Download EUR/USD data
+        run: npm run download
+
+      - name: Run Forex Sniper
         run: npm start
-
-        
