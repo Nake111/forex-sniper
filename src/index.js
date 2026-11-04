@@ -1,6 +1,7 @@
 
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
+import { getForexNews } from "./news.js";
 
 async function main() {
   console.log("FOREX SNIPER");
