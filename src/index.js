@@ -1,3 +1,4 @@
+
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 
@@ -10,13 +11,16 @@ async function main() {
   const candles = JSON.parse(raw);
 
   if (!Array.isArray(candles) || candles.length < 50) {
-    throw new Error("Not enough candle data for analysis");
+    throw new Error("Not enough candle data");
   }
 
   const results = calculateIndicators(candles);
   const latest = results[results.length - 1];
 
   let signal = "HOLD";
+  let entry = null;
+  let stopLoss = null;
+  let takeProfit = null;
 
   if (
     latest.close > latest.ema20 &&
@@ -36,7 +40,21 @@ async function main() {
     signal = "SELL";
   }
 
-  console.log("\nLATEST EUR/USD ANALYSIS");
+  if (signal !== "HOLD") {
+    entry = latest.close;
+    const risk = latest.atr14 * 1.5;
+    const reward = latest.atr14 * 3;
+
+    if (signal === "BUY") {
+      stopLoss = entry - risk;
+      takeProfit = entry + reward;
+    } else {
+      stopLoss = entry + risk;
+      takeProfit = entry - reward;
+    }
+  }
+
+  console.log("\nEUR/USD ANALYSIS");
   console.log("-----------------------");
   console.log("Candles:", candles.length);
   console.log("Close:", latest.close);
@@ -46,7 +64,17 @@ async function main() {
   console.log("MACD:", latest.macd);
   console.log("MACD Signal:", latest.macdSignal);
   console.log("ATR 14:", latest.atr14);
+
   console.log("\nSIGNAL:", signal);
+
+  if (signal !== "HOLD") {
+    console.log("ENTRY:", entry.toFixed(5));
+    console.log("STOP LOSS:", stopLoss.toFixed(5));
+    console.log("TAKE PROFIT:", takeProfit.toFixed(5));
+    console.log("RISK/REWARD: 1:2");
+  } else {
+    console.log("No valid entry. Waiting for confirmation.");
+  }
 }
 
 main().catch(error => {
