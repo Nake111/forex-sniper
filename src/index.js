@@ -4,10 +4,11 @@ import { calculateIndicators } from "./indicators.js";
 import { getForexNews } from "./news.js";
 
 async function main() {
-  console.log("FOREX SNIPER");
-  console.log("EUR/USD — Educational Analysis");
-  console.log("Live trading: Disabled");
+  console.log("================================");
+  console.log("       FOREX SNIPER DESK");
+  console.log("================================");
 
+  // 1. Load EUR/USD candle data
   const raw = await readFile("data/eurusd-m5.json", "utf8");
   const candles = JSON.parse(raw);
 
@@ -15,9 +16,11 @@ async function main() {
     throw new Error("Not enough candle data");
   }
 
+  // 2. Calculate technical indicators
   const results = calculateIndicators(candles);
   const latest = results[results.length - 1];
 
+  // 3. Generate trading signal
   let signal = "HOLD";
   let entry = null;
   let stopLoss = null;
@@ -41,6 +44,7 @@ async function main() {
     signal = "SELL";
   }
 
+  // 4. Calculate hypothetical risk levels
   if (signal !== "HOLD") {
     entry = latest.close;
     const risk = latest.atr14 * 1.5;
@@ -55,8 +59,9 @@ async function main() {
     }
   }
 
-  console.log("\nEUR/USD ANALYSIS");
-  console.log("-----------------------");
+  // 5. Print technical analysis
+  console.log("\nEUR/USD TECHNICAL ANALYSIS");
+  console.log("--------------------------");
   console.log("Candles:", candles.length);
   console.log("Close:", latest.close);
   console.log("EMA 20:", latest.ema20);
@@ -74,11 +79,37 @@ async function main() {
     console.log("TAKE PROFIT:", takeProfit.toFixed(5));
     console.log("RISK/REWARD: 1:2");
   } else {
-    console.log("No valid entry. Waiting for confirmation.");
+    console.log("Waiting for confirmation.");
   }
+
+  // 6. Load free GDELT news
+  console.log("\nEUR/USD NEWS — LAST 24 HOURS");
+  console.log("----------------------------");
+
+  try {
+    const news = await getForexNews();
+
+    if (!news.length) {
+      console.log("No news articles returned.");
+    }
+
+    for (const [index, article] of news.entries()) {
+      console.log(`\n${index + 1}. ${article.title}`);
+      console.log("Source:", article.source || "Unknown");
+      console.log("Date:", article.date || "Unknown");
+      console.log("URL:", article.url);
+    }
+  } catch (error) {
+    console.log("News feed unavailable:", error.message);
+  }
+
+  console.log("\n================================");
+  console.log("LIVE TRADING: DISABLED");
+  console.log("PAPER ANALYSIS ONLY");
+  console.log("================================");
 }
 
 main().catch(error => {
-  console.error("Analysis failed:", error);
+  console.error("Forex Sniper error:", error);
   process.exitCode = 1;
 });
