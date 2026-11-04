@@ -1,26 +1,33 @@
-name: Download EURUSD Data
+name: Forex Sniper Analysis
 
 on:
   workflow_dispatch:
 
 jobs:
-  download:
+  analysis:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
-      - name: Download EURUSD candles
+      - name: Download EUR/USD historical data
         run: npm run download
 
-      - name: Save data
+      - name: Run Forex analysis
+        run: npm start
+
+      - name: Save historical data
         uses: actions/upload-artifact@v4
         with:
           name: eurusd-historical-data
           path: data/eurusd-m5.json
+          retention-days: 90
