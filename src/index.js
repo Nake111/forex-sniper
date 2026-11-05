@@ -1,15 +1,13 @@
-
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
-import { getForexNews } from "./news.js";
 import { finalAction, tradePlan } from "./trade-plan.js";
 
-const VERSION = "3.8";
+const VERSION = "BTC 1.0";
 
 const DATA_FILES = {
-  M5: "data/eurusd-m5.json",
-  M15: "data/eurusd-m15.json",
-  H1: "data/eurusd-h1.json"
+  M5: "data/btcusd-m5.json",
+  M15: "data/btcusd-m15.json",
+  H1: "data/btcusd-h1.json"
 };
 
 const RULES = {
@@ -20,7 +18,7 @@ const RULES = {
 };
 
 function price(value) {
-  return Number.isFinite(value) ? value.toFixed(5) : "N/A";
+  return Number.isFinite(value) ? value.toFixed(2) : "N/A";
 }
 
 function number(value, digits = 2) {
@@ -45,13 +43,14 @@ async function loadCandles(timeframe) {
       volume: Number(c.volume ?? 0)
     }))
     .filter(c =>
-      [c.open, c.high, c.low, c.close].every(Number.isFinite)
+      [c.open, c.high, c.low, c.close].every(Number.isFinite) &&
+      c.high >= c.low
     )
     .sort((a, b) => Number(a.time) - Number(b.time));
 
   if (candles.length < 60) {
     throw new Error(
-      `${timeframe}: insufficient candles (${candles.length}).`
+      `${timeframe}: insufficient BTC/USD candles (${candles.length}).`
     );
   }
 
@@ -74,24 +73,24 @@ function printSqueeze(timeframe, result) {
     s.momentum < 0 ? "BEARISH" : "NEUTRAL";
 
   console.log(`State: ${s.state ?? "N/A"}`);
-  console.log(`Momentum: ${number(s.momentum, 7)}`);
-  console.log(`Previous momentum: ${number(s.previousMomentum, 7)}`);
+  console.log(`Momentum: ${number(s.momentum, 4)}`);
+  console.log(`Previous momentum: ${number(s.previousMomentum, 4)}`);
   console.log(`Momentum bias: ${momentumBias}`);
   console.log(`Momentum direction: ${s.direction ?? "N/A"}`);
 }
 
 function printTimeframe(timeframe, result) {
-  console.log(`\n========== ${timeframe} ANALYSIS ==========`);
+  console.log(`\n========== BTC/USD ${timeframe} ==========`);
 
-  console.log(`Close: ${price(result.close)}`);
-  console.log(`EMA20: ${price(result.ema20)}`);
-  console.log(`EMA50: ${price(result.ema50)}`);
+  console.log(`Close: $${price(result.close)}`);
+  console.log(`EMA20: $${price(result.ema20)}`);
+  console.log(`EMA50: $${price(result.ema50)}`);
   console.log(`RSI14: ${number(result.rsi14)}`);
-  console.log(`MACD: ${number(result.macd, 7)}`);
-  console.log(`MACD Signal: ${number(result.macdSignal, 7)}`);
-  console.log(`MACD Histogram: ${number(result.macdHistogram, 7)}`);
-  console.log(`ATR14: ${number(result.atr14, 6)}`);
-  console.log(`Volume Profile POC: ${price(result.poc)}`);
+  console.log(`MACD: ${number(result.macd, 4)}`);
+  console.log(`MACD Signal: ${number(result.macdSignal, 4)}`);
+  console.log(`MACD Histogram: ${number(result.macdHistogram, 4)}`);
+  console.log(`ATR14: $${number(result.atr14, 2)}`);
+  console.log(`Volume Profile POC: $${price(result.poc)}`);
 
   console.log(`Bullish votes: ${result.bullishVotes}/4`);
   console.log(`Bearish votes: ${result.bearishVotes}/4`);
@@ -173,7 +172,7 @@ function checkTradeConfirmation(signal, results) {
   if (signal === "HOLD") {
     return {
       status: "NO TRADE",
-      reason: "Technical conditions do not meet entry rules."
+      reason: "BTC/USD conditions do not meet entry rules."
     };
   }
 
@@ -220,36 +219,17 @@ function checkTradeConfirmation(signal, results) {
 }
 
 // ==========================================
-// FOREX NEWS
-// ==========================================
-
-async function printNews() {
-  console.log("\n========== FOREX NEWS ==========");
-
-  try {
-    const news = await getForexNews();
-
-    if (!news || (Array.isArray(news) && news.length === 0)) {
-      console.log("No news data available.");
-      return;
-    }
-
-    console.log(JSON.stringify(news, null, 2));
-  } catch (error) {
-    console.log(`News unavailable: ${error.message}`);
-  }
-}
-
-// ==========================================
 // MAIN
 // ==========================================
 
 async function main() {
   console.log("======================================");
-  console.log(`FOREX SNIPER AI v${VERSION}`);
-  console.log("EUR/USD MULTI-TIMEFRAME ANALYSIS");
+  console.log(`BTCUSD SNIPER AI ${VERSION}`);
+  console.log("BITCOIN / US DOLLAR ANALYSIS");
   console.log("M5 + M15 + H1");
   console.log("SMART MONEY + TTM SQUEEZE");
+  console.log("EMA + RSI + MACD + ATR");
+  console.log("VOLUME PROFILE + MARKET STRUCTURE");
   console.log("H1 CONFIRMATION SAFETY GATE");
   console.log("PAPER ANALYSIS ONLY - LIVE ORDERS DISABLED");
   console.log("======================================");
@@ -266,11 +246,7 @@ async function main() {
   }
 
   const signal = evaluateSignal(results);
-
-  const confirmation = checkTradeConfirmation(
-    signal,
-    results
-  );
+  const confirmation = checkTradeConfirmation(signal, results);
 
   const plan = tradePlan(
     signal,
@@ -278,28 +254,22 @@ async function main() {
     confirmation
   );
 
-  console.log("\n========== FINAL SIGNAL ==========");
+  console.log("\n========== BTC/USD FINAL SIGNAL ==========");
   console.log(`TECHNICAL SIGNAL: ${signal}`);
   console.log(`TRADE CONFIRMATION: ${confirmation.status}`);
   console.log(`FINAL ACTION: ${finalAction(signal, plan)}`);
   console.log(`Confirmation reason: ${confirmation.reason}`);
 
   if (plan) {
-    console.log("\n========== CONFIRMED TRADE PLAN ==========");
-    console.log(`Entry reference: ${price(plan.entry)}`);
-    console.log(`Stop Loss reference: ${price(plan.stopLoss)}`);
-    console.log(`Take Profit reference: ${price(plan.takeProfit)}`);
+    console.log("\n========== PAPER TRADE PLAN ==========");
+    console.log(`Entry reference: $${price(plan.entry)}`);
+    console.log(`Stop Loss reference: $${price(plan.stopLoss)}`);
+    console.log(`Take Profit reference: $${price(plan.takeProfit)}`);
     console.log(`Risk/Reward: ${plan.riskReward}`);
-  } else if (
-    signal !== "HOLD" &&
-    confirmation.status !== "H1 ALIGNED"
-  ) {
-    console.log("\nNO TRADE PLAN");
-    console.log("H1 confirmation has not passed.");
-    console.log("Wait for higher-timeframe alignment.");
-    console.log("Entry, stop-loss and take-profit are suppressed.");
   } else {
-    console.log("\nNo valid entry. Waiting for confirmation.");
+    console.log("\nNO TRADE PLAN");
+    console.log("No confirmed entry. Wait for all filters to align.");
+    console.log("Entry, stop-loss and take-profit are suppressed.");
   }
 
   console.log("\n========== SQUEEZE SUMMARY ==========");
@@ -310,7 +280,7 @@ async function main() {
     console.log(
       `${timeframe}: ${s?.state ?? "N/A"} | ` +
       `${s?.direction ?? "N/A"} | ` +
-      `Momentum: ${number(s?.momentum, 7)}`
+      `Momentum: ${number(s?.momentum, 4)}`
     );
   }
 
@@ -330,24 +300,28 @@ async function main() {
     for (const block of blocks) {
       console.log(
         `${block.direction} OB | ` +
-        `High: ${price(block.high)} | ` +
-        `Low: ${price(block.low)} | ` +
+        `High: $${price(block.high)} | ` +
+        `Low: $${price(block.low)} | ` +
         `Status: ${block.status}`
       );
     }
   }
 
+  console.log("\n========== IMPORTANT DATA NOTE ==========");
+  console.log("Volume Profile uses volume supplied by the data provider.");
+  console.log("It may represent CFD/tick volume, not total global BTC volume.");
+  console.log("POC is an estimate, not a consolidated exchange POC.");
+
   console.log("\n======================================");
   console.log("H1 confirmation is a filter, not a guarantee.");
-  console.log("No live orders are placed.");
+  console.log("This system does not place live orders.");
+  console.log("BTC/USD strategy requires separate backtesting.");
   console.log("======================================");
-
-  await printNews();
 
   console.log("\n========== ANALYSIS COMPLETE ==========");
 }
 
 main().catch(error => {
-  console.error("FOREX SNIPER ERROR:", error);
+  console.error("BTCUSD SNIPER ERROR:", error);
   process.exitCode = 1;
 });
