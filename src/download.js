@@ -12,10 +12,10 @@ async function downloadTimeframe(timeframe, filename) {
   const from = new Date();
   from.setUTCDate(from.getUTCDate() - 30);
 
-  console.log(`Downloading EUR/USD ${timeframe} candles...`);
+  console.log(`Downloading BTC/USD ${timeframe} candles...`);
 
   const candles = await getHistoricalRates({
-    instrument: "eurusd",
+    instrument: "btcusd",
     dates: {
       from: formatDate(from),
       to: formatDate(to)
@@ -24,8 +24,10 @@ async function downloadTimeframe(timeframe, filename) {
     format: "json"
   });
 
-  if (!Array.isArray(candles) || candles.length < 50) {
-    throw new Error(`Not enough ${timeframe} candles downloaded`);
+  if (!Array.isArray(candles) || candles.length < 100) {
+    throw new Error(
+      `Not enough BTC/USD ${timeframe} candles downloaded`
+    );
   }
 
   await writeFile(
@@ -33,21 +35,21 @@ async function downloadTimeframe(timeframe, filename) {
     JSON.stringify(candles, null, 2)
   );
 
-  console.log(`${timeframe} candles:`, candles.length);
+  console.log(`${timeframe} candles: ${candles.length}`);
   console.log(`Saved: data/${filename}`);
 }
 
 async function main() {
   await mkdir("data", { recursive: true });
 
-  await downloadTimeframe("m5", "eurusd-m5.json");
-  await downloadTimeframe("m15", "eurusd-m15.json");
-  await downloadTimeframe("h1", "eurusd-h1.json");
+  await downloadTimeframe("m5", "btcusd-m5.json");
+  await downloadTimeframe("m15", "btcusd-m15.json");
+  await downloadTimeframe("h1", "btcusd-h1.json");
 
-  console.log("All three timeframes downloaded successfully.");
+  console.log("All BTC/USD timeframes downloaded successfully.");
 }
 
 main().catch(error => {
-  console.error("Download failed:", error);
+  console.error("BTC/USD download failed:", error);
   process.exitCode = 1;
 });
