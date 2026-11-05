@@ -3,8 +3,10 @@ import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan } from "./trade-plan.js";
 
-const PIP = 0.0001;
-const COST_PIPS = Number(process.env.BACKTEST_COST_PIPS ?? 1.2);
+// Round-trip trading cost in basis points.
+// 10 bps = 0.10% of entry price. Adjust for your broker/exchange.
+const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? 10);
+
 const WINDOW = 120;
 const MIN_HISTORY = 60;
 
@@ -32,6 +34,7 @@ function normalize(data, name) {
   if (candles.length < MIN_HISTORY + 2) {
     throw new Error(`${name}: insufficient valid candles`);
   }
+
   return candles;
 }
 
@@ -44,10 +47,14 @@ async function load(path, name) {
 
 function latestClosed(candles, interval, closeTime, previous) {
   let index = previous;
+
   while (
     index + 1 < candles.length &&
     candles[index + 1].time + interval <= closeTime
-  ) index++;
+  ) {
+    index++;
+  }
+
   return index;
 }
 
@@ -97,6 +104,7 @@ function confirmation(signal, h1) {
   if (signal === "HOLD") return { status: "NO TRADE" };
 
   const s = h1.squeeze;
+
   if (!s || !Number.isFinite(s.momentum)) {
     return { status: "WAIT" };
   }
@@ -121,6 +129,7 @@ function analyse(candles, index) {
   const window = candles.slice(start, index + 1);
 
   if (window.length < MIN_HISTORY) return null;
+
   return analyseTimeframe(window);
 }
 
@@ -167,17 +176,18 @@ function maxDrawdown(trades) {
 }
 
 async function main() {
-  if (!Number.isFinite(COST_PIPS) || COST_PIPS < 0) {
-    throw new Error("Invalid BACKTEST_COST_PIPS");
+  if (!Number.isFinite(COST_BPS) || COST_BPS < 0) {
+    throw new Error("Invalid BACKTEST_COST_BPS");
   }
 
   const [m5, m15, h1] = await Promise.all([
-    load("data/eurusd-m5.json", "M5"),
-    load("data/eurusd-m15.json", "M15"),
-    load("data/eurusd-h1.json", "H1")
+    load("data/btcusd-m5.json", "M5"),
+    load("data/btcusd-m15.json", "M15"),
+    load("data/btcusd-h1.json", "H1")
   ]);
 
   const trades = [];
+
   let m15Index = -1;
   let h1Index = -1;
   let cachedM15 = null;
@@ -232,6 +242,7 @@ async function main() {
     const signal = evaluateSignal(results);
     const confirm = confirmation(signal, cachedH1);
     const plan = tradePlan(signal, currentM5, confirm);
+
     signalsChecked++;
 
     if (!plan) {
@@ -240,25 +251,36 @@ async function main() {
     }
 
     // Signal is known at this candle close.
-    // Entry is the NEXT M5 candle open.
+    // Entry is the next M5 candle open.
     const entryIndex = i + 1;
     const entry = m5[entryIndex].open;
+
     const risk = currentM5.atr14 * 1.5;
     const reward = currentM5.atr14 * 3;
 
-    if (!Number.isFinite(entry) || !Number.isFinite(risk) || risk <= 0) {
+    if (
+      !Number.isFinite(entry) ||
+      !Number.isFinite(risk) ||
+      risk <= 0
+    ) {
       i++;
       continue;
     }
 
-    const sl = signal === "BUY" ? entry - risk : entry + risk;
-    const tp = signal === "BUY" ? entry + reward : entry - reward;
+    const sl = signal === "BUY"
+      ? entry - risk
+      : entry + risk;
+
+    const tp = signal === "BUY"
+      ? entry + reward
+      : entry - reward;
 
     let exit = null;
     let exitIndex = entryIndex;
 
     for (let j = entryIndex; j < m5.length; j++) {
       exit = resolveExit(signal, m5[j], sl, tp);
+
       if (exit) {
         exitIndex = j;
         break;
@@ -270,62 +292,106 @@ async function main() {
       break;
     }
 
-    const grossPips = signal === "BUY"
-      ? (exit.price - entry) / PIP
-      : (entry - exit.price) / PIP;
+    const grossMove = signal === "BUY"
+      ? exit.price - entry
+      : entry - exit.price;
 
-    const riskPips = risk / PIP;
-    const netPips = grossPips - COST_PIPS;
-    const netR = netPips / riskPips;
+    // Convert round-trip basis-point cost into BTC price units.
+    const costInPrice = entry * COST_BPS / 10000;
+
+    const netMove = grossMove - costInPrice;
+    const netR = netMove / risk;
+    const netPercent = (netMove / entry) * 100;
 
     trades.push({
       side: signal,
       outcome: exit.outcome,
       entryTime: new Date(m5[entryIndex].time).toISOString(),
       exitTime: new Date(m5[exitIndex].time).toISOString(),
-      netPips,
+      netMove,
+      netPercent,
       netR
     });
 
     i = exitIndex + 1;
   }
 
-  const wins = trades.filter(t => t.netR > 0);
-  const losses = trades.filter(t => t.netR <= 0);
+  const profitable = trades.filter(t => t.netR > 0);
+  const unprofitable = trades.filter(t => t.netR <= 0);
 
-  const netPips = trades.reduce((s, t) => s + t.netPips, 0);
-  const netR = trades.reduce((s, t) => s + t.netR, 0);
+  const totalNetMove = trades.reduce(
+    (sum, t) => sum + t.netMove,
+    0
+  );
 
-  const profit = wins.reduce((s, t) => s + t.netR, 0);
-  const loss = Math.abs(losses.reduce((s, t) => s + t.netR, 0));
+  const totalNetR = trades.reduce(
+    (sum, t) => sum + t.netR,
+    0
+  );
+
+  const profit = profitable.reduce(
+    (sum, t) => sum + t.netR,
+    0
+  );
+
+  const loss = Math.abs(unprofitable.reduce(
+    (sum, t) => sum + t.netR,
+    0
+  ));
 
   const factor = loss > 0 ? profit / loss : null;
+
   const winRate = trades.length
-    ? wins.length / trades.length * 100
+    ? profitable.length / trades.length * 100
     : 0;
 
-  console.log("\n========== HISTORICAL BACKTEST ==========");
-  console.log("PAIR: EUR/USD");
+  console.log("\n========== BTC/USD HISTORICAL BACKTEST ==========");
+  console.log("PAIR: BTC/USD");
   console.log("SIGNAL: M5 + M15 + H1");
-  console.log(`Period: ${new Date(m5[0].time).toISOString()} to ${new Date(m5.at(-1).time).toISOString()}`);
-  console.log(`Candles: M5 ${m5.length} | M15 ${m15.length} | H1 ${h1.length}`);
+
+  console.log(
+    `Period: ${new Date(m5[0].time).toISOString()} to ` +
+    `${new Date(m5.at(-1).time).toISOString()}`
+  );
+
+  console.log(
+    `Candles: M5 ${m5.length} | M15 ${m15.length} | H1 ${h1.length}`
+  );
+
   console.log(`Signals evaluated: ${signalsChecked}`);
   console.log(`Closed trades: ${trades.length}`);
   console.log(`Open at end, excluded: ${openAtEnd}`);
-  console.log(`BUY: ${trades.filter(t => t.side === "BUY").length}`);
-  console.log(`SELL: ${trades.filter(t => t.side === "SELL").length}`);
-  console.log(`Net wins: ${wins.length}`);
-  console.log(`Net losses: ${losses.length}`);
+
+  console.log(
+    `BUY: ${trades.filter(t => t.side === "BUY").length}`
+  );
+
+  console.log(
+    `SELL: ${trades.filter(t => t.side === "SELL").length}`
+  );
+
+  console.log(`Net profitable trades: ${profitable.length}`);
+  console.log(`Net unprofitable trades: ${unprofitable.length}`);
   console.log(`Win rate: ${winRate.toFixed(2)}%`);
-  console.log(`Net pips: ${netPips.toFixed(2)}`);
-  console.log(`Net result: ${netR.toFixed(2)} R`);
-  console.log(`Profit factor: ${factor === null ? "N/A" : factor.toFixed(2)}`);
-  console.log(`Maximum drawdown: ${maxDrawdown(trades).toFixed(2)} R`);
-  console.log(`Round-trip cost assumption: ${COST_PIPS} pips`);
+  console.log(`Net price movement: $${totalNetMove.toFixed(2)} per BTC`);
+  console.log(`Net result: ${totalNetR.toFixed(2)} R`);
+
+  console.log(
+    `Profit factor: ${factor === null ? "N/A" : factor.toFixed(2)}`
+  );
+
+  console.log(
+    `Maximum drawdown: ${maxDrawdown(trades).toFixed(2)} R`
+  );
+
+  console.log(`Round-trip cost assumption: ${COST_BPS} bps`);
+  console.log(`Equivalent percentage cost: ${(COST_BPS / 100).toFixed(3)}%`);
+
   console.log("Entry: next M5 candle open.");
   console.log("If SL and TP hit in one candle, SL is counted first.");
   console.log("Unclosed trades are excluded.");
-  console.log("=========================================");
+  console.log("This is a historical simulation, not a live performance claim.");
+  console.log("=================================================");
 
   if (!trades.length) {
     console.log("No completed trades. No performance conclusion can be drawn.");
@@ -333,6 +399,6 @@ async function main() {
 }
 
 main().catch(error => {
-  console.error("BACKTEST ERROR:", error);
+  console.error("BTCUSD BACKTEST ERROR:", error);
   process.exitCode = 1;
 });
