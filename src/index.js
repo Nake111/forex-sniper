@@ -1,3 +1,4 @@
+
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
@@ -81,8 +82,11 @@ function printSmartMoney(name, smc) {
     for (const ob of smc.orderBlocks) {
       console.log(
         `${ob.direction} OB | High: ${price(ob.high)} | ` +
-        `Low: ${price(ob.low)} | Bars ago: ${ob.barsAgo} | ` +
-        `Mitigated: ${ob.mitigated ? "YES" : "NO"}`
+        `Low: ${price(ob.low)} | Midpoint: ${price(ob.midpoint)} | ` +
+        `Bars ago: ${ob.barsAgo} | Status: ${ob.status} | ` +
+        `Touched: ${ob.touched ? "YES" : "NO"} | ` +
+        `Mitigated: ${ob.mitigated ? "YES" : "NO"} | ` +
+        `Invalidated: ${ob.invalidated ? "YES" : "NO"}`
       );
     }
   }
@@ -254,6 +258,7 @@ async function main() {
   console.log("Data: Dukascopy");
   console.log("Indicators: EMA / RSI / MACD / ATR");
   console.log("Smart Money: BOS / CHoCH / OB / FVG / Liquidity");
+  console.log("Order Block Status: FRESH / TOUCHED / MITIGATED / INVALIDATED");
   console.log("Volume Profile: Candle-volume POC estimate");
   console.log("Mode: PAPER ANALYSIS ONLY");
   console.log("Live orders: DISABLED");
