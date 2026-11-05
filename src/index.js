@@ -1,4 +1,4 @@
-
+import { analyzeMarketStructure } from "./market-structure.js";
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 import { getForexNews } from "./news.js";
