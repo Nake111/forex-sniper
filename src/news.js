@@ -10,27 +10,68 @@ const TIMEOUT_MS = 15000;
 const EVENT_RULES = [
   {
     name: "CENTRAL BANK",
-    words: ["ecb", "federal reserve", "fed", "central bank", "monetary policy"]
+    words: [
+      "ecb",
+      "federal reserve",
+      "fed",
+      "central bank",
+      "monetary policy"
+    ]
   },
   {
     name: "INFLATION",
-    words: ["inflation", "cpi", "pce", "consumer prices", "producer prices"]
+    words: [
+      "inflation",
+      "cpi",
+      "pce",
+      "consumer prices",
+      "producer prices"
+    ]
   },
   {
     name: "EMPLOYMENT",
-    words: ["nfp", "nonfarm payroll", "payrolls", "unemployment", "jobless claims", "employment data"]
+    words: [
+      "nfp",
+      "nonfarm payroll",
+      "payrolls",
+      "unemployment",
+      "jobless claims",
+      "employment data",
+      "jobs report"
+    ]
   },
   {
     name: "INTEREST RATES",
-    words: ["interest rate", "rate decision", "rate cut", "rate hike", "rate hold", "bond yield", "treasury yields"]
+    words: [
+      "interest rate",
+      "rate decision",
+      "rate cut",
+      "rate hike",
+      "rate hold",
+      "bond yield",
+      "treasury yields"
+    ]
   },
   {
     name: "ECONOMIC GROWTH",
-    words: ["gdp", "pmi", "retail sales", "economic growth", "recession"]
+    words: [
+      "gdp",
+      "pmi",
+      "retail sales",
+      "economic growth",
+      "recession"
+    ]
   },
   {
     name: "GEOPOLITICS",
-    words: ["tariff", "trade war", "sanctions", "geopolitical", "war", "oil prices"]
+    words: [
+      "tariff",
+      "trade war",
+      "sanctions",
+      "geopolitical",
+      "war",
+      "oil prices"
+    ]
   }
 ];
 
@@ -47,7 +88,9 @@ function decodeXml(value) {
 function parseDate(value) {
   const parsed = Date.parse(value);
 
-  if (Number.isFinite(parsed)) return parsed;
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  }
 
   const match = String(value).match(
     /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/
@@ -79,42 +122,58 @@ function isRecent(article) {
 }
 
 function classifyArticle(article) {
-  const title = article.title.toLowerCase();
+  const title = String(article.title || "").toLowerCase();
+
   let score = 0;
   const matchedEvents = [];
 
-  if (/eur\/usd|eurusd|euro.*dollar|dollar.*euro/.test(title)) {
-    score += 4;
+  const directPair =
+    /\beur\/usd\b|\beurusd\b|euro.*dollar|dollar.*euro/.test(title);
+
+  const hasECB =
+    /\becb\b|european central bank/.test(title);
+
+  const hasFed =
+    /\bfed\b|federal reserve/.test(title);
+
+  // Direct EUR/USD coverage receives the strongest relevance bonus.
+  if (directPair) {
+    score += 3;
   }
 
-  if (/\becb\b|european central bank/.test(title)) {
-    score += 4;
-  }
-
-  if (/\bfed\b|federal reserve/.test(title)) {
-    score += 4;
-  }
-
-  if (/\beuro\b|\beuros\b/.test(title)) {
+  // Central bank references are relevant but not automatically high impact.
+  if (hasECB || hasFed) {
     score += 2;
   }
 
-  if (/\bus dollar\b|\bu\.s\. dollar\b|\bdollar index\b/.test(title)) {
-    score += 2;
+  if (
+    /\beuro\b|\beuros\b|\bus dollar\b|\bu\.s\. dollar\b|\bdollar index\b/.test(title)
+  ) {
+    score += 1;
   }
 
+  // Detect economic event categories.
   for (const event of EVENT_RULES) {
     if (event.words.some(word => title.includes(word))) {
-      score += 2;
+      score += 1;
       matchedEvents.push(event.name);
     }
   }
 
+  // Specific major economic announcements.
+  const highImpactEvent =
+    /\brate decision\b|raises interest rates|cuts interest rates|inflation (?:rises|falls|jumps|drops) to|cpi report|consumer price index|nonfarm payroll|\bnfp\b|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting/.test(title);
+
+  if (highImpactEvent) {
+    score += 2;
+  }
+
   let relevance = "LOW";
 
-  if (score >= 6) {
+  // HIGH requires a specific event AND sufficient EUR/USD relevance.
+  if (highImpactEvent && score >= 5) {
     relevance = "HIGH";
-  } else if (score >= 3) {
+  } else if (score >= 2) {
     relevance = "MEDIUM";
   }
 
@@ -132,7 +191,11 @@ function normalizeArticles(articles) {
   const unique = new Map();
 
   for (const article of articles) {
-    if (!article.title || !article.url || !isRecent(article)) {
+    if (
+      !article.title ||
+      !article.url ||
+      !isRecent(article)
+    ) {
       continue;
     }
 
@@ -161,13 +224,16 @@ function normalizeArticles(articles) {
 }
 
 function parseRss(xml) {
-  const items = [...xml.matchAll(
-    /<item>([\s\S]*?)<\/item>/g
-  )];
+  const items = [
+    ...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)
+  ];
 
   return items.map(([, item]) => {
     function getTag(tag) {
-      const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escaped = tag.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
 
       const match = item.match(
         new RegExp(
@@ -176,7 +242,9 @@ function parseRss(xml) {
         )
       );
 
-      return match ? decodeXml(match[1].trim()) : "";
+      return match
+        ? decodeXml(match[1].trim())
+        : "";
     }
 
     return {
@@ -198,14 +266,19 @@ async function getGoogleNews() {
 
   const response = await fetch(
     `${GOOGLE_NEWS_URL}?${params}`,
-    { signal: AbortSignal.timeout(TIMEOUT_MS) }
+    {
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    }
   );
 
   if (!response.ok) {
-    throw new Error(`Google News HTTP ${response.status}`);
+    throw new Error(
+      `Google News HTTP ${response.status}`
+    );
   }
 
   const xml = await response.text();
+
   return normalizeArticles(parseRss(xml));
 }
 
@@ -221,11 +294,15 @@ async function getGdeltNews() {
 
   const response = await fetch(
     `${GDELT_URL}?${params}`,
-    { signal: AbortSignal.timeout(TIMEOUT_MS) }
+    {
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    }
   );
 
   if (!response.ok) {
-    throw new Error(`GDELT HTTP ${response.status}`);
+    throw new Error(
+      `GDELT HTTP ${response.status}`
+    );
   }
 
   const data = await response.json();
@@ -243,16 +320,34 @@ async function getGdeltNews() {
 function printNewsReport(articles, source) {
   console.log("");
   console.log("EUR/USD NEWS INTELLIGENCE");
-  console.log("------------------------");
+  console.log("-------------------------");
   console.log(`SOURCE: ${source}`);
   console.log(`RELEVANT ARTICLES: ${articles.length}`);
   console.log("NEWS IS CONTEXT ONLY — NOT A TRADE SIGNAL.");
 
+  const high = articles.filter(
+    article => article.relevance === "HIGH"
+  ).length;
+
+  const medium = articles.filter(
+    article => article.relevance === "MEDIUM"
+  ).length;
+
+  const low = articles.filter(
+    article => article.relevance === "LOW"
+  ).length;
+
+  console.log(`HIGH IMPACT CANDIDATES: ${high}`);
+  console.log(`MEDIUM RELEVANCE: ${medium}`);
+  console.log(`LOW RELEVANCE: ${low}`);
+
   for (const [index, article] of articles.entries()) {
     console.log("");
+
     console.log(
       `${index + 1}. [${article.relevance}] [${article.eventType}]`
     );
+
     console.log(`TITLE: ${article.title}`);
     console.log(`SOURCE: ${article.source}`);
     console.log(`DATE: ${article.date}`);
@@ -266,33 +361,50 @@ export async function getForexNews() {
   console.log("NEWS INTELLIGENCE STARTED");
   console.log("-------------------------");
 
-  // Google News is primary because GDELT recently returned HTTP 429.
+  // Google News is primary because GDELT previously returned HTTP 429.
   try {
     const articles = await getGoogleNews();
 
     if (articles.length > 0) {
-      printNewsReport(articles, "GOOGLE NEWS RSS");
+      printNewsReport(
+        articles,
+        "GOOGLE NEWS RSS"
+      );
+
       return articles;
     }
 
-    console.log("Google News: no relevant articles. Trying GDELT.");
+    console.log(
+      "Google News: no relevant articles. Trying GDELT."
+    );
   } catch (error) {
-    console.log(`Google News failed: ${error.message}`);
+    console.log(
+      `Google News failed: ${error.message}`
+    );
   }
 
+  // GDELT backup.
   try {
     const articles = await getGdeltNews();
 
     if (articles.length > 0) {
       printNewsReport(articles, "GDELT");
+
       return articles;
     }
 
-    console.log("GDELT: no relevant articles found.");
+    console.log(
+      "GDELT: no relevant articles found."
+    );
   } catch (error) {
-    console.log(`GDELT failed: ${error.message}`);
+    console.log(
+      `GDELT failed: ${error.message}`
+    );
   }
 
-  console.log("NEWS STATUS: NO RELEVANT ARTICLES AVAILABLE.");
+  console.log(
+    "NEWS STATUS: NO RELEVANT ARTICLES AVAILABLE."
+  );
+
   return [];
 }
