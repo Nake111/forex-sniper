@@ -13,71 +13,199 @@ function getTime(candle) {
   return time;
 }
 
-export function analyzeMarketStructure(candles, strength = 3) {
-  if (!Array.isArray(candles) || candles.length < strength * 2 + 2) {
-    throw new Error("Not enough candles for market structure");
-  }
-
+function findSwings(candles, strength) {
   const swings = [];
 
   for (let i = strength; i < candles.length - strength; i++) {
     const high = Number(candles[i].high);
     const low = Number(candles[i].low);
 
-    const left = candles.slice(i - strength, i);
-    const right = candles.slice(i + 1, i + strength + 1);
+    const neighbours = [
+      ...candles.slice(i - strength, i),
+      ...candles.slice(i + 1, i + strength + 1)
+    ];
 
-    const swingHigh = [...left, ...right].every(
-      c => high > Number(c.high)
+    const swingHigh = neighbours.every(
+      candle => high > Number(candle.high)
     );
 
-    const swingLow = [...left, ...right].every(
-      c => low < Number(c.low)
+    const swingLow = neighbours.every(
+      candle => low < Number(candle.low)
     );
 
     if (swingHigh) {
-      swings.push({ type: "HIGH", price: high, index: i });
+      swings.push({
+        type: "HIGH",
+        price: high,
+        index: i
+      });
     }
 
     if (swingLow) {
-      swings.push({ type: "LOW", price: low, index: i });
+      swings.push({
+        type: "LOW",
+        price: low,
+        index: i
+      });
     }
   }
 
-  const last = candles[candles.length - 1];
-  const previous = candles[candles.length - 2];
+  return swings;
+}
 
-  const latestHigh = [...swings].reverse().find(s => s.type === "HIGH");
-  const latestLow = [...swings].reverse().find(s => s.type === "LOW");
+function findRecentBreak(candles, swing, direction, lookback) {
+  if (!swing) return null;
 
-  let bos = "NONE";
-  let liquiditySweep = "NONE";
+  const start = Math.max(
+    swing.index + 1,
+    candles.length - lookback
+  );
 
-  if (latestHigh && Number(last.close) > latestHigh.price) {
-    bos = "BULLISH";
-  } else if (latestLow && Number(last.close) < latestLow.price) {
-    bos = "BEARISH";
+  for (let i = candles.length - 1; i >= start; i--) {
+    const previousClose = Number(candles[i - 1].close);
+    const currentClose = Number(candles[i].close);
+
+    const crossed = direction === "BULLISH"
+      ? previousClose <= swing.price &&
+        currentClose > swing.price
+      : previousClose >= swing.price &&
+        currentClose < swing.price;
+
+    if (crossed) {
+      return {
+        direction,
+        level: swing.price,
+        index: i,
+        barsAgo: candles.length - 1 - i
+      };
+    }
   }
+
+  return null;
+}
+
+function findRecentSweep(candles, swingHigh, swingLow, lookback) {
+  const events = [];
+  const start = Math.max(0, candles.length - lookback);
+
+  for (let i = start; i < candles.length; i++) {
+    const candle = candles[i];
+    const high = Number(candle.high);
+    const low = Number(candle.low);
+    const close = Number(candle.close);
+
+    if (
+      swingHigh &&
+      i > swingHigh.index &&
+      high > swingHigh.price &&
+      close < swingHigh.price
+    ) {
+      events.push({
+        direction: "BEARISH",
+        level: swingHigh.price,
+        index: i,
+        barsAgo: candles.length - 1 - i
+      });
+    }
+
+    if (
+      swingLow &&
+      i > swingLow.index &&
+      low < swingLow.price &&
+      close > swingLow.price
+    ) {
+      events.push({
+        direction: "BULLISH",
+        level: swingLow.price,
+        index: i,
+        barsAgo: candles.length - 1 - i
+      });
+    }
+  }
+
+  if (!events.length) return null;
+
+  events.sort((a, b) => b.index - a.index);
 
   if (
-    latestHigh &&
-    Number(previous.high) <= latestHigh.price &&
-    Number(last.high) > latestHigh.price &&
-    Number(last.close) < latestHigh.price
+    events.length > 1 &&
+    events[0].index === events[1].index &&
+    events[0].direction !== events[1].direction
   ) {
-    liquiditySweep = "BEARISH";
+    return null;
   }
 
+  return events[0];
+}
+
+export function analyzeMarketStructure(candles, strength = 3) {
   if (
-    latestLow &&
-    Number(previous.low) >= latestLow.price &&
-    Number(last.low) < latestLow.price &&
-    Number(last.close) > latestLow.price
+    !Array.isArray(candles) ||
+    candles.length < strength * 2 + 10
   ) {
-    liquiditySweep = "BULLISH";
+    throw new Error("Not enough candles for market structure");
   }
 
-  const latestTime = getTime(last);
+  for (const candle of candles) {
+    const high = Number(candle.high);
+    const low = Number(candle.low);
+    const close = Number(candle.close);
+
+    if (
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close) ||
+      high < low
+    ) {
+      throw new Error("Invalid OHLC candle data");
+    }
+  }
+
+  const swings = findSwings(candles, strength);
+
+  const latestHigh = [...swings]
+    .reverse()
+    .find(swing => swing.type === "HIGH");
+
+  const latestLow = [...swings]
+    .reverse()
+    .find(swing => swing.type === "LOW");
+
+  const bullishBreak = findRecentBreak(
+    candles,
+    latestHigh,
+    "BULLISH",
+    6
+  );
+
+  const bearishBreak = findRecentBreak(
+    candles,
+    latestLow,
+    "BEARISH",
+    6
+  );
+
+  let breakEvent = null;
+
+  if (bullishBreak && bearishBreak) {
+    if (bullishBreak.index > bearishBreak.index) {
+      breakEvent = bullishBreak;
+    } else if (bearishBreak.index > bullishBreak.index) {
+      breakEvent = bearishBreak;
+    }
+  } else {
+    breakEvent = bullishBreak || bearishBreak;
+  }
+
+  const sweepEvent = findRecentSweep(
+    candles,
+    latestHigh,
+    latestLow,
+    3
+  );
+
+  const latestTime = getTime(candles[candles.length - 1]);
+
   let previousDayHigh = null;
   let previousDayLow = null;
 
@@ -86,8 +214,8 @@ export function analyzeMarketStructure(candles, strength = 3) {
       .toISOString()
       .slice(0, 10);
 
-    const dayCandles = candles.filter(c => {
-      const time = getTime(c);
+    const dayCandles = candles.filter(candle => {
+      const time = getTime(candle);
 
       return time !== null &&
         new Date(time).toISOString().slice(0, 10) === previousDay;
@@ -95,11 +223,11 @@ export function analyzeMarketStructure(candles, strength = 3) {
 
     if (dayCandles.length) {
       previousDayHigh = Math.max(
-        ...dayCandles.map(c => Number(c.high))
+        ...dayCandles.map(candle => Number(candle.high))
       );
 
       previousDayLow = Math.min(
-        ...dayCandles.map(c => Number(c.low))
+        ...dayCandles.map(candle => Number(candle.low))
       );
     }
   }
@@ -107,8 +235,15 @@ export function analyzeMarketStructure(candles, strength = 3) {
   return {
     swingHigh: latestHigh?.price ?? null,
     swingLow: latestLow?.price ?? null,
-    bos,
-    liquiditySweep,
+
+    bos: breakEvent?.direction ?? "NONE",
+    bosLevel: breakEvent?.level ?? null,
+    bosBarsAgo: breakEvent?.barsAgo ?? null,
+
+    liquiditySweep: sweepEvent?.direction ?? "NONE",
+    liquiditySweepLevel: sweepEvent?.level ?? null,
+    liquiditySweepBarsAgo: sweepEvent?.barsAgo ?? null,
+
     previousDayHigh,
     previousDayLow
   };
