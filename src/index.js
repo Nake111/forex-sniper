@@ -61,6 +61,8 @@ async function loadCandles(timeframe) {
 }
 
 function printTimeframe(name, result) {
+  const s = result.structure;
+
   console.log(`\n========== ${name} ==========`);
   console.log(`Close:       ${price(result.close)}`);
   console.log(`EMA20:       ${price(result.ema20)}`);
@@ -72,8 +74,26 @@ function printTimeframe(name, result) {
   console.log(`Volume POC:  ${price(result.poc)}`);
   console.log(`Bullish:     ${result.bullishVotes}/4`);
   console.log(`Bearish:     ${result.bearishVotes}/4`);
-  console.log(`BOS:         ${result.structure.bos}`);
-  console.log(`Sweep:       ${result.structure.sweep}`);
+
+  console.log("\n--- MARKET STRUCTURE ---");
+  console.log(`Swing High:  ${price(s.swingHigh)}`);
+  console.log(`Swing Low:   ${price(s.swingLow)}`);
+  console.log(`BOS:         ${s.bos}`);
+  console.log(`BOS Level:   ${price(s.bosLevel)}`);
+  console.log(`BOS Bars Ago: ${s.bosBarsAgo ?? "N/A"}`);
+
+  console.log("\n--- LIQUIDITY ---");
+  console.log(`Sweep:       ${s.liquiditySweep}`);
+  console.log(`Sweep Level: ${price(s.liquiditySweepLevel)}`);
+  console.log(`Sweep Bars Ago: ${s.liquiditySweepBarsAgo ?? "N/A"}`);
+  console.log(`Confirmed:   ${s.sweepConfirmed ? "YES" : "NO"}`);
+  console.log(
+    `Confirmation Bars Ago: ${s.sweepConfirmationBarsAgo ?? "N/A"}`
+  );
+
+  console.log("\n--- DAILY LEVELS ---");
+  console.log(`Previous Day High: ${price(s.previousDayHigh)}`);
+  console.log(`Previous Day Low:  ${price(s.previousDayLow)}`);
 }
 
 function evaluate(m5, m15, h1) {
@@ -197,7 +217,7 @@ function tradePlan(signal, m5) {
 
 async function main() {
   console.log("========================================");
-  console.log("       FOREX SNIPER AI v3.2");
+  console.log("       FOREX SNIPER AI v3.3");
   console.log("========================================");
   console.log("Symbol: EUR/USD");
   console.log(`Time: ${new Date().toISOString()}`);
