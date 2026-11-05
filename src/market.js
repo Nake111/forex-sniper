@@ -136,6 +136,150 @@ export function volumeProfile(candles, bins = 24) {
   };
 }
 
+// ==========================================
+// TTM SQUEEZE MOMENTUM - LAZYBEAR METHOD
+// ==========================================
+
+export function squeezeMomentum(
+  candles,
+  length = 20,
+  bbMult = 2,
+  kcMult = 1.5
+) {
+  if (!Array.isArray(candles) || candles.length < length + 1) {
+    return {
+      state: "INSUFFICIENT_DATA",
+      momentum: null,
+      previousMomentum: null,
+      direction: "N/A"
+    };
+  }
+
+  const sma = values =>
+    values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  const closes = candles.map(c => Number(c.close));
+
+  const trueRanges = candles.map((candle, i) => {
+    if (i === 0) {
+      return Number(candle.high) - Number(candle.low);
+    }
+
+    const previousClose = closes[i - 1];
+
+    return Math.max(
+      Number(candle.high) - Number(candle.low),
+      Math.abs(Number(candle.high) - previousClose),
+      Math.abs(Number(candle.low) - previousClose)
+    );
+  });
+
+  function calculateAt(end) {
+    const start = end - length + 1;
+
+    const closeWindow = closes.slice(start, end + 1);
+
+    const highWindow = candles
+      .slice(start, end + 1)
+      .map(c => Number(c.high));
+
+    const lowWindow = candles
+      .slice(start, end + 1)
+      .map(c => Number(c.low));
+
+    // Bollinger Bands
+    const basis = sma(closeWindow);
+
+    const variance = closeWindow.reduce(
+      (sum, value) => sum + (value - basis) ** 2,
+      0
+    ) / length;
+
+    const deviation = Math.sqrt(variance);
+
+    const upperBB = basis + bbMult * deviation;
+    const lowerBB = basis - bbMult * deviation;
+
+    // Keltner Channels
+    const rangeMean = sma(trueRanges.slice(start, end + 1));
+
+    const upperKC = basis + kcMult * rangeMean;
+    const lowerKC = basis - kcMult * rangeMean;
+
+    const squeezeOn =
+      lowerBB > lowerKC && upperBB < upperKC;
+
+    const squeezeOff =
+      lowerBB < lowerKC && upperBB > upperKC;
+
+    // LazyBear momentum regression
+    const highest = Math.max(...highWindow);
+    const lowest = Math.min(...lowWindow);
+
+    const anchor =
+      ((highest + lowest) / 2 + basis) / 2;
+
+    const regressionInput = closeWindow.map(
+      value => value - anchor
+    );
+
+    const xMean = (length - 1) / 2;
+    const yMean = sma(regressionInput);
+
+    let numerator = 0;
+    let denominator = 0;
+
+    for (let i = 0; i < length; i++) {
+      numerator +=
+        (i - xMean) * (regressionInput[i] - yMean);
+
+      denominator += (i - xMean) ** 2;
+    }
+
+    const slope =
+      denominator === 0 ? 0 : numerator / denominator;
+
+    const momentum =
+      yMean + slope * (length - 1 - xMean);
+
+    return {
+      state: squeezeOn
+        ? "SQUEEZE_ON"
+        : squeezeOff
+          ? "SQUEEZE_RELEASED"
+          : "NO_SQUEEZE",
+      momentum
+    };
+  }
+
+  const current = calculateAt(candles.length - 1);
+  const previous = calculateAt(candles.length - 2);
+
+  let direction = "FLAT";
+
+  if (current.momentum > 0) {
+    direction =
+      current.momentum > previous.momentum
+        ? "BULLISH_STRENGTHENING"
+        : "BULLISH_WEAKENING";
+  } else if (current.momentum < 0) {
+    direction =
+      current.momentum < previous.momentum
+        ? "BEARISH_STRENGTHENING"
+        : "BEARISH_WEAKENING";
+  }
+
+  return {
+    ...current,
+    previousMomentum: previous.momentum,
+    direction
+  };
+}
+
+// ==========================================
+// MARKET STRUCTURE
+// ==========================================
+
 export function marketStructure(candles) {
   const structure = analyzeMarketStructure(candles, 3);
 
@@ -146,6 +290,10 @@ export function marketStructure(candles) {
       : "NONE"
   };
 }
+
+// ==========================================
+// COMPLETE TIMEFRAME ANALYSIS
+// ==========================================
 
 export function analyseTimeframe(candles) {
   if (!Array.isArray(candles) || candles.length < 60) {
@@ -160,9 +308,12 @@ export function analyseTimeframe(candles) {
   const rsi14 = rsi(closes, 14);
   const macdData = macd(closes);
   const atr14 = atr(candles, 14);
+
   const profile = volumeProfile(candles);
   const structure = marketStructure(candles);
   const smartMoney = analyzeSmartMoney(candles);
+
+  const squeeze = squeezeMomentum(candles);
 
   const bullish = [
     close > ema20,
@@ -188,6 +339,7 @@ export function analyseTimeframe(candles) {
     macdHistogram: macdData.histogram,
     atr14,
     poc: profile.poc,
+    squeeze,
     structure,
     smartMoney,
     bullishVotes: bullish.filter(Boolean).length,
