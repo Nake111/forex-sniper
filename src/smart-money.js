@@ -1,9 +1,8 @@
-
 // Independent Smart Money Concepts engine for Forex Sniper.
 // Conceptual reference: LuxAlgo Smart Money Concepts, © LuxAlgo.
 // Reference license: CC BY-NC-SA 4.0
 // https://creativecommons.org/licenses/by-nc-sa/4.0/
-// This is an independent JavaScript implementation, not copied Pine Script.
+// Independent JavaScript implementation; not copied Pine Script.
 
 function n(value) {
   const result = Number(value);
@@ -18,8 +17,10 @@ function findPivots(candles, strength) {
     const high = n(candles[i].high);
     const low = n(candles[i].low);
 
-    let isHigh = high !== null;
-    let isLow = low !== null;
+    if (high === null || low === null) continue;
+
+    let isHigh = true;
+    let isLow = true;
 
     for (let j = i - strength; j <= i + strength; j++) {
       if (j === i) continue;
@@ -35,13 +36,18 @@ function findPivots(candles, strength) {
   return { highs, lows };
 }
 
-function findStructureEvents(candles, pivots, direction) {
+function collectBreaks(candles, pivots, direction, strength) {
   const events = [];
 
   for (const pivot of pivots) {
-    for (let i = pivot.index + 1; i < candles.length; i++) {
+    // A pivot is only usable after its right-side candles confirm it.
+    const start = pivot.index + strength + 1;
+
+    for (let i = start; i < candles.length; i++) {
       const previous = n(candles[i - 1].close);
       const close = n(candles[i].close);
+
+      if (previous === null || close === null) continue;
 
       const crossed = direction === "BULLISH"
         ? previous <= pivot.price && close > pivot.price
@@ -52,6 +58,7 @@ function findStructureEvents(candles, pivots, direction) {
           direction,
           level: pivot.price,
           index: i,
+          pivotIndex: pivot.index,
           barsAgo: candles.length - 1 - i
         });
         break;
@@ -59,20 +66,38 @@ function findStructureEvents(candles, pivots, direction) {
     }
   }
 
-  events.sort((a, b) => a.index - b.index);
+  return events;
+}
 
-  let bias = 0;
+function classifyEvents(events) {
+  const sorted = [...events].sort((a, b) => {
+    if (a.index !== b.index) return a.index - b.index;
 
-  for (const event of events) {
-    const nextBias = event.direction === "BULLISH" ? 1 : -1;
+    // If both directions break on one candle, do not guess.
+    return a.direction.localeCompare(b.direction);
+  });
 
-    event.type =
-      bias !== 0 && bias !== nextBias ? "CHoCH" : "BOS";
+  let bias = "NEUTRAL";
+  const classified = [];
 
-    bias = nextBias;
+  for (const event of sorted) {
+    if (
+      classified.length &&
+      classified.at(-1).index === event.index
+    ) {
+      continue;
+    }
+
+    const type =
+      bias !== "NEUTRAL" && bias !== event.direction
+        ? "CHoCH"
+        : "BOS";
+
+    classified.push({ ...event, type });
+    bias = event.direction;
   }
 
-  return events;
+  return classified;
 }
 
 function findOrderBlock(candles, event) {
@@ -81,6 +106,7 @@ function findOrderBlock(candles, event) {
   const bullish = event.direction === "BULLISH";
   const start = Math.max(0, event.index - 20);
 
+  // Find the last opposite candle before the structural break.
   for (let i = event.index - 1; i >= start; i--) {
     const candle = candles[i];
 
@@ -99,14 +125,39 @@ function findOrderBlock(candles, event) {
 
     if (!opposite) continue;
 
+    let touched = false;
+    let invalidated = false;
+
+    // Check every candle after the block, not just the latest candle.
+    for (let j = i + 1; j < candles.length; j++) {
+      const later = candles[j];
+      const laterHigh = n(later.high);
+      const laterLow = n(later.low);
+      const laterClose = n(later.close);
+
+      if (
+        laterHigh === null ||
+        laterLow === null ||
+        laterClose === null
+      ) continue;
+
+      if (bullish) {
+        if (laterLow <= high) touched = true;
+        if (laterClose < low) invalidated = true;
+      } else {
+        if (laterHigh >= low) touched = true;
+        if (laterClose > high) invalidated = true;
+      }
+    }
+
     return {
       direction: event.direction,
       high,
       low,
       barsAgo: candles.length - 1 - i,
-      mitigated: bullish
-        ? n(candles.at(-1).low) < low
-        : n(candles.at(-1).high) > high
+      touched,
+      mitigated: invalidated,
+      invalidated
     };
   }
 
@@ -119,43 +170,65 @@ function findFVGs(candles) {
 
   for (let i = start; i < candles.length; i++) {
     const first = candles[i - 2];
-    const current = candles[i];
 
     const firstHigh = n(first.high);
     const firstLow = n(first.low);
-    const currentHigh = n(current.high);
-    const currentLow = n(current.low);
+    const currentHigh = n(candles[i].high);
+    const currentLow = n(candles[i].low);
 
     if (
       [firstHigh, firstLow, currentHigh, currentLow]
         .some(v => v === null)
     ) continue;
 
+    let direction;
+    let top;
+    let bottom;
+
     if (currentLow > firstHigh) {
-      gaps.push({
-        direction: "BULLISH",
-        top: currentLow,
-        bottom: firstHigh,
-        barsAgo: candles.length - 1 - i,
-        filled: n(candles.at(-1).low) <= firstHigh
-      });
+      direction = "BULLISH";
+      top = currentLow;
+      bottom = firstHigh;
+    } else if (currentHigh < firstLow) {
+      direction = "BEARISH";
+      top = firstLow;
+      bottom = currentHigh;
+    } else {
+      continue;
     }
 
-    if (currentHigh < firstLow) {
+    let touched = false;
+    let filled = false;
+
+    // Track mitigation across all candles after the gap formed.
+    for (let j = i + 1; j < candles.length; j++) {
+      const high = n(candles[j].high);
+      const low = n(candles[j].low);
+
+      if (high === null || low === null) continue;
+
+      if (direction === "BULLISH") {
+        if (low <= top) touched = true;
+        if (low <= bottom) filled = true;
+      } else {
+        if (high >= bottom) touched = true;
+        if (high >= top) filled = true;
+      }
+    }
+
+    if (!filled) {
       gaps.push({
-        direction: "BEARISH",
-        top: firstLow,
-        bottom: currentHigh,
+        direction,
+        top,
+        bottom,
         barsAgo: candles.length - 1 - i,
-        filled: n(candles.at(-1).high) >= firstLow
+        touched,
+        filled
       });
     }
   }
 
-  return gaps
-    .filter(gap => !gap.filled)
-    .slice(-5)
-    .reverse();
+  return gaps.slice(-5).reverse();
 }
 
 function findEqualLevels(pivots, tolerance) {
@@ -171,84 +244,118 @@ function findEqualLevels(pivots, tolerance) {
   return null;
 }
 
+function latestEvent(events) {
+  return events.at(-1) ?? null;
+}
+
+function publicEvent(event) {
+  return {
+    direction: event?.direction ?? "NEUTRAL",
+    type: event?.type ?? "NONE",
+    level: event?.level ?? null,
+    barsAgo: event?.barsAgo ?? null
+  };
+}
+
 export function analyzeSmartMoney(candles) {
   if (!Array.isArray(candles) || candles.length < 60) {
     throw new Error("Not enough candles for SMC analysis.");
   }
 
-  const swing = findPivots(candles, 10);
-  const internal = findPivots(candles, 3);
+  const swingStrength = 10;
+  const internalStrength = 3;
 
-  const swingEvents = [
-    ...findStructureEvents(candles, swing.highs, "BULLISH"),
-    ...findStructureEvents(candles, swing.lows, "BEARISH")
-  ].sort((a, b) => a.index - b.index);
+  const swingPivots = findPivots(candles, swingStrength);
+  const internalPivots = findPivots(candles, internalStrength);
 
-  const internalEvents = [
-    ...findStructureEvents(candles, internal.highs, "BULLISH"),
-    ...findStructureEvents(candles, internal.lows, "BEARISH")
-  ].sort((a, b) => a.index - b.index);
+  const swingEvents = classifyEvents([
+    ...collectBreaks(
+      candles,
+      swingPivots.highs,
+      "BULLISH",
+      swingStrength
+    ),
+    ...collectBreaks(
+      candles,
+      swingPivots.lows,
+      "BEARISH",
+      swingStrength
+    )
+  ]);
 
-  const lastSwing = swingEvents.at(-1) ?? null;
-  const lastInternal = internalEvents.at(-1) ?? null;
+  const internalEvents = classifyEvents([
+    ...collectBreaks(
+      candles,
+      internalPivots.highs,
+      "BULLISH",
+      internalStrength
+    ),
+    ...collectBreaks(
+      candles,
+      internalPivots.lows,
+      "BEARISH",
+      internalStrength
+    )
+  ]);
+
+  const lastSwing = latestEvent(swingEvents);
+  const lastInternal = latestEvent(internalEvents);
 
   const lastBullish = [...swingEvents]
     .reverse()
-    .find(e => e.direction === "BULLISH");
+    .find(event => event.direction === "BULLISH");
 
   const lastBearish = [...swingEvents]
     .reverse()
-    .find(e => e.direction === "BEARISH");
+    .find(event => event.direction === "BEARISH");
 
   const orderBlocks = [
     findOrderBlock(candles, lastBullish),
     findOrderBlock(candles, lastBearish)
   ].filter(Boolean);
 
+  const recent = candles.slice(-50);
+  const highs = recent.map(c => n(c.high)).filter(v => v !== null);
+  const lows = recent.map(c => n(c.low)).filter(v => v !== null);
+
+  if (!highs.length || !lows.length) {
+    throw new Error("Invalid price range for SMC analysis.");
+  }
+
+  const rangeHigh = Math.max(...highs);
+  const rangeLow = Math.min(...lows);
+  const equilibrium = (rangeHigh + rangeLow) / 2;
   const current = n(candles.at(-1).close);
 
-  const recent = candles.slice(-50);
-  const rangeHigh = Math.max(...recent.map(c => n(c.high)));
-  const rangeLow = Math.min(...recent.map(c => n(c.low)));
-  const equilibrium = (rangeHigh + rangeLow) / 2;
+  const recentRanges = candles.slice(-15)
+    .map(c => {
+      const high = n(c.high);
+      const low = n(c.low);
+      return high === null || low === null ? null : high - low;
+    })
+    .filter(v => v !== null);
 
-  const recentRanges = candles.slice(-15).map(
-    c => n(c.high) - n(c.low)
-  );
-
-  const averageRange =
-    recentRanges.reduce((a, b) => a + b, 0) /
-    recentRanges.length;
+  const averageRange = recentRanges.length
+    ? recentRanges.reduce((a, b) => a + b, 0) / recentRanges.length
+    : 0;
 
   return {
-    swing: {
-      direction: lastSwing?.direction ?? "NEUTRAL",
-      type: lastSwing?.type ?? "NONE",
-      level: lastSwing?.level ?? null,
-      barsAgo: lastSwing?.barsAgo ?? null
-    },
+    swing: publicEvent(lastSwing),
+    internal: publicEvent(lastInternal),
 
-    internal: {
-      direction: lastInternal?.direction ?? "NEUTRAL",
-      type: lastInternal?.type ?? "NONE",
-      level: lastInternal?.level ?? null,
-      barsAgo: lastInternal?.barsAgo ?? null
-    },
-
-    swingHigh: swing.highs.at(-1)?.price ?? null,
-    swingLow: swing.lows.at(-1)?.price ?? null,
+    swingHigh: swingPivots.highs.at(-1)?.price ?? null,
+    swingLow: swingPivots.lows.at(-1)?.price ?? null,
 
     orderBlocks,
-
     fairValueGaps: findFVGs(candles),
 
     equalHigh: findEqualLevels(
-      swing.highs,
+      swingPivots.highs,
       averageRange * 0.1
     ),
 
     equalLow: findEqualLevels(
-      swing.lows,
+      swingPivots.lows,
       averageRange * 0.1
     ),
 
