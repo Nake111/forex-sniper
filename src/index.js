@@ -1,14 +1,15 @@
-import { analyzeMarketStructure } from "./market-structure.js";
+
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
+import { analyzeMarketStructure } from "./market-structure.js";
 import { getForexNews } from "./news.js";
-const latest = results[results.length - 1];
+
 async function main() {
   console.log("================================");
   console.log("       FOREX SNIPER DESK");
   console.log("================================");
 
-  // 1. Load EUR/USD candle data
+  // 1. Load EUR/USD M5 data
   const raw = await readFile("data/eurusd-m5.json", "utf8");
   const candles = JSON.parse(raw);
 
@@ -16,11 +17,14 @@ async function main() {
     throw new Error("Not enough candle data");
   }
 
-  // 2. Calculate technical indicators
+  // 2. Calculate indicators
   const results = calculateIndicators(candles);
   const latest = results[results.length - 1];
 
-  // 3. Generate trading signal
+  // 3. Analyze market structure
+  const structure = analyzeMarketStructure(candles);
+
+  // 4. Generate BUY / SELL / HOLD signal
   let signal = "HOLD";
   let entry = null;
   let stopLoss = null;
@@ -44,7 +48,7 @@ async function main() {
     signal = "SELL";
   }
 
-  // 4. Calculate hypothetical risk levels
+  // 5. Calculate hypothetical risk levels
   if (signal !== "HOLD") {
     entry = latest.close;
     const risk = latest.atr14 * 1.5;
@@ -59,7 +63,7 @@ async function main() {
     }
   }
 
-  // 5. Print technical analysis
+  // 6. Technical analysis report
   console.log("\nEUR/USD TECHNICAL ANALYSIS");
   console.log("--------------------------");
   console.log("Candles:", candles.length);
@@ -82,7 +86,17 @@ async function main() {
     console.log("Waiting for confirmation.");
   }
 
-  // 6. Load free GDELT news
+  // 7. Market structure report
+  console.log("\nEUR/USD MARKET STRUCTURE");
+  console.log("------------------------");
+  console.log("Swing High:", structure.swingHigh ?? "Not found");
+  console.log("Swing Low:", structure.swingLow ?? "Not found");
+  console.log("Break of Structure:", structure.bos);
+  console.log("Liquidity Sweep:", structure.liquiditySweep);
+  console.log("Previous Day High:", structure.previousDayHigh ?? "Not available");
+  console.log("Previous Day Low:", structure.previousDayLow ?? "Not available");
+
+  // 8. News report
   console.log("\nEUR/USD NEWS — LAST 24 HOURS");
   console.log("----------------------------");
 
@@ -103,6 +117,7 @@ async function main() {
     console.log("News feed unavailable:", error.message);
   }
 
+  // 9. Safety status
   console.log("\n================================");
   console.log("LIVE TRADING: DISABLED");
   console.log("PAPER ANALYSIS ONLY");
