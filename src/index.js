@@ -2,8 +2,9 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
+import { finalAction, tradePlan } from "./trade-plan.js";
 
-const VERSION = "3.7";
+const VERSION = "3.8";
 
 const DATA_FILES = {
   M5: "data/eurusd-m5.json",
@@ -74,9 +75,7 @@ function printSqueeze(timeframe, result) {
 
   console.log(`State: ${s.state ?? "N/A"}`);
   console.log(`Momentum: ${number(s.momentum, 7)}`);
-  console.log(
-    `Previous momentum: ${number(s.previousMomentum, 7)}`
-  );
+  console.log(`Previous momentum: ${number(s.previousMomentum, 7)}`);
   console.log(`Momentum bias: ${momentumBias}`);
   console.log(`Momentum direction: ${s.direction ?? "N/A"}`);
 }
@@ -98,15 +97,11 @@ function printTimeframe(timeframe, result) {
   console.log(`Bearish votes: ${result.bearishVotes}/4`);
 
   if (result.structure) {
-    console.log(
-      `Market structure: ${JSON.stringify(result.structure)}`
-    );
+    console.log(`Market structure: ${JSON.stringify(result.structure)}`);
   }
 
   if (result.smartMoney) {
-    console.log(
-      `Smart Money: ${JSON.stringify(result.smartMoney)}`
-    );
+    console.log(`Smart Money: ${JSON.stringify(result.smartMoney)}`);
   }
 
   printSqueeze(timeframe, result);
@@ -123,7 +118,6 @@ function evaluateSignal(results) {
 
   const structure = m5.structure ?? {};
 
-  // Structure confirmation must match the trade direction.
   const bullishM5Confirmation =
     structure.bos === "BULLISH" ||
     structure.sweep === "BULLISH" ||
@@ -160,19 +154,11 @@ function evaluateSignal(results) {
     Number.isFinite(m5.poc) &&
     m5.close < m5.poc;
 
-  if (
-    bullish &&
-    bullishM5Confirmation &&
-    abovePoc
-  ) {
+  if (bullish && bullishM5Confirmation && abovePoc) {
     return "BUY";
   }
 
-  if (
-    bearish &&
-    bearishM5Confirmation &&
-    belowPoc
-  ) {
+  if (bearish && bearishM5Confirmation && belowPoc) {
     return "SELL";
   }
 
@@ -234,50 +220,6 @@ function checkTradeConfirmation(signal, results) {
 }
 
 // ==========================================
-// TRADE PLAN — SAFETY GATE
-// ==========================================
-
-function tradePlan(signal, result, confirmation) {
-  // CRITICAL:
-  // Never create entry, stop-loss or take-profit
-  // unless H1 confirmation has passed.
-
-  if (
-    signal === "HOLD" ||
-    confirmation?.status !== "H1 ALIGNED" ||
-    !Number.isFinite(result.atr14) ||
-    result.atr14 <= 0 ||
-    !Number.isFinite(result.close)
-  ) {
-    return null;
-  }
-
-  const entry = result.close;
-  const risk = result.atr14 * 1.5;
-  const reward = result.atr14 * 3;
-
-  if (signal === "BUY") {
-    return {
-      entry,
-      stopLoss: entry - risk,
-      takeProfit: entry + reward,
-      riskReward: "1:2"
-    };
-  }
-
-  if (signal === "SELL") {
-    return {
-      entry,
-      stopLoss: entry + risk,
-      takeProfit: entry - reward,
-      riskReward: "1:2"
-    };
-  }
-
-  return null;
-}
-
-// ==========================================
 // FOREX NEWS
 // ==========================================
 
@@ -287,10 +229,7 @@ async function printNews() {
   try {
     const news = await getForexNews();
 
-    if (
-      !news ||
-      (Array.isArray(news) && news.length === 0)
-    ) {
+    if (!news || (Array.isArray(news) && news.length === 0)) {
       console.log("No news data available.");
       return;
     }
@@ -322,23 +261,17 @@ async function main() {
 
     results[timeframe] = analyseTimeframe(candles);
 
-    console.log(
-      `${timeframe} candles loaded: ${candles.length}`
-    );
-
+    console.log(`${timeframe} candles loaded: ${candles.length}`);
     printTimeframe(timeframe, results[timeframe]);
   }
 
-  // Calculate the technical signal.
   const signal = evaluateSignal(results);
 
-  // Check whether H1 confirms the technical signal.
   const confirmation = checkTradeConfirmation(
     signal,
     results
   );
 
-  // A trade plan is possible only after H1 alignment.
   const plan = tradePlan(
     signal,
     results.M5,
@@ -346,22 +279,13 @@ async function main() {
   );
 
   console.log("\n========== FINAL SIGNAL ==========");
-
   console.log(`TECHNICAL SIGNAL: ${signal}`);
   console.log(`TRADE CONFIRMATION: ${confirmation.status}`);
-
-  // Final action is never BUY or SELL while H1 says WAIT.
-  console.log(
-    `FINAL ACTION: ${plan ? signal : "NO TRADE"}`
-  );
-
-  console.log(
-    `Confirmation reason: ${confirmation.reason}`
-  );
+  console.log(`FINAL ACTION: ${finalAction(signal, plan)}`);
+  console.log(`Confirmation reason: ${confirmation.reason}`);
 
   if (plan) {
     console.log("\n========== CONFIRMED TRADE PLAN ==========");
-
     console.log(`Entry reference: ${price(plan.entry)}`);
     console.log(`Stop Loss reference: ${price(plan.stopLoss)}`);
     console.log(`Take Profit reference: ${price(plan.takeProfit)}`);
@@ -378,10 +302,6 @@ async function main() {
     console.log("\nNo valid entry. Waiting for confirmation.");
   }
 
-  // ========================================
-  // SQUEEZE SUMMARY
-  // ========================================
-
   console.log("\n========== SQUEEZE SUMMARY ==========");
 
   for (const timeframe of ["M5", "M15", "H1"]) {
@@ -394,14 +314,11 @@ async function main() {
     );
   }
 
-  // ========================================
-  // ORDER BLOCK SUMMARY
-  // ========================================
-
   console.log("\n========== ORDER BLOCK SUMMARY ==========");
 
   for (const timeframe of ["M5", "M15", "H1"]) {
-    const blocks = results[timeframe].smartMoney?.orderBlocks ?? [];
+    const blocks =
+      results[timeframe].smartMoney?.orderBlocks ?? [];
 
     console.log(`\n${timeframe}:`);
 
