@@ -1,4 +1,3 @@
-
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
@@ -21,8 +20,7 @@ function price(value) {
 }
 
 async function loadCandles(timeframe) {
-  const filename = DATA_FILES[timeframe];
-  const raw = await readFile(filename, "utf8");
+  const raw = await readFile(DATA_FILES[timeframe], "utf8");
   const parsed = JSON.parse(raw);
 
   if (!Array.isArray(parsed)) {
@@ -43,27 +41,81 @@ async function loadCandles(timeframe) {
     );
 
   if (candles.length < 60) {
-    throw new Error(
-      `${timeframe}: only ${candles.length} valid candles found.`
-    );
+    throw new Error(`${timeframe}: insufficient valid candles.`);
   }
 
-  const volumeCandles = candles.filter(c =>
-    Number.isFinite(c.volume) && c.volume > 0
-  ).length;
+  const volumeCandles = candles.filter(c => c.volume > 0).length;
 
   console.log(
     `${timeframe}: ${candles.length} candles loaded; ` +
-    `${volumeCandles} candles contain volume.`
+    `${volumeCandles} contain volume.`
   );
 
   return candles;
+}
+
+function printSmartMoney(name, smc) {
+  console.log(`\n========== ${name} SMART MONEY CONCEPTS ==========`);
+
+  console.log("\n--- SWING STRUCTURE ---");
+  console.log(`Direction: ${smc.swing.direction}`);
+  console.log(`Event:     ${smc.swing.type}`);
+  console.log(`Level:     ${price(smc.swing.level)}`);
+  console.log(`Bars ago:  ${smc.swing.barsAgo ?? "N/A"}`);
+
+  console.log("\n--- INTERNAL STRUCTURE ---");
+  console.log(`Direction: ${smc.internal.direction}`);
+  console.log(`Event:     ${smc.internal.type}`);
+  console.log(`Level:     ${price(smc.internal.level)}`);
+  console.log(`Bars ago:  ${smc.internal.barsAgo ?? "N/A"}`);
+
+  console.log("\n--- SWING LEVELS ---");
+  console.log(`Swing High: ${price(smc.swingHigh)}`);
+  console.log(`Swing Low:  ${price(smc.swingLow)}`);
+
+  console.log("\n--- ORDER BLOCKS ---");
+
+  if (!smc.orderBlocks.length) {
+    console.log("No order blocks detected.");
+  } else {
+    for (const ob of smc.orderBlocks) {
+      console.log(
+        `${ob.direction} OB | High: ${price(ob.high)} | ` +
+        `Low: ${price(ob.low)} | Bars ago: ${ob.barsAgo} | ` +
+        `Mitigated: ${ob.mitigated ? "YES" : "NO"}`
+      );
+    }
+  }
+
+  console.log("\n--- FAIR VALUE GAPS ---");
+
+  if (!smc.fairValueGaps.length) {
+    console.log("No unfilled FVG detected.");
+  } else {
+    for (const fvg of smc.fairValueGaps) {
+      console.log(
+        `${fvg.direction} FVG | Top: ${price(fvg.top)} | ` +
+        `Bottom: ${price(fvg.bottom)} | Bars ago: ${fvg.barsAgo}`
+      );
+    }
+  }
+
+  console.log("\n--- LIQUIDITY LEVELS ---");
+  console.log(`Equal High: ${price(smc.equalHigh)}`);
+  console.log(`Equal Low:  ${price(smc.equalLow)}`);
+
+  console.log("\n--- PREMIUM / DISCOUNT ---");
+  console.log(`Range High:  ${price(smc.rangeHigh)}`);
+  console.log(`Range Low:   ${price(smc.rangeLow)}`);
+  console.log(`Equilibrium: ${price(smc.equilibrium)}`);
+  console.log(`Current Zone: ${smc.zone}`);
 }
 
 function printTimeframe(name, result) {
   const s = result.structure;
 
   console.log(`\n========== ${name} ==========`);
+
   console.log(`Close:       ${price(result.close)}`);
   console.log(`EMA20:       ${price(result.ema20)}`);
   console.log(`EMA50:       ${price(result.ema50)}`);
@@ -76,24 +128,21 @@ function printTimeframe(name, result) {
   console.log(`Bearish:     ${result.bearishVotes}/4`);
 
   console.log("\n--- MARKET STRUCTURE ---");
-  console.log(`Swing High:  ${price(s.swingHigh)}`);
-  console.log(`Swing Low:   ${price(s.swingLow)}`);
-  console.log(`BOS:         ${s.bos}`);
-  console.log(`BOS Level:   ${price(s.bosLevel)}`);
-  console.log(`BOS Bars Ago: ${s.bosBarsAgo ?? "N/A"}`);
+  console.log(`Swing High: ${price(s.swingHigh)}`);
+  console.log(`Swing Low:  ${price(s.swingLow)}`);
+  console.log(`BOS:        ${s.bos}`);
+  console.log(`BOS Level:  ${price(s.bosLevel)}`);
 
-  console.log("\n--- LIQUIDITY ---");
-  console.log(`Sweep:       ${s.liquiditySweep}`);
+  console.log("\n--- LIQUIDITY SWEEP ---");
+  console.log(`Sweep:      ${s.liquiditySweep}`);
   console.log(`Sweep Level: ${price(s.liquiditySweepLevel)}`);
-  console.log(`Sweep Bars Ago: ${s.liquiditySweepBarsAgo ?? "N/A"}`);
-  console.log(`Confirmed:   ${s.sweepConfirmed ? "YES" : "NO"}`);
-  console.log(
-    `Confirmation Bars Ago: ${s.sweepConfirmationBarsAgo ?? "N/A"}`
-  );
+  console.log(`Confirmed:  ${s.sweepConfirmed ? "YES" : "NO"}`);
 
   console.log("\n--- DAILY LEVELS ---");
   console.log(`Previous Day High: ${price(s.previousDayHigh)}`);
   console.log(`Previous Day Low:  ${price(s.previousDayLow)}`);
+
+  printSmartMoney(name, result.smartMoney);
 }
 
 function evaluate(m5, m15, h1) {
@@ -120,7 +169,6 @@ function evaluate(m5, m15, h1) {
     m5.structure.sweep === "BEARISH";
 
   const pocAvailable = Number.isFinite(m5.poc);
-
   const buyVolume = pocAvailable && m5.close > m5.poc;
   const sellVolume = pocAvailable && m5.close < m5.poc;
 
@@ -140,21 +188,6 @@ function evaluate(m5, m15, h1) {
 
   if (!buySetup && !sellSetup) {
     reasons.push("Timeframe confirmation is incomplete.");
-
-    if (!buyM5 && !sellM5) {
-      reasons.push("M5 has no 3/4 directional confirmation.");
-    }
-
-    if (!buyM15 && !sellM15) {
-      reasons.push("M15 has no 3/4 directional confirmation.");
-    }
-
-    if (!buyH1 && !sellH1) {
-      reasons.push("H1 has fewer than 2 votes in either direction.");
-    }
-
-    if (h1BlocksBuy) reasons.push("H1 strongly opposes BUY.");
-    if (h1BlocksSell) reasons.push("H1 strongly opposes SELL.");
   }
 
   if (buySetup && !buyStructure) {
@@ -166,9 +199,7 @@ function evaluate(m5, m15, h1) {
   }
 
   if ((buySetup || sellSetup) && !pocAvailable) {
-    reasons.push(
-      "Volume POC unavailable: no usable volume data. Trade blocked."
-    );
+    reasons.push("Volume POC unavailable. Trade blocked.");
   } else {
     if (buySetup && !buyVolume) {
       reasons.push("BUY blocked: price is not above POC.");
@@ -179,6 +210,9 @@ function evaluate(m5, m15, h1) {
     }
   }
 
+  if (h1BlocksBuy) reasons.push("H1 strongly opposes BUY.");
+  if (h1BlocksSell) reasons.push("H1 strongly opposes SELL.");
+
   if (signal === "HOLD" && reasons.length === 0) {
     reasons.push("No complete confirmed setup.");
   }
@@ -187,16 +221,12 @@ function evaluate(m5, m15, h1) {
 }
 
 function tradePlan(signal, m5) {
-  if (!["BUY", "SELL"].includes(signal)) {
-    return null;
-  }
+  if (!["BUY", "SELL"].includes(signal)) return null;
 
   const entry = m5.close;
   const risk = m5.atr14;
 
-  if (!Number.isFinite(risk) || risk <= 0) {
-    return null;
-  }
+  if (!Number.isFinite(risk) || risk <= 0) return null;
 
   const distance = risk * 1.5;
 
@@ -217,16 +247,18 @@ function tradePlan(signal, m5) {
 
 async function main() {
   console.log("========================================");
-  console.log("       FOREX SNIPER AI v3.3");
+  console.log("       FOREX SNIPER AI v3.4");
   console.log("========================================");
   console.log("Symbol: EUR/USD");
   console.log(`Time: ${new Date().toISOString()}`);
-  console.log("Data source: Dukascopy downloaded candles");
-  console.log("Volume profile: candle-volume POC estimate");
+  console.log("Data: Dukascopy");
+  console.log("Indicators: EMA / RSI / MACD / ATR");
+  console.log("Smart Money: BOS / CHoCH / OB / FVG / Liquidity");
+  console.log("Volume Profile: Candle-volume POC estimate");
   console.log("Mode: PAPER ANALYSIS ONLY");
   console.log("Live orders: DISABLED");
 
-  console.log("\nLoading M5, M15 and H1 candle files...");
+  console.log("\nLoading M5, M15 and H1...");
 
   const [m5Data, m15Data, h1Data] = await Promise.all([
     loadCandles("M5"),
@@ -242,36 +274,24 @@ async function main() {
   printTimeframe("M15 CONFIRMATION", m15);
   printTimeframe("H1 MAIN DIRECTION", h1);
 
-  console.log("\n========== VOLUME PROFILE CHECK ==========");
+  console.log("\n========== VOLUME PROFILE ==========");
   console.log(`M5 POC:  ${price(m5.poc)}`);
   console.log(`M15 POC: ${price(m15.poc)}`);
   console.log(`H1 POC:  ${price(h1.poc)}`);
 
-  if (Number.isFinite(m5.poc)) {
-    console.log(
-      m5.close > m5.poc
-        ? "M5 price is ABOVE POC."
-        : m5.close < m5.poc
-          ? "M5 price is BELOW POC."
-          : "M5 price is AT POC."
-    );
-  } else {
-    console.log("M5 POC unavailable: volume data is missing.");
-  }
-
-  console.log("\n========== H1 CONFIRMATION RULE ==========");
-  console.log("Minimum H1 confirmation: 2/4");
-  console.log("Strong opposition threshold: 3/4");
-
-  const result = evaluate(m5, m15, h1);
-
   console.log("\n========== MARKET CONSENSUS ==========");
   console.log(
-    `Bullish votes: ${m5.bullishVotes + m15.bullishVotes + h1.bullishVotes}/12`
+    `Bullish votes: ${
+      m5.bullishVotes + m15.bullishVotes + h1.bullishVotes
+    }/12`
   );
   console.log(
-    `Bearish votes: ${m5.bearishVotes + m15.bearishVotes + h1.bearishVotes}/12`
+    `Bearish votes: ${
+      m5.bearishVotes + m15.bearishVotes + h1.bearishVotes
+    }/12`
   );
+
+  const result = evaluate(m5, m15, h1);
 
   console.log("\n========== FINAL SIGNAL ==========");
   console.log(`SIGNAL: ${result.signal}`);
@@ -289,17 +309,10 @@ async function main() {
     console.log("TAKE PROFIT: N/A");
   }
 
-  console.log("\n========== CONFIRMATION CHECKLIST ==========");
-  console.log(`M5:  BUY ${m5.bullishVotes}/4 | SELL ${m5.bearishVotes}/4`);
-  console.log(`M15: BUY ${m15.bullishVotes}/4 | SELL ${m15.bearishVotes}/4`);
-  console.log(`H1:  BUY ${h1.bullishVotes}/4 | SELL ${h1.bearishVotes}/4`);
+  console.log("\n========== WHY HOLD / BLOCKED ==========");
 
-  if (result.reasons.length > 0) {
-    console.log("\n========== WHY HOLD / BLOCKED ==========");
-
-    for (const reason of result.reasons) {
-      console.log(`- ${reason}`);
-    }
+  for (const reason of result.reasons) {
+    console.log(`- ${reason}`);
   }
 
   console.log("\n========== NEWS INTELLIGENCE ==========");
