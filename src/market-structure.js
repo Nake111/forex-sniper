@@ -7,7 +7,6 @@ function getTime(candle) {
   let time = typeof value === "number" ? value : Date.parse(value);
 
   if (!Number.isFinite(time)) return null;
-
   if (time < 1e12) time *= 1000;
 
   return time;
@@ -25,28 +24,12 @@ function findSwings(candles, strength) {
       ...candles.slice(i + 1, i + strength + 1)
     ];
 
-    const swingHigh = neighbours.every(
-      candle => high > Number(candle.high)
-    );
-
-    const swingLow = neighbours.every(
-      candle => low < Number(candle.low)
-    );
-
-    if (swingHigh) {
-      swings.push({
-        type: "HIGH",
-        price: high,
-        index: i
-      });
+    if (neighbours.every(c => high > Number(c.high))) {
+      swings.push({ type: "HIGH", price: high, index: i });
     }
 
-    if (swingLow) {
-      swings.push({
-        type: "LOW",
-        price: low,
-        index: i
-      });
+    if (neighbours.every(c => low < Number(c.low))) {
+      swings.push({ type: "LOW", price: low, index: i });
     }
   }
 
@@ -56,20 +39,15 @@ function findSwings(candles, strength) {
 function findRecentBreak(candles, swing, direction, lookback) {
   if (!swing) return null;
 
-  const start = Math.max(
-    swing.index + 1,
-    candles.length - lookback
-  );
+  const start = Math.max(swing.index + 1, candles.length - lookback);
 
   for (let i = candles.length - 1; i >= start; i--) {
     const previousClose = Number(candles[i - 1].close);
     const currentClose = Number(candles[i].close);
 
     const crossed = direction === "BULLISH"
-      ? previousClose <= swing.price &&
-        currentClose > swing.price
-      : previousClose >= swing.price &&
-        currentClose < swing.price;
+      ? previousClose <= swing.price && currentClose > swing.price
+      : previousClose >= swing.price && currentClose < swing.price;
 
     if (crossed) {
       return {
@@ -103,6 +81,8 @@ function findRecentSweep(candles, swingHigh, swingLow, lookback) {
       events.push({
         direction: "BEARISH",
         level: swingHigh.price,
+        sweepHigh: high,
+        sweepLow: low,
         index: i,
         barsAgo: candles.length - 1 - i
       });
@@ -117,6 +97,8 @@ function findRecentSweep(candles, swingHigh, swingLow, lookback) {
       events.push({
         direction: "BULLISH",
         level: swingLow.price,
+        sweepHigh: high,
+        sweepLow: low,
         index: i,
         barsAgo: candles.length - 1 - i
       });
@@ -135,7 +117,30 @@ function findRecentSweep(candles, swingHigh, swingLow, lookback) {
     return null;
   }
 
-  return events[0];
+  const event = events[0];
+  let confirmed = false;
+  let confirmationBarsAgo = null;
+
+  // Confirmation must come from a candle AFTER the sweep candle.
+  for (let i = event.index + 1; i < candles.length; i++) {
+    const close = Number(candles[i].close);
+
+    const confirmation = event.direction === "BULLISH"
+      ? close > event.sweepHigh
+      : close < event.sweepLow;
+
+    if (confirmation) {
+      confirmed = true;
+      confirmationBarsAgo = candles.length - 1 - i;
+      break;
+    }
+  }
+
+  return {
+    ...event,
+    confirmed,
+    confirmationBarsAgo
+  };
 }
 
 export function analyzeMarketStructure(candles, strength = 3) {
@@ -223,11 +228,11 @@ export function analyzeMarketStructure(candles, strength = 3) {
 
     if (dayCandles.length) {
       previousDayHigh = Math.max(
-        ...dayCandles.map(candle => Number(candle.high))
+        ...dayCandles.map(c => Number(c.high))
       );
 
       previousDayLow = Math.min(
-        ...dayCandles.map(candle => Number(candle.low))
+        ...dayCandles.map(c => Number(c.low))
       );
     }
   }
@@ -243,6 +248,9 @@ export function analyzeMarketStructure(candles, strength = 3) {
     liquiditySweep: sweepEvent?.direction ?? "NONE",
     liquiditySweepLevel: sweepEvent?.level ?? null,
     liquiditySweepBarsAgo: sweepEvent?.barsAgo ?? null,
+    sweepConfirmed: sweepEvent?.confirmed ?? false,
+    sweepConfirmationBarsAgo:
+      sweepEvent?.confirmationBarsAgo ?? null,
 
     previousDayHigh,
     previousDayLow
