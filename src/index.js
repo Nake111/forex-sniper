@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
 
-const VERSION = "3.5";
+const VERSION = "3.6";
 
 const DATA_FILES = {
   M5: "data/eurusd-m5.json",
@@ -46,11 +46,7 @@ async function loadCandles(timeframe) {
     .filter(c =>
       [c.open, c.high, c.low, c.close].every(Number.isFinite)
     )
-    .sort((a, b) => {
-      const ta = Number(a.time);
-      const tb = Number(b.time);
-      return ta - tb;
-    });
+    .sort((a, b) => Number(a.time) - Number(b.time));
 
   if (candles.length < 60) {
     throw new Error(`${timeframe}: insufficient candles (${candles.length}).`);
@@ -69,12 +65,16 @@ function printSqueeze(timeframe, result) {
     return;
   }
 
+  const momentumBias =
+    !Number.isFinite(s.momentum) ? "N/A" :
+    s.momentum > 0 ? "BULLISH" :
+    s.momentum < 0 ? "BEARISH" : "NEUTRAL";
+
   console.log(`State: ${s.state ?? "N/A"}`);
   console.log(`Momentum: ${number(s.momentum, 7)}`);
   console.log(`Previous momentum: ${number(s.previousMomentum, 7)}`);
-  console.log(`Direction: ${s.direction ?? "N/A"}`);
-  console.log(`Bullish momentum: ${s.bullish ?? "N/A"}`);
-  console.log(`Bearish momentum: ${s.bearish ?? "N/A"}`);
+  console.log(`Momentum bias: ${momentumBias}`);
+  console.log(`Momentum direction: ${s.direction ?? "N/A"}`);
 }
 
 function printTimeframe(timeframe, result) {
@@ -121,13 +121,14 @@ function evaluateSignal(results) {
     h1.bearishVotes >= RULES.H1 &&
     h1.bullishVotes < RULES.H1_STRONG_OPPOSITION;
 
-  const m5Structure = m5.structure ?? {};
+  const structure = m5.structure ?? {};
+
   const m5Confirmation =
-    m5Structure.bos === "BULLISH" ||
-    m5Structure.bos === "BEARISH" ||
-    m5Structure.sweep === "BULLISH" ||
-    m5Structure.sweep === "BEARISH" ||
-    m5Structure.sweepConfirmed === true;
+    structure.bos === "BULLISH" ||
+    structure.bos === "BEARISH" ||
+    structure.sweep === "BULLISH" ||
+    structure.sweep === "BEARISH" ||
+    structure.sweepConfirmed === true;
 
   const abovePoc =
     Number.isFinite(m5.poc) && m5.close > m5.poc;
@@ -139,6 +140,53 @@ function evaluateSignal(results) {
   if (bearish && m5Confirmation && belowPoc) return "SELL";
 
   return "HOLD";
+}
+
+// H1 TTM Squeeze confirmation gate.
+// This does not change the technical signal; it assesses
+// whether the higher-timeframe momentum supports the setup.
+function checkTradeConfirmation(signal, results) {
+  if (signal === "HOLD") {
+    return {
+      status: "NO TRADE",
+      reason: "Technical conditions do not meet entry rules."
+    };
+  }
+
+  const h1 = results.H1.squeeze;
+
+  if (!h1 || !Number.isFinite(h1.momentum)) {
+    return {
+      status: "WAIT",
+      reason: "H1 TTM Squeeze data is unavailable."
+    };
+  }
+
+  if (h1.state !== "SQUEEZE_RELEASED") {
+    return {
+      status: "WAIT",
+      reason: `H1 squeeze state is ${h1.state}, not released.`
+    };
+  }
+
+  if (signal === "BUY" && !h1.direction.startsWith("BULLISH")) {
+    return {
+      status: "WAIT",
+      reason: `H1 momentum conflicts with BUY: ${h1.direction}.`
+    };
+  }
+
+  if (signal === "SELL" && !h1.direction.startsWith("BEARISH")) {
+    return {
+      status: "WAIT",
+      reason: `H1 momentum conflicts with SELL: ${h1.direction}.`
+    };
+  }
+
+  return {
+    status: "H1 ALIGNED",
+    reason: `H1 squeeze supports ${signal}.`
+  };
 }
 
 function tradePlan(signal, result) {
@@ -188,7 +236,7 @@ async function main() {
   console.log("======================================");
   console.log(`FOREX SNIPER AI v${VERSION}`);
   console.log("EUR/USD MULTI-TIMEFRAME ANALYSIS");
-  console.log("TTM SQUEEZE INTEGRATION");
+  console.log("TTM SQUEEZE + H1 CONFIRMATION");
   console.log("PAPER ANALYSIS ONLY - LIVE ORDERS DISABLED");
   console.log("======================================");
 
@@ -197,20 +245,24 @@ async function main() {
   for (const timeframe of ["M5", "M15", "H1"]) {
     const candles = await loadCandles(timeframe);
     results[timeframe] = analyseTimeframe(candles);
+
     console.log(`${timeframe} candles loaded: ${candles.length}`);
     printTimeframe(timeframe, results[timeframe]);
   }
 
   const signal = evaluateSignal(results);
+  const confirmation = checkTradeConfirmation(signal, results);
   const plan = tradePlan(signal, results.M5);
 
   console.log("\n========== FINAL SIGNAL ==========");
-  console.log(`SIGNAL: ${signal}`);
+  console.log(`TECHNICAL SIGNAL: ${signal}`);
+  console.log(`TRADE CONFIRMATION: ${confirmation.status}`);
+  console.log(`Confirmation reason: ${confirmation.reason}`);
 
   if (plan) {
-    console.log(`Entry: ${price(plan.entry)}`);
-    console.log(`Stop Loss: ${price(plan.stopLoss)}`);
-    console.log(`Take Profit: ${price(plan.takeProfit)}`);
+    console.log(`Entry reference: ${price(plan.entry)}`);
+    console.log(`Stop Loss reference: ${price(plan.stopLoss)}`);
+    console.log(`Take Profit reference: ${price(plan.takeProfit)}`);
     console.log(`Risk/Reward: ${plan.riskReward}`);
   } else {
     console.log("No valid entry. Waiting for confirmation.");
@@ -219,15 +271,15 @@ async function main() {
   console.log("\n========== SQUEEZE SUMMARY ==========");
 
   for (const timeframe of ["M5", "M15", "H1"]) {
-    const squeeze = results[timeframe].squeeze;
+    const s = results[timeframe].squeeze;
     console.log(
-      `${timeframe}: ${squeeze?.state ?? "NOT AVAILABLE"} | ` +
-      `${squeeze?.direction ?? "N/A"}`
+      `${timeframe}: ${s?.state ?? "N/A"} | ` +
+      `${s?.direction ?? "N/A"} | Momentum: ${number(s?.momentum, 7)}`
     );
   }
 
-  console.log("\nTTM Squeeze is an additional volatility/momentum tool.");
-  console.log("It does not independently trigger BUY or SELL.");
+  console.log("\nH1 confirmation is a filter, not a guarantee of success.");
+  console.log("No live orders are placed.");
 
   await printNews();
 
