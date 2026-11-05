@@ -1,8 +1,8 @@
-// Independent Smart Money Concepts engine for Forex Sniper.
-// Conceptual reference: LuxAlgo Smart Money Concepts, © LuxAlgo.
-// Reference license: CC BY-NC-SA 4.0
+// Forex Sniper Smart Money Concepts Engine
+// Independent JavaScript implementation.
+// Conceptual reference: LuxAlgo Smart Money Concepts.
+// © LuxAlgo — CC BY-NC-SA 4.0
 // https://creativecommons.org/licenses/by-nc-sa/4.0/
-// Independent JavaScript implementation; not copied Pine Script.
 
 function n(value) {
   const result = Number(value);
@@ -40,7 +40,6 @@ function collectBreaks(candles, pivots, direction, strength) {
   const events = [];
 
   for (const pivot of pivots) {
-    // A pivot is only usable after its right-side candles confirm it.
     const start = pivot.index + strength + 1;
 
     for (let i = start; i < candles.length; i++) {
@@ -70,23 +69,16 @@ function collectBreaks(candles, pivots, direction, strength) {
 }
 
 function classifyEvents(events) {
-  const sorted = [...events].sort((a, b) => {
-    if (a.index !== b.index) return a.index - b.index;
-
-    // If both directions break on one candle, do not guess.
-    return a.direction.localeCompare(b.direction);
-  });
+  const sorted = [...events].sort((a, b) => a.index - b.index);
 
   let bias = "NEUTRAL";
   const classified = [];
 
   for (const event of sorted) {
-    if (
-      classified.length &&
-      classified.at(-1).index === event.index
-    ) {
-      continue;
-    }
+    const previous = classified.at(-1);
+
+    // Avoid ambiguous double breaks on the same candle.
+    if (previous && previous.index === event.index) continue;
 
     const type =
       bias !== "NEUTRAL" && bias !== event.direction
@@ -104,10 +96,23 @@ function findOrderBlock(candles, event) {
   if (!event) return null;
 
   const bullish = event.direction === "BULLISH";
-  const start = Math.max(0, event.index - 20);
+  const searchStart = Math.max(0, event.index - 30);
 
-  // Find the last opposite candle before the structural break.
-  for (let i = event.index - 1; i >= start; i--) {
+  const ranges = candles
+    .slice(Math.max(0, event.index - 14), event.index)
+    .map(c => {
+      const high = n(c.high);
+      const low = n(c.low);
+      return high === null || low === null ? null : high - low;
+    })
+    .filter(v => v !== null && v > 0);
+
+  if (!ranges.length) return null;
+
+  const averageRange =
+    ranges.reduce((sum, value) => sum + value, 0) / ranges.length;
+
+  for (let i = event.index - 1; i >= searchStart; i--) {
     const candle = candles[i];
 
     const open = n(candle.open);
@@ -125,15 +130,29 @@ function findOrderBlock(candles, event) {
 
     if (!opposite) continue;
 
+    let displacement = 0;
+
+    for (let j = i + 1; j <= event.index; j++) {
+      const laterClose = n(candles[j].close);
+      if (laterClose === null) continue;
+
+      if (bullish) {
+        displacement = Math.max(displacement, laterClose - high);
+      } else {
+        displacement = Math.max(displacement, low - laterClose);
+      }
+    }
+
+    if (displacement < averageRange * 0.75) continue;
+
     let touched = false;
     let invalidated = false;
 
-    // Check every candle after the block, not just the latest candle.
-    for (let j = i + 1; j < candles.length; j++) {
-      const later = candles[j];
-      const laterHigh = n(later.high);
-      const laterLow = n(later.low);
-      const laterClose = n(later.close);
+    // Mitigation checks begin only after the structural break.
+    for (let j = event.index + 1; j < candles.length; j++) {
+      const laterHigh = n(candles[j].high);
+      const laterLow = n(candles[j].low);
+      const laterClose = n(candles[j].close);
 
       if (
         laterHigh === null ||
@@ -141,12 +160,16 @@ function findOrderBlock(candles, event) {
         laterClose === null
       ) continue;
 
-      if (bullish) {
-        if (laterLow <= high) touched = true;
-        if (laterClose < low) invalidated = true;
-      } else {
-        if (laterHigh >= low) touched = true;
-        if (laterClose > high) invalidated = true;
+      if (laterHigh >= low && laterLow <= high) {
+        touched = true;
+      }
+
+      if (bullish && laterClose < low) {
+        invalidated = true;
+      }
+
+      if (!bullish && laterClose > high) {
+        invalidated = true;
       }
     }
 
@@ -155,8 +178,9 @@ function findOrderBlock(candles, event) {
       high,
       low,
       barsAgo: candles.length - 1 - i,
+      displacement,
       touched,
-      mitigated: invalidated,
+      mitigated: touched,
       invalidated
     };
   }
@@ -169,10 +193,8 @@ function findFVGs(candles) {
   const start = Math.max(2, candles.length - 50);
 
   for (let i = start; i < candles.length; i++) {
-    const first = candles[i - 2];
-
-    const firstHigh = n(first.high);
-    const firstLow = n(first.low);
+    const firstHigh = n(candles[i - 2].high);
+    const firstLow = n(candles[i - 2].low);
     const currentHigh = n(candles[i].high);
     const currentLow = n(candles[i].low);
 
@@ -200,7 +222,6 @@ function findFVGs(candles) {
     let touched = false;
     let filled = false;
 
-    // Track mitigation across all candles after the gap formed.
     for (let j = i + 1; j < candles.length; j++) {
       const high = n(candles[j].high);
       const low = n(candles[j].low);
@@ -244,10 +265,6 @@ function findEqualLevels(pivots, tolerance) {
   return null;
 }
 
-function latestEvent(events) {
-  return events.at(-1) ?? null;
-}
-
 function publicEvent(event) {
   return {
     direction: event?.direction ?? "NEUTRAL",
@@ -269,37 +286,17 @@ export function analyzeSmartMoney(candles) {
   const internalPivots = findPivots(candles, internalStrength);
 
   const swingEvents = classifyEvents([
-    ...collectBreaks(
-      candles,
-      swingPivots.highs,
-      "BULLISH",
-      swingStrength
-    ),
-    ...collectBreaks(
-      candles,
-      swingPivots.lows,
-      "BEARISH",
-      swingStrength
-    )
+    ...collectBreaks(candles, swingPivots.highs, "BULLISH", swingStrength),
+    ...collectBreaks(candles, swingPivots.lows, "BEARISH", swingStrength)
   ]);
 
   const internalEvents = classifyEvents([
-    ...collectBreaks(
-      candles,
-      internalPivots.highs,
-      "BULLISH",
-      internalStrength
-    ),
-    ...collectBreaks(
-      candles,
-      internalPivots.lows,
-      "BEARISH",
-      internalStrength
-    )
+    ...collectBreaks(candles, internalPivots.highs, "BULLISH", internalStrength),
+    ...collectBreaks(candles, internalPivots.lows, "BEARISH", internalStrength)
   ]);
 
-  const lastSwing = latestEvent(swingEvents);
-  const lastInternal = latestEvent(internalEvents);
+  const lastSwing = swingEvents.at(-1) ?? null;
+  const lastInternal = internalEvents.at(-1) ?? null;
 
   const lastBullish = [...swingEvents]
     .reverse()
@@ -349,15 +346,8 @@ export function analyzeSmartMoney(candles) {
     orderBlocks,
     fairValueGaps: findFVGs(candles),
 
-    equalHigh: findEqualLevels(
-      swingPivots.highs,
-      averageRange * 0.1
-    ),
-
-    equalLow: findEqualLevels(
-      swingPivots.lows,
-      averageRange * 0.1
-    ),
+    equalHigh: findEqualLevels(swingPivots.highs, averageRange * 0.1),
+    equalLow: findEqualLevels(swingPivots.lows, averageRange * 0.1),
 
     rangeHigh,
     rangeLow,
