@@ -9,10 +9,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/trade-plan.js",
+    "check": "node --check src/index.js && node --check src/trade-plan.js && node --check src/backtest.js",
     "test": "node --test trade-plan.test.js",
     "start": "node src/index.js",
-    "download": "node src/download.js"
+    "download": "node src/download.js",
+    "backtest": "node src/backtest.js"
   },
   "dependencies": {
     "dukascopy-node": "^1.40.0"
