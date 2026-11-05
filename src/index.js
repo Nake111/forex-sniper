@@ -1,489 +1,283 @@
 
-import { readFile } from "node:fs/promises";
-import { calculateIndicators } from "./indicators.js";
-import { analyzeMarketStructure } from "./market-structure.js";
-import { calculateVolumeProfile } from "./volume-profile.js";
+import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
 
-async function loadTimeframe(filename) {
-  const raw = await readFile(`data/${filename}`, "utf8");
-  const candles = JSON.parse(raw);
+const SYMBOL = "EURUSD=X";
 
-  if (!Array.isArray(candles) || candles.length < 50) {
-    throw new Error(`Not enough data in ${filename}`);
-  }
+const CONFIG = {
+  M5: { range: "5d", interval: "5m" },
+  M15: { range: "1mo", interval: "15m" },
+  H1: { range: "3mo", interval: "1h" }
+};
 
-  const results = calculateIndicators(candles);
+const RULES = {
+  M5: 3,
+  M15: 3,
+  H1: 2,
+  H1_STRONG_OPPOSITION: 3
+};
 
-  return {
-    candles,
-    latest: results[results.length - 1]
-  };
+function price(value) {
+  return Number.isFinite(value) ? value.toFixed(5) : "N/A";
 }
 
-function evaluateTimeframe(latest) {
-  const bullish = [
-    latest.close > latest.ema20,
-    latest.ema20 > latest.ema50,
-    latest.rsi14 > 50,
-    latest.macd > latest.macdSignal
-  ];
-
-  const bearish = [
-    latest.close < latest.ema20,
-    latest.ema20 < latest.ema50,
-    latest.rsi14 < 50,
-    latest.macd < latest.macdSignal
-  ];
-
-  const bullishVotes = bullish.filter(Boolean).length;
-  const bearishVotes = bearish.filter(Boolean).length;
-
-  let trend = "NEUTRAL";
-  let phase = "MIXED";
-
-  if (bullishVotes === 4) {
-    trend = "BULLISH";
-    phase = "CONFIRMED BULLISH";
-  } else if (bearishVotes === 4) {
-    trend = "BEARISH";
-    phase = "CONFIRMED BEARISH";
-  } else if (bullishVotes >= 3) {
-    phase = "DEVELOPING BULLISH";
-  } else if (bearishVotes >= 3) {
-    phase = "DEVELOPING BEARISH";
-  }
-
-  return {
-    trend,
-    phase,
-    bullishVotes,
-    bearishVotes,
-    bullish,
-    bearish
-  };
-}
-
-function printTimeframe(name, latest, result) {
-  console.log(`\n${name}`);
-  console.log("------------------------");
-  console.log("Close:", latest.close);
-  console.log("EMA 20:", latest.ema20);
-  console.log("EMA 50:", latest.ema50);
-  console.log("RSI 14:", latest.rsi14);
-  console.log("MACD:", latest.macd);
-  console.log("MACD Signal:", latest.macdSignal);
-  console.log("Bullish votes:", result.bullishVotes, "/ 4");
-  console.log("Bearish votes:", result.bearishVotes, "/ 4");
-  console.log("Trend:", result.trend);
-  console.log("Trend phase:", result.phase);
-}
-
-function printCheck(label, passed) {
-  console.log(`${passed ? "PASS" : "WAIT"} | ${label}`);
-}
-
-function printTimeframeProgress(name, result, side) {
-  const votes = side === "BUY"
-    ? result.bullishVotes
-    : result.bearishVotes;
-
-  const phase = votes === 4
-    ? "CONFIRMED"
-    : votes === 3
-      ? "DEVELOPING"
-      : "WAIT";
-
-  console.log(
-    `${phase} | ${name} ${side} conditions (${votes}/4)`
+async function downloadCandles(timeframe) {
+  const settings = CONFIG[timeframe];
+  const url = new URL(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${SYMBOL}`
   );
+
+  url.searchParams.set("range", settings.range);
+  url.searchParams.set("interval", settings.interval);
+
+  const response = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 ForexSniper/3.0" },
+    signal: AbortSignal.timeout(20000)
+  });
+
+  if (!response.ok) {
+    throw new Error(`${timeframe} data HTTP ${response.status}`);
+  }
+
+  const json = await response.json();
+  const result = json.chart?.result?.[0];
+
+  if (!result) {
+    throw new Error(`${timeframe} market data unavailable`);
+  }
+
+  const quote = result.indicators?.quote?.[0];
+  if (!quote) throw new Error(`${timeframe} candle data missing`);
+
+  const candles = (result.timestamp || []).map((time, i) => ({
+    time: new Date(time * 1000).toISOString(),
+    open: quote.open[i],
+    high: quote.high[i],
+    low: quote.low[i],
+    close: quote.close[i],
+    volume: quote.volume?.[i] || 0
+  })).filter(c =>
+    [c.open, c.high, c.low, c.close].every(Number.isFinite)
+  );
+
+  if (candles.length < 60) {
+    throw new Error(`${timeframe}: insufficient candles (${candles.length})`);
+  }
+
+  return candles;
 }
 
-function explainMissing(name, result, side) {
-  const conditions = side === "BUY"
-    ? [
-        ["Price above EMA20", result.bullish[0]],
-        ["EMA20 above EMA50", result.bullish[1]],
-        ["RSI above 50", result.bullish[2]],
-        ["MACD above signal", result.bullish[3]]
-      ]
-    : [
-        ["Price below EMA20", result.bearish[0]],
-        ["EMA20 below EMA50", result.bearish[1]],
-        ["RSI below 50", result.bearish[2]],
-        ["MACD below signal", result.bearish[3]]
-      ];
+function printTimeframe(name, result) {
+  console.log(`\n========== ${name} ==========`);
+  console.log(`Close:       ${price(result.close)}`);
+  console.log(`EMA20:       ${price(result.ema20)}`);
+  console.log(`EMA50:       ${price(result.ema50)}`);
+  console.log(`RSI14:       ${result.rsi14.toFixed(2)}`);
+  console.log(`MACD:        ${result.macd.toFixed(7)}`);
+  console.log(`MACD Signal: ${result.macdSignal.toFixed(7)}`);
+  console.log(`ATR14:       ${price(result.atr14)}`);
+  console.log(`Volume POC:  ${price(result.poc)}`);
+  console.log(`Bullish:     ${result.bullishVotes}/4`);
+  console.log(`Bearish:     ${result.bearishVotes}/4`);
+  console.log(`BOS:         ${result.structure.bos}`);
+  console.log(`Sweep:       ${result.structure.sweep}`);
+}
 
-  const missing = conditions.filter(item => !item[1]);
+function evaluate(m5, m15, h1) {
+  const reasons = [];
 
-  console.log(`\n${name} ${side} conditions:`);
+  const buyM5 = m5.bullishVotes >= RULES.M5;
+  const buyM15 = m15.bullishVotes >= RULES.M15;
+  const buyH1 = h1.bullishVotes >= RULES.H1;
+  const h1BlocksBuy =
+    h1.bearishVotes >= RULES.H1_STRONG_OPPOSITION;
 
-  if (missing.length === 0) {
-    console.log("All 4 conditions passed.");
-  } else {
-    missing.forEach(item => {
-      console.log("MISSING:", item[0]);
-    });
+  const sellM5 = m5.bearishVotes >= RULES.M5;
+  const sellM15 = m15.bearishVotes >= RULES.M15;
+  const sellH1 = h1.bearishVotes >= RULES.H1;
+  const h1BlocksSell =
+    h1.bullishVotes >= RULES.H1_STRONG_OPPOSITION;
+
+  const buyStructure =
+    m5.structure.bos === "BULLISH" ||
+    m5.structure.sweep === "BULLISH";
+
+  const sellStructure =
+    m5.structure.bos === "BEARISH" ||
+    m5.structure.sweep === "BEARISH";
+
+  const buyVolume =
+    Number.isFinite(m5.poc) && m5.close > m5.poc;
+
+  const sellVolume =
+    Number.isFinite(m5.poc) && m5.close < m5.poc;
+
+  const buySetup =
+    buyM5 && buyM15 && buyH1 && !h1BlocksBuy;
+
+  const sellSetup =
+    sellM5 && sellM15 && sellH1 && !h1BlocksSell;
+
+  let signal = "HOLD";
+
+  if (buySetup && buyStructure && buyVolume) {
+    signal = "BUY";
+  } else if (sellSetup && sellStructure && sellVolume) {
+    signal = "SELL";
   }
+
+  if (!buySetup && !sellSetup) {
+    reasons.push("Timeframe confirmation is incomplete.");
+
+    if (!buyM5 && !sellM5) reasons.push("M5 has no 3/4 direction.");
+    if (!buyM15 && !sellM15) reasons.push("M15 has no 3/4 direction.");
+
+    if (!buyH1 && !sellH1) {
+      reasons.push("H1 has fewer than 2 votes in either direction.");
+    }
+
+    if (h1BlocksBuy) reasons.push("H1 strongly opposes BUY.");
+    if (h1BlocksSell) reasons.push("H1 strongly opposes SELL.");
+  }
+
+  if (buySetup && !buyStructure) {
+    reasons.push("BUY blocked: no bullish M5 BOS or liquidity sweep.");
+  }
+
+  if (buySetup && !buyVolume) {
+    reasons.push("BUY blocked: price is not above POC.");
+  }
+
+  if (sellSetup && !sellStructure) {
+    reasons.push("SELL blocked: no bearish M5 BOS or liquidity sweep.");
+  }
+
+  if (sellSetup && !sellVolume) {
+    reasons.push("SELL blocked: price is not below POC.");
+  }
+
+  if (signal === "HOLD" && reasons.length === 0) {
+    reasons.push("No complete confirmed setup.");
+  }
+
+  return {
+    signal,
+    reasons,
+    buySetup,
+    sellSetup,
+    buyStructure,
+    sellStructure,
+    buyVolume,
+    sellVolume
+  };
+}
+
+function tradePlan(signal, m5) {
+  if (!["BUY", "SELL"].includes(signal)) return null;
+
+  const entry = m5.close;
+  const risk = m5.atr14;
+
+  if (!Number.isFinite(risk) || risk <= 0) return null;
+
+  const distance = risk * 1.5;
+
+  return signal === "BUY"
+    ? {
+        entry,
+        stopLoss: entry - distance,
+        takeProfit: entry + distance * 2
+      }
+    : {
+        entry,
+        stopLoss: entry + distance,
+        takeProfit: entry - distance * 2
+      };
 }
 
 async function main() {
-  console.log("================================");
-  console.log("       FOREX SNIPER DESK");
-  console.log("================================");
+  console.log("========================================");
+  console.log("       FOREX SNIPER AI v3.0");
+  console.log("========================================");
+  console.log(`Symbol: ${SYMBOL}`);
+  console.log(`Time: ${new Date().toISOString()}`);
+  console.log("Mode: PAPER ANALYSIS ONLY");
+  console.log("Live orders: DISABLED");
 
-  const m5 = await loadTimeframe("eurusd-m5.json");
-  const m15 = await loadTimeframe("eurusd-m15.json");
-  const h1 = await loadTimeframe("eurusd-h1.json");
+  console.log("\nDownloading M5, M15 and H1 candles...");
 
-  const m5Result = evaluateTimeframe(m5.latest);
-  const m15Result = evaluateTimeframe(m15.latest);
-  const h1Result = evaluateTimeframe(h1.latest);
+  const [m5Data, m15Data, h1Data] = await Promise.all([
+    downloadCandles("M5"),
+    downloadCandles("M15"),
+    downloadCandles("H1")
+  ]);
 
-  printTimeframe("M5 ENTRY", m5.latest, m5Result);
-  printTimeframe("M15 CONFIRMATION", m15.latest, m15Result);
-  printTimeframe("H1 MAIN DIRECTION", h1.latest, h1Result);
+  const m5 = analyseTimeframe(m5Data);
+  const m15 = analyseTimeframe(m15Data);
+  const h1 = analyseTimeframe(h1Data);
 
-  const bullishTotal =
-    m5Result.bullishVotes +
-    m15Result.bullishVotes +
-    h1Result.bullishVotes;
+  printTimeframe("M5 ENTRY", m5);
+  printTimeframe("M15 CONFIRMATION", m15);
+  printTimeframe("H1 MAIN DIRECTION", h1);
 
-  const bearishTotal =
-    m5Result.bearishVotes +
-    m15Result.bearishVotes +
-    h1Result.bearishVotes;
+  console.log("\n========== H1 CONFIRMATION RULE ==========");
+  console.log("Minimum H1 confirmation: 2/4");
+  console.log("Strong opposition threshold: 3/4");
 
-  const direction = bullishTotal > bearishTotal
-    ? "BUY"
-    : bearishTotal > bullishTotal
-      ? "SELL"
-      : "NEUTRAL";
+  const result = evaluate(m5, m15, h1);
 
-  const agreement = Math.round(
-    Math.max(bullishTotal, bearishTotal) / 12 * 100
-  );
+  console.log("\n========== MARKET CONSENSUS ==========");
+  console.log(`Bullish votes: ${m5.bullishVotes + m15.bullishVotes + h1.bullishVotes}/12`);
+  console.log(`Bearish votes: ${m5.bearishVotes + m15.bearishVotes + h1.bearishVotes}/12`);
 
-  const structure = analyzeMarketStructure(m5.candles);
+  console.log("\n========== FINAL SIGNAL ==========");
+  console.log(`SIGNAL: ${result.signal}`);
 
-  // Approximate Volume Profile over the latest 24 hours.
-  const profileCandles = m5.candles.slice(-288);
+  const plan = tradePlan(result.signal, m5);
 
-  const volumeProfile = calculateVolumeProfile(
-    profileCandles,
-    24,
-    0.70
-  );
-
-  const currentPrice = m5.latest.close;
-
-  console.log("\nVOLUME PROFILE");
-  console.log("------------------------");
-  console.log("POC:", volumeProfile.poc.toFixed(5));
-  console.log(
-    "Value Area High:",
-    volumeProfile.valueAreaHigh.toFixed(5)
-  );
-  console.log(
-    "Value Area Low:",
-    volumeProfile.valueAreaLow.toFixed(5)
-  );
-
-  const bullishVolume = currentPrice > volumeProfile.poc;
-  const bearishVolume = currentPrice < volumeProfile.poc;
-
-  console.log(
-    "Price vs POC:",
-    bullishVolume ? "ABOVE POC" :
-    bearishVolume ? "BELOW POC" : "AT POC"
-  );
-
-  console.log("\nEUR/USD MARKET STRUCTURE");
-  console.log("------------------------");
-
-  console.log(
-    "Swing High:",
-    structure.swingHigh?.toFixed(5) ?? "Not found"
-  );
-
-  console.log(
-    "Swing Low:",
-    structure.swingLow?.toFixed(5) ?? "Not found"
-  );
-
-  console.log("Break of Structure:", structure.bos);
-
-  console.log(
-    "BOS Level:",
-    structure.bosLevel?.toFixed(5) ?? "Not available"
-  );
-
-  console.log("Liquidity Sweep:", structure.liquiditySweep);
-
-  console.log(
-    "Sweep Level:",
-    structure.liquiditySweepLevel?.toFixed(5) ?? "Not available"
-  );
-
-  console.log(
-    "Sweep Bars Ago:",
-    structure.liquiditySweepBarsAgo ?? "Not available"
-  );
-
-  console.log(
-    "Sweep Confirmed:",
-    structure.sweepConfirmed ? "YES" : "NO"
-  );
-
-  console.log(
-    "Confirmation Bars Ago:",
-    structure.sweepConfirmationBarsAgo ?? "Not available"
-  );
-
-  console.log(
-    "Previous Day High:",
-    structure.previousDayHigh?.toFixed(5) ?? "Not available"
-  );
-
-  console.log(
-    "Previous Day Low:",
-    structure.previousDayLow?.toFixed(5) ?? "Not available"
-  );
-
-  // All three timeframes must be fully aligned.
-  const allBullish =
-    m5Result.trend === "BULLISH" &&
-    m15Result.trend === "BULLISH" &&
-    h1Result.trend === "BULLISH";
-
-  const allBearish =
-    m5Result.trend === "BEARISH" &&
-    m15Result.trend === "BEARISH" &&
-    h1Result.trend === "BEARISH";
-
-  // BOS can qualify independently.
-  // A liquidity sweep must have a later candle confirmation.
-  const bullishStructure =
-    structure.bos === "BULLISH" ||
-    (
-      structure.liquiditySweep === "BULLISH" &&
-      structure.sweepConfirmed === true
-    );
-
-  const bearishStructure =
-    structure.bos === "BEARISH" ||
-    (
-      structure.liquiditySweep === "BEARISH" &&
-      structure.sweepConfirmed === true
-    );
-
-  let signal = "HOLD";
-  const reasons = [];
-
-  if (direction === "BUY") {
-    if (!allBullish) {
-      reasons.push("All three timeframes are not fully bullish.");
-      explainMissing("M5", m5Result, "BUY");
-      explainMissing("M15", m15Result, "BUY");
-      explainMissing("H1", h1Result, "BUY");
-    }
-
-    if (!bullishStructure) {
-      if (
-        structure.liquiditySweep === "BULLISH" &&
-        structure.sweepConfirmed !== true
-      ) {
-        reasons.push(
-          "Bullish sweep detected but not confirmed by a later candle close."
-        );
-      } else {
-        reasons.push(
-          "No bullish BOS or confirmed bullish liquidity sweep."
-        );
-      }
-    }
-
-    if (!bullishVolume) {
-      reasons.push("Price is not above Volume Profile POC.");
-    }
-
-    if (allBullish && bullishStructure && bullishVolume) {
-      signal = "BUY";
-    }
-  } else if (direction === "SELL") {
-    if (!allBearish) {
-      reasons.push("All three timeframes are not fully bearish.");
-      explainMissing("M5", m5Result, "SELL");
-      explainMissing("M15", m15Result, "SELL");
-      explainMissing("H1", h1Result, "SELL");
-    }
-
-    if (!bearishStructure) {
-      if (
-        structure.liquiditySweep === "BEARISH" &&
-        structure.sweepConfirmed !== true
-      ) {
-        reasons.push(
-          "Bearish sweep detected but not confirmed by a later candle close."
-        );
-      } else {
-        reasons.push(
-          "No bearish BOS or confirmed bearish liquidity sweep."
-        );
-      }
-    }
-
-    if (!bearishVolume) {
-      reasons.push("Price is not below Volume Profile POC.");
-    }
-
-    if (allBearish && bearishStructure && bearishVolume) {
-      signal = "SELL";
-    }
+  if (plan) {
+    console.log(`ENTRY:      ${price(plan.entry)}`);
+    console.log(`STOP LOSS:  ${price(plan.stopLoss)}`);
+    console.log(`TAKE PROFIT:${price(plan.takeProfit)}`);
+    console.log("RISK/REWARD: 1:2");
   } else {
-    reasons.push("No dominant direction.");
+    console.log("ENTRY: WAIT");
+    console.log("STOP LOSS: N/A");
+    console.log("TAKE PROFIT: N/A");
   }
 
-  // Readiness is a checklist completion score, NOT win probability.
-  let readiness = null;
+  console.log("\n========== CONFIRMATION CHECKLIST ==========");
+  console.log(`M5:  BUY ${m5.bullishVotes}/4 | SELL ${m5.bearishVotes}/4`);
+  console.log(`M15: BUY ${m15.bullishVotes}/4 | SELL ${m15.bearishVotes}/4`);
+  console.log(`H1:  BUY ${h1.bullishVotes}/4 | SELL ${h1.bearishVotes}/4`);
 
-  if (direction === "BUY") {
-    const gates = [
-      m5Result.bullishVotes === 4,
-      m15Result.bullishVotes === 4,
-      h1Result.bullishVotes === 4,
-      bullishStructure,
-      bullishVolume
-    ];
-
-    readiness = gates.filter(Boolean).length;
-  } else if (direction === "SELL") {
-    const gates = [
-      m5Result.bearishVotes === 4,
-      m15Result.bearishVotes === 4,
-      h1Result.bearishVotes === 4,
-      bearishStructure,
-      bearishVolume
-    ];
-
-    readiness = gates.filter(Boolean).length;
+  if (result.reasons.length) {
+    console.log("\n========== WHY HOLD / BLOCKED ==========");
+    result.reasons.forEach(reason => console.log(`- ${reason}`));
   }
 
-  console.log("\n================================");
-  console.log("SIGNAL READINESS REPORT");
-  console.log("================================");
+  console.log("\n========== NEWS INTELLIGENCE ==========");
 
-  console.log("Bullish votes:", bullishTotal, "/ 12");
-  console.log("Bearish votes:", bearishTotal, "/ 12");
-  console.log("Dominant direction:", direction);
-  console.log("Directional agreement:", agreement + "%");
+  const news = await getForexNews();
 
-  if (readiness !== null) {
-    console.log(
-      "Trade readiness:",
-      readiness,
-      "/ 5 gates",
-      `(${readiness * 20}%)`
-    );
-  } else {
-    console.log("Trade readiness: NOT AVAILABLE");
-  }
+  console.log(`Source: ${news.source}`);
+  console.log(`Articles: ${news.articles.length}`);
+  console.log(`HIGH candidates: ${news.high}`);
+  console.log(`MEDIUM relevance: ${news.medium}`);
+  console.log(`LOW relevance: ${news.low}`);
 
-  console.log("Final signal:", signal);
+  if (news.error) console.log(`News warning: ${news.error}`);
 
-  console.log("\nTRADE READINESS CHECKLIST");
-  console.log("------------------------");
+  news.articles.slice(0, 10).forEach(article => {
+    console.log(`[${article.impact}] ${article.title}`);
+  });
 
-  if (direction === "BUY") {
-    printTimeframeProgress("M5", m5Result, "BUY");
-    printTimeframeProgress("M15", m15Result, "BUY");
-    printTimeframeProgress("H1", h1Result, "BUY");
-
-    printCheck("Bullish BOS or confirmed sweep", bullishStructure);
-    printCheck("Price above POC", bullishVolume);
-  } else if (direction === "SELL") {
-    printTimeframeProgress("M5", m5Result, "SELL");
-    printTimeframeProgress("M15", m15Result, "SELL");
-    printTimeframeProgress("H1", h1Result, "SELL");
-
-    printCheck("Bearish BOS or confirmed sweep", bearishStructure);
-    printCheck("Price below POC", bearishVolume);
-  } else {
-    console.log("WAIT | No clear dominant direction.");
-  }
-
-  printCheck("Final BUY/SELL signal", signal !== "HOLD");
-
-  if (signal === "HOLD") {
-    console.log("\nEXACT REASONS FOR HOLD");
-
-    reasons.forEach((reason, index) => {
-      console.log(`${index + 1}. ${reason}`);
-    });
-  }
-
-  if (signal !== "HOLD") {
-    const entry = currentPrice;
-    const atr = m5.latest.atr14;
-
-    if (!Number.isFinite(atr) || atr <= 0) {
-      throw new Error("Invalid ATR value; cannot calculate trade levels.");
-    }
-
-    const risk = atr * 1.5;
-    const reward = atr * 3;
-
-    const stopLoss = signal === "BUY"
-      ? entry - risk
-      : entry + risk;
-
-    const takeProfit = signal === "BUY"
-      ? entry + reward
-      : entry - reward;
-
-    console.log("\nTRADE LEVELS — PAPER ONLY");
-    console.log("Entry:", entry.toFixed(5));
-    console.log("Stop Loss:", stopLoss.toFixed(5));
-    console.log("Take Profit:", takeProfit.toFixed(5));
-    console.log("Risk/Reward: 1:2");
-  } else {
-    console.log("\nTRADE LEVELS: NOT AVAILABLE — HOLD");
-  }
-
-  // News is background information only.
-  // Headlines never change the technical signal.
-  console.log("\nEUR/USD NEWS — LAST 24 HOURS");
-  console.log("----------------------------");
-  console.log("NEWS IS CONTEXT ONLY — NOT A SIGNAL INPUT.");
-
-  try {
-    const news = await getForexNews();
-
-    if (!news.length) {
-      console.log("No recent news articles returned.");
-    }
-
-    for (const [index, article] of news.entries()) {
-      console.log(`\n${index + 1}. ${article.title}`);
-      console.log("Source:", article.source || "Unknown");
-      console.log("Date:", article.date || "Unknown");
-      console.log("URL:", article.url);
-    }
-  } catch (error) {
-    console.log("News feed unavailable:", error.message);
-  }
-
-  console.log("\n================================");
-  console.log("LIVE TRADING: DISABLED");
-  console.log("PAPER ANALYSIS ONLY");
-  console.log("Readiness percentage is NOT win probability.");
-  console.log("Directional agreement is NOT win probability.");
-  console.log("Volume Profile uses approximate tick-volume data.");
-  console.log("Backtest before considering trading decisions.");
-  console.log("================================");
+  console.log("\nNews is context only; it does not create trading signals.");
+  console.log("========================================");
+  console.log("Analysis complete. Paper mode only.");
 }
 
 main().catch(error => {
-  console.error("Forex Sniper error:", error);
+  console.error("\nFOREX SNIPER ERROR:", error.message);
   process.exitCode = 1;
 });
