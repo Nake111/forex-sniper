@@ -1,3 +1,4 @@
+
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 import { analyzeMarketStructure } from "./market-structure.js";
@@ -194,19 +195,52 @@ async function main() {
 
   console.log("Price vs POC:", priceVsPoc);
 
+  // Detailed market structure report.
   console.log("\nEUR/USD MARKET STRUCTURE");
   console.log("------------------------");
-  console.log("Swing High:", structure.swingHigh ?? "Not found");
-  console.log("Swing Low:", structure.swingLow ?? "Not found");
+
+  console.log(
+    "Swing High:",
+    structure.swingHigh?.toFixed(5) ?? "Not found"
+  );
+
+  console.log(
+    "Swing Low:",
+    structure.swingLow?.toFixed(5) ?? "Not found"
+  );
+
   console.log("Break of Structure:", structure.bos);
+
+  console.log(
+    "BOS Level:",
+    structure.bosLevel?.toFixed(5) ?? "Not available"
+  );
+
+  console.log(
+    "BOS Bars Ago:",
+    structure.bosBarsAgo ?? "Not available"
+  );
+
   console.log("Liquidity Sweep:", structure.liquiditySweep);
+
+  console.log(
+    "Sweep Level:",
+    structure.liquiditySweepLevel?.toFixed(5) ?? "Not available"
+  );
+
+  console.log(
+    "Sweep Bars Ago:",
+    structure.liquiditySweepBarsAgo ?? "Not available"
+  );
+
   console.log(
     "Previous Day High:",
-    structure.previousDayHigh ?? "Not available"
+    structure.previousDayHigh?.toFixed(5) ?? "Not available"
   );
+
   console.log(
     "Previous Day Low:",
-    structure.previousDayLow ?? "Not available"
+    structure.previousDayLow?.toFixed(5) ?? "Not available"
   );
 
   // Strict confirmation: all three timeframes must be 4/4.
