@@ -27,6 +27,9 @@ jobs:
       - name: Check JavaScript
         run: npm run check
 
+      - name: Test trade-plan safety
+        run: npm test
+
       - name: Download EUR/USD data
         run: npm run download
 
