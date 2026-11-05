@@ -234,6 +234,16 @@ async function main() {
   );
 
   console.log(
+    "Sweep Confirmed:",
+    structure.sweepConfirmed ? "YES" : "NO"
+  );
+
+  console.log(
+    "Sweep Confirmation Bars Ago:",
+    structure.sweepConfirmationBarsAgo ?? "Not available"
+  );
+
+  console.log(
     "Previous Day High:",
     structure.previousDayHigh?.toFixed(5) ?? "Not available"
   );
@@ -254,13 +264,21 @@ async function main() {
     m15Result.trend === "BEARISH" &&
     h1Result.trend === "BEARISH";
 
+  // A sweep only qualifies after a later candle confirms it.
+  // A valid BOS can qualify independently.
   const bullishStructure =
     structure.bos === "BULLISH" ||
-    structure.liquiditySweep === "BULLISH";
+    (
+      structure.liquiditySweep === "BULLISH" &&
+      structure.sweepConfirmed === true
+    );
 
   const bearishStructure =
     structure.bos === "BEARISH" ||
-    structure.liquiditySweep === "BEARISH";
+    (
+      structure.liquiditySweep === "BEARISH" &&
+      structure.sweepConfirmed === true
+    );
 
   const bullishVolume = currentPrice > volumeProfile.poc;
   const bearishVolume = currentPrice < volumeProfile.poc;
@@ -269,9 +287,20 @@ async function main() {
   const reasons = [];
 
   if (allBullish) {
-    if (!bullishStructure) {
+    if (
+      structure.bos !== "BULLISH" &&
+      structure.liquiditySweep !== "BULLISH"
+    ) {
       reasons.push(
         "No bullish break of structure or bullish liquidity sweep."
+      );
+    } else if (
+      structure.bos !== "BULLISH" &&
+      structure.liquiditySweep === "BULLISH" &&
+      structure.sweepConfirmed !== true
+    ) {
+      reasons.push(
+        "Bullish liquidity sweep is not confirmed by a later candle close."
       );
     }
 
@@ -283,9 +312,20 @@ async function main() {
       signal = "BUY";
     }
   } else if (allBearish) {
-    if (!bearishStructure) {
+    if (
+      structure.bos !== "BEARISH" &&
+      structure.liquiditySweep !== "BEARISH"
+    ) {
       reasons.push(
         "No bearish break of structure or bearish liquidity sweep."
+      );
+    } else if (
+      structure.bos !== "BEARISH" &&
+      structure.liquiditySweep === "BEARISH" &&
+      structure.sweepConfirmed !== true
+    ) {
+      reasons.push(
+        "Bearish liquidity sweep is not confirmed by a later candle close."
       );
     }
 
@@ -332,7 +372,7 @@ async function main() {
     printTimeframeProgress("M15", m15Result, "BUY");
     printTimeframeProgress("H1", h1Result, "BUY");
 
-    printCheck("Bullish market structure", bullishStructure);
+    printCheck("Bullish BOS or confirmed sweep", bullishStructure);
     printCheck("Price above POC", bullishVolume);
     printCheck(
       "Final BUY signal (strict confirmation)",
@@ -343,7 +383,7 @@ async function main() {
     printTimeframeProgress("M15", m15Result, "SELL");
     printTimeframeProgress("H1", h1Result, "SELL");
 
-    printCheck("Bearish market structure", bearishStructure);
+    printCheck("Bearish BOS or confirmed sweep", bearishStructure);
     printCheck("Price below POC", bearishVolume);
     printCheck(
       "Final SELL signal (strict confirmation)",
