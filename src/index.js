@@ -2,7 +2,7 @@ import { analyzeMarketStructure } from "./market-structure.js";
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 import { getForexNews } from "./news.js";
-
+const latest = results[results.length - 1];
 async function main() {
   console.log("================================");
   console.log("       FOREX SNIPER DESK");
