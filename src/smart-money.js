@@ -1,3 +1,4 @@
+
 // Forex Sniper Smart Money Concepts Engine
 // Independent JavaScript implementation.
 // Conceptual reference: LuxAlgo Smart Money Concepts.
@@ -77,7 +78,6 @@ function classifyEvents(events) {
   for (const event of sorted) {
     const previous = classified.at(-1);
 
-    // Avoid ambiguous double breaks on the same candle.
     if (previous && previous.index === event.index) continue;
 
     const type =
@@ -120,14 +120,9 @@ function findOrderBlock(candles, event) {
     const high = n(candle.high);
     const low = n(candle.low);
 
-    if ([open, close, high, low].some(v => v === null)) {
-      continue;
-    }
+    if ([open, close, high, low].some(v => v === null)) continue;
 
-    const opposite = bullish
-      ? close < open
-      : close > open;
-
+    const opposite = bullish ? close < open : close > open;
     if (!opposite) continue;
 
     let displacement = 0;
@@ -136,19 +131,19 @@ function findOrderBlock(candles, event) {
       const laterClose = n(candles[j].close);
       if (laterClose === null) continue;
 
-      if (bullish) {
-        displacement = Math.max(displacement, laterClose - high);
-      } else {
-        displacement = Math.max(displacement, low - laterClose);
-      }
+      displacement = bullish
+        ? Math.max(displacement, laterClose - high)
+        : Math.max(displacement, low - laterClose);
     }
 
     if (displacement < averageRange * 0.75) continue;
 
+    const midpoint = (high + low) / 2;
     let touched = false;
+    let mitigated = false;
     let invalidated = false;
 
-    // Mitigation checks begin only after the structural break.
+    // Check only candles after the structural break.
     for (let j = event.index + 1; j < candles.length; j++) {
       const laterHigh = n(candles[j].high);
       const laterLow = n(candles[j].low);
@@ -164,6 +159,14 @@ function findOrderBlock(candles, event) {
         touched = true;
       }
 
+      if (bullish && laterLow <= midpoint) {
+        mitigated = true;
+      }
+
+      if (!bullish && laterHigh >= midpoint) {
+        mitigated = true;
+      }
+
       if (bullish && laterClose < low) {
         invalidated = true;
       }
@@ -173,15 +176,23 @@ function findOrderBlock(candles, event) {
       }
     }
 
+    let status = "FRESH";
+
+    if (touched) status = "TOUCHED";
+    if (mitigated) status = "MITIGATED";
+    if (invalidated) status = "INVALIDATED";
+
     return {
       direction: event.direction,
       high,
       low,
+      midpoint,
       barsAgo: candles.length - 1 - i,
       displacement,
       touched,
-      mitigated: touched,
-      invalidated
+      mitigated,
+      invalidated,
+      status
     };
   }
 
