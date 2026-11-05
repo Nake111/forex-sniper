@@ -1,3 +1,4 @@
+
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 import { analyzeMarketStructure } from "./market-structure.js";
@@ -12,34 +13,39 @@ async function loadTimeframe(filename) {
   }
 
   const results = calculateIndicators(candles);
-  const latest = results[results.length - 1];
-
-  return { candles, latest };
+  return {
+    candles,
+    latest: results[results.length - 1]
+  };
 }
 
-function getTrend(latest) {
-  if (
-    latest.close > latest.ema20 &&
-    latest.ema20 > latest.ema50 &&
-    latest.rsi14 > 50 &&
+function evaluateTimeframe(latest) {
+  const bullish = [
+    latest.close > latest.ema20,
+    latest.ema20 > latest.ema50,
+    latest.rsi14 > 50,
     latest.macd > latest.macdSignal
-  ) {
-    return "BULLISH";
-  }
+  ];
 
-  if (
-    latest.close < latest.ema20 &&
-    latest.ema20 < latest.ema50 &&
-    latest.rsi14 < 50 &&
+  const bearish = [
+    latest.close < latest.ema20,
+    latest.ema20 < latest.ema50,
+    latest.rsi14 < 50,
     latest.macd < latest.macdSignal
-  ) {
-    return "BEARISH";
-  }
+  ];
 
-  return "NEUTRAL";
+  const bullishVotes = bullish.filter(Boolean).length;
+  const bearishVotes = bearish.filter(Boolean).length;
+
+  let trend = "NEUTRAL";
+
+  if (bullishVotes === 4) trend = "BULLISH";
+  if (bearishVotes === 4) trend = "BEARISH";
+
+  return { trend, bullishVotes, bearishVotes };
 }
 
-function printTimeframe(name, latest, trend) {
+function printTimeframe(name, latest, result) {
   console.log(`\n${name} TIMEFRAME`);
   console.log("------------------------");
   console.log("Close:", latest.close);
@@ -48,7 +54,55 @@ function printTimeframe(name, latest, trend) {
   console.log("RSI 14:", latest.rsi14);
   console.log("MACD:", latest.macd);
   console.log("MACD Signal:", latest.macdSignal);
-  console.log("Trend:", trend);
+  console.log("Bullish conditions:", result.bullishVotes, "/ 4");
+  console.log("Bearish conditions:", result.bearishVotes, "/ 4");
+  console.log("Trend:", result.trend);
+}
+
+function explainMissing(name, result, direction) {
+  const conditions = direction === "BUY"
+    ? [
+        ["Price above EMA20", result.bullish[0]],
+        ["EMA20 above EMA50", result.bullish[1]],
+        ["RSI above 50", result.bullish[2]],
+        ["MACD above signal", result.bullish[3]]
+      ]
+    : [
+        ["Price below EMA20", result.bearish[0]],
+        ["EMA20 below EMA50", result.bearish[1]],
+        ["RSI below 50", result.bearish[2]],
+        ["MACD below signal", result.bearish[3]]
+      ];
+
+  const missing = conditions.filter(item => !item[1]);
+
+  console.log(`\n${name} missing ${direction} conditions:`);
+
+  if (missing.length === 0) {
+    console.log("All conditions confirmed.");
+  } else {
+    missing.forEach(item => console.log("- " + item[0]));
+  }
+}
+
+function evaluateWithDetails(latest) {
+  const result = evaluateTimeframe(latest);
+
+  result.bullish = [
+    latest.close > latest.ema20,
+    latest.ema20 > latest.ema50,
+    latest.rsi14 > 50,
+    latest.macd > latest.macdSignal
+  ];
+
+  result.bearish = [
+    latest.close < latest.ema20,
+    latest.ema20 < latest.ema50,
+    latest.rsi14 < 50,
+    latest.macd < latest.macdSignal
+  ];
+
+  return result;
 }
 
 async function main() {
@@ -56,41 +110,72 @@ async function main() {
   console.log("       FOREX SNIPER DESK");
   console.log("================================");
 
-  // Load all three timeframes
   const m5 = await loadTimeframe("eurusd-m5.json");
   const m15 = await loadTimeframe("eurusd-m15.json");
   const h1 = await loadTimeframe("eurusd-h1.json");
 
-  const m5Trend = getTrend(m5.latest);
-  const m15Trend = getTrend(m15.latest);
-  const h1Trend = getTrend(h1.latest);
+  const m5Result = evaluateWithDetails(m5.latest);
+  const m15Result = evaluateWithDetails(m15.latest);
+  const h1Result = evaluateWithDetails(h1.latest);
 
-  // Display timeframe analysis
-  printTimeframe("M5 ENTRY", m5.latest, m5Trend);
-  printTimeframe("M15 CONFIRMATION", m15.latest, m15Trend);
-  printTimeframe("H1 MAIN DIRECTION", h1.latest, h1Trend);
+  printTimeframe("M5 ENTRY", m5.latest, m5Result);
+  printTimeframe("M15 CONFIRMATION", m15.latest, m15Result);
+  printTimeframe("H1 MAIN DIRECTION", h1.latest, h1Result);
 
-  // Only trade when all three timeframes agree
+  const bullishTotal =
+    m5Result.bullishVotes +
+    m15Result.bullishVotes +
+    h1Result.bullishVotes;
+
+  const bearishTotal =
+    m5Result.bearishVotes +
+    m15Result.bearishVotes +
+    h1Result.bearishVotes;
+
+  const direction = bullishTotal >= bearishTotal ? "BUY" : "SELL";
+  const confidence = Math.round(
+    Math.max(bullishTotal, bearishTotal) / 12 * 100
+  );
+
   let signal = "HOLD";
-  let entry = null;
-  let stopLoss = null;
-  let takeProfit = null;
 
   if (
-    m5Trend === "BULLISH" &&
-    m15Trend === "BULLISH" &&
-    h1Trend === "BULLISH"
+    m5Result.trend === "BULLISH" &&
+    m15Result.trend === "BULLISH" &&
+    h1Result.trend === "BULLISH"
   ) {
     signal = "BUY";
   } else if (
-    m5Trend === "BEARISH" &&
-    m15Trend === "BEARISH" &&
-    h1Trend === "BEARISH"
+    m5Result.trend === "BEARISH" &&
+    m15Result.trend === "BEARISH" &&
+    h1Result.trend === "BEARISH"
   ) {
     signal = "SELL";
   }
 
-  // Calculate hypothetical risk levels using M5 ATR
+  console.log("\n================================");
+  console.log("SIGNAL CONFIDENCE REPORT");
+  console.log("================================");
+  console.log("Bullish indicator votes:", bullishTotal, "/ 12");
+  console.log("Bearish indicator votes:", bearishTotal, "/ 12");
+  console.log("Dominant direction:", direction);
+  console.log("Directional agreement score:", confidence + "%");
+  console.log("Final signal:", signal);
+
+  if (signal === "HOLD") {
+    console.log("\nREASONS FOR HOLD:");
+
+    explainMissing("M5", m5Result, direction);
+    explainMissing("M15", m15Result, direction);
+    explainMissing("H1", h1Result, direction);
+
+    console.log("\nWaiting for all three timeframes to align.");
+  }
+
+  let entry = null;
+  let stopLoss = null;
+  let takeProfit = null;
+
   if (signal !== "HOLD") {
     entry = m5.latest.close;
     const risk = m5.latest.atr14 * 1.5;
@@ -103,26 +188,14 @@ async function main() {
       stopLoss = entry + risk;
       takeProfit = entry - reward;
     }
+
+    console.log("\nTRADE LEVELS — PAPER ONLY");
+    console.log("Entry:", entry.toFixed(5));
+    console.log("Stop Loss:", stopLoss.toFixed(5));
+    console.log("Take Profit:", takeProfit.toFixed(5));
+    console.log("Risk/Reward: 1:2");
   }
 
-  console.log("\n================================");
-  console.log("MULTI-TIMEFRAME SIGNAL");
-  console.log("================================");
-  console.log("H1:", h1Trend);
-  console.log("M15:", m15Trend);
-  console.log("M5:", m5Trend);
-  console.log("\nFINAL SIGNAL:", signal);
-
-  if (signal !== "HOLD") {
-    console.log("ENTRY:", entry.toFixed(5));
-    console.log("STOP LOSS:", stopLoss.toFixed(5));
-    console.log("TAKE PROFIT:", takeProfit.toFixed(5));
-    console.log("RISK/REWARD: 1:2");
-  } else {
-    console.log("No full timeframe alignment. Waiting for confirmation.");
-  }
-
-  // M5 market structure
   const structure = analyzeMarketStructure(m5.candles);
 
   console.log("\nEUR/USD MARKET STRUCTURE");
@@ -134,7 +207,6 @@ async function main() {
   console.log("Previous Day High:", structure.previousDayHigh ?? "Not available");
   console.log("Previous Day Low:", structure.previousDayLow ?? "Not available");
 
-  // News report
   console.log("\nEUR/USD NEWS — LAST 24 HOURS");
   console.log("----------------------------");
 
@@ -158,6 +230,7 @@ async function main() {
   console.log("\n================================");
   console.log("LIVE TRADING: DISABLED");
   console.log("PAPER ANALYSIS ONLY");
+  console.log("Confidence is not win probability.");
   console.log("================================");
 }
 
