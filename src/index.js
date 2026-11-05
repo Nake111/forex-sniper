@@ -1,4 +1,3 @@
-
 import { readFile } from "node:fs/promises";
 import { calculateIndicators } from "./indicators.js";
 import { analyzeMarketStructure } from "./market-structure.js";
@@ -40,11 +39,28 @@ function evaluateTimeframe(latest) {
   const bearishVotes = bearish.filter(Boolean).length;
 
   let trend = "NEUTRAL";
+  let phase = "MIXED";
 
-  if (bullishVotes === 4) trend = "BULLISH";
-  if (bearishVotes === 4) trend = "BEARISH";
+  if (bullishVotes === 4) {
+    trend = "BULLISH";
+    phase = "CONFIRMED BULLISH";
+  } else if (bearishVotes === 4) {
+    trend = "BEARISH";
+    phase = "CONFIRMED BEARISH";
+  } else if (bullishVotes >= 3) {
+    phase = "DEVELOPING BULLISH";
+  } else if (bearishVotes >= 3) {
+    phase = "DEVELOPING BEARISH";
+  }
 
-  return { trend, bullishVotes, bearishVotes, bullish, bearish };
+  return {
+    trend,
+    phase,
+    bullishVotes,
+    bearishVotes,
+    bullish,
+    bearish
+  };
 }
 
 function printTimeframe(name, latest, result) {
@@ -59,6 +75,7 @@ function printTimeframe(name, latest, result) {
   console.log("Bullish votes:", result.bullishVotes, "/ 4");
   console.log("Bearish votes:", result.bearishVotes, "/ 4");
   console.log("Trend:", result.trend);
+  console.log("Trend phase:", result.phase);
 }
 
 function explainMissing(name, result, direction) {
@@ -89,6 +106,22 @@ function explainMissing(name, result, direction) {
 
 function printCheck(label, passed) {
   console.log(`${passed ? "PASS" : "WAIT"} | ${label}`);
+}
+
+function printTimeframeProgress(name, result, side) {
+  const votes = side === "BUY"
+    ? result.bullishVotes
+    : result.bearishVotes;
+
+  const phase = votes === 4
+    ? "CONFIRMED"
+    : votes === 3
+      ? "DEVELOPING"
+      : "WAIT";
+
+  console.log(
+    `${phase} | ${name} ${side} conditions (${votes}/4)`
+  );
 }
 
 async function main() {
@@ -130,7 +163,7 @@ async function main() {
 
   const structure = analyzeMarketStructure(m5.candles);
 
-  // Approximate Volume Profile from the latest 24 hours of M5 candles.
+  // Approximate Volume Profile using the latest 24 hours.
   const profileCandles = m5.candles.slice(-288);
 
   const volumeProfile = calculateVolumeProfile(
@@ -144,8 +177,14 @@ async function main() {
   console.log("\nVOLUME PROFILE");
   console.log("------------------------");
   console.log("POC:", volumeProfile.poc.toFixed(5));
-  console.log("Value Area High:", volumeProfile.valueAreaHigh.toFixed(5));
-  console.log("Value Area Low:", volumeProfile.valueAreaLow.toFixed(5));
+  console.log(
+    "Value Area High:",
+    volumeProfile.valueAreaHigh.toFixed(5)
+  );
+  console.log(
+    "Value Area Low:",
+    volumeProfile.valueAreaLow.toFixed(5)
+  );
 
   const priceVsPoc = currentPrice > volumeProfile.poc
     ? "ABOVE POC"
@@ -161,9 +200,16 @@ async function main() {
   console.log("Swing Low:", structure.swingLow ?? "Not found");
   console.log("Break of Structure:", structure.bos);
   console.log("Liquidity Sweep:", structure.liquiditySweep);
-  console.log("Previous Day High:", structure.previousDayHigh ?? "Not available");
-  console.log("Previous Day Low:", structure.previousDayLow ?? "Not available");
+  console.log(
+    "Previous Day High:",
+    structure.previousDayHigh ?? "Not available"
+  );
+  console.log(
+    "Previous Day Low:",
+    structure.previousDayLow ?? "Not available"
+  );
 
+  // Strict confirmation: all three timeframes must be 4/4.
   const allBullish =
     m5Result.trend === "BULLISH" &&
     m15Result.trend === "BULLISH" &&
@@ -190,7 +236,9 @@ async function main() {
 
   if (allBullish) {
     if (!bullishStructure) {
-      reasons.push("No bullish break of structure or bullish liquidity sweep.");
+      reasons.push(
+        "No bullish break of structure or bullish liquidity sweep."
+      );
     }
 
     if (!bullishVolume) {
@@ -202,7 +250,9 @@ async function main() {
     }
   } else if (allBearish) {
     if (!bearishStructure) {
-      reasons.push("No bearish break of structure or bearish liquidity sweep.");
+      reasons.push(
+        "No bearish break of structure or bearish liquidity sweep."
+      );
     }
 
     if (!bearishVolume) {
@@ -213,7 +263,9 @@ async function main() {
       signal = "SELL";
     }
   } else {
-    reasons.push("M5, M15 and H1 are not all aligned.");
+    reasons.push(
+      "M5, M15 and H1 are not all aligned."
+    );
   }
 
   console.log("\n================================");
@@ -242,19 +294,27 @@ async function main() {
   console.log("================================");
 
   if (direction === "BUY") {
-    printCheck("M5 bullish trend", m5Result.trend === "BULLISH");
-    printCheck("M15 bullish trend", m15Result.trend === "BULLISH");
-    printCheck("H1 bullish trend", h1Result.trend === "BULLISH");
+    printTimeframeProgress("M5", m5Result, "BUY");
+    printTimeframeProgress("M15", m15Result, "BUY");
+    printTimeframeProgress("H1", h1Result, "BUY");
+
     printCheck("Bullish market structure", bullishStructure);
     printCheck("Price above POC", bullishVolume);
-    printCheck("Final BUY signal", signal === "BUY");
+    printCheck(
+      "Final BUY signal (strict confirmation)",
+      signal === "BUY"
+    );
   } else if (direction === "SELL") {
-    printCheck("M5 bearish trend", m5Result.trend === "BEARISH");
-    printCheck("M15 bearish trend", m15Result.trend === "BEARISH");
-    printCheck("H1 bearish trend", h1Result.trend === "BEARISH");
+    printTimeframeProgress("M5", m5Result, "SELL");
+    printTimeframeProgress("M15", m15Result, "SELL");
+    printTimeframeProgress("H1", h1Result, "SELL");
+
     printCheck("Bearish market structure", bearishStructure);
     printCheck("Price below POC", bearishVolume);
-    printCheck("Final SELL signal", signal === "SELL");
+    printCheck(
+      "Final SELL signal (strict confirmation)",
+      signal === "SELL"
+    );
   } else {
     console.log("WAIT | No clear dominant direction.");
   }
@@ -278,7 +338,9 @@ async function main() {
     console.log("Take Profit:", takeProfit.toFixed(5));
     console.log("Risk/Reward: 1:2");
   } else {
-    console.log("\nTRADE LEVELS: NOT AVAILABLE — HOLD");
+    console.log(
+      "\nTRADE LEVELS: NOT AVAILABLE — HOLD"
+    );
   }
 
   console.log("\nEUR/USD NEWS — LAST 24 HOURS");
