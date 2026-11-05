@@ -1,13 +1,12 @@
 
+import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
 
-const SYMBOL = "EURUSD=X";
-
-const CONFIG = {
-  M5: { range: "5d", interval: "5m" },
-  M15: { range: "1mo", interval: "15m" },
-  H1: { range: "3mo", interval: "1h" }
+const DATA_FILES = {
+  M5: "data/eurusd-m5.json",
+  M15: "data/eurusd-m15.json",
+  H1: "data/eurusd-h1.json"
 };
 
 const RULES = {
@@ -21,53 +20,42 @@ function price(value) {
   return Number.isFinite(value) ? value.toFixed(5) : "N/A";
 }
 
-async function downloadCandles(timeframe) {
-  const settings = CONFIG[timeframe];
-  const url = new URL(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${SYMBOL}`
-  );
+async function loadCandles(timeframe) {
+  const filename = DATA_FILES[timeframe];
+  const raw = await readFile(filename, "utf8");
+  const parsed = JSON.parse(raw);
 
-  url.searchParams.set("range", settings.range);
-  url.searchParams.set("interval", settings.interval);
-
-  const response = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 ForexSniper/3.1" },
-    signal: AbortSignal.timeout(20000)
-  });
-
-  if (!response.ok) {
-    throw new Error(`${timeframe} data HTTP ${response.status}`);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${timeframe}: candle file is not an array.`);
   }
 
-  const json = await response.json();
-  const result = json.chart?.result?.[0];
-
-  if (!result) {
-    throw new Error(`${timeframe} market data unavailable`);
-  }
-
-  const quote = result.indicators?.quote?.[0];
-
-  if (!quote) {
-    throw new Error(`${timeframe} candle data missing`);
-  }
-
-  const candles = (result.timestamp || []).map((time, i) => ({
-    time: new Date(time * 1000).toISOString(),
-    open: quote.open[i],
-    high: quote.high[i],
-    low: quote.low[i],
-    close: quote.close[i],
-    volume: quote.volume?.[i] || 0
-  })).filter(c =>
-    [c.open, c.high, c.low, c.close].every(Number.isFinite)
-  );
+  const candles = parsed
+    .map(c => ({
+      time: c.timestamp,
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close),
+      volume: Number(c.volume ?? 0)
+    }))
+    .filter(c =>
+      [c.open, c.high, c.low, c.close].every(Number.isFinite)
+    );
 
   if (candles.length < 60) {
     throw new Error(
-      `${timeframe}: insufficient candles (${candles.length})`
+      `${timeframe}: only ${candles.length} valid candles found.`
     );
   }
+
+  const volumeCandles = candles.filter(c =>
+    Number.isFinite(c.volume) && c.volume > 0
+  ).length;
+
+  console.log(
+    `${timeframe}: ${candles.length} candles loaded; ` +
+    `${volumeCandles} candles contain volume.`
+  );
 
   return candles;
 }
@@ -111,11 +99,10 @@ function evaluate(m5, m15, h1) {
     m5.structure.bos === "BEARISH" ||
     m5.structure.sweep === "BEARISH";
 
-  const buyVolume =
-    Number.isFinite(m5.poc) && m5.close > m5.poc;
+  const pocAvailable = Number.isFinite(m5.poc);
 
-  const sellVolume =
-    Number.isFinite(m5.poc) && m5.close < m5.poc;
+  const buyVolume = pocAvailable && m5.close > m5.poc;
+  const sellVolume = pocAvailable && m5.close < m5.poc;
 
   const buySetup =
     buyM5 && buyM15 && buyH1 && !h1BlocksBuy;
@@ -146,29 +133,30 @@ function evaluate(m5, m15, h1) {
       reasons.push("H1 has fewer than 2 votes in either direction.");
     }
 
-    if (h1BlocksBuy) {
-      reasons.push("H1 strongly opposes BUY.");
-    }
-
-    if (h1BlocksSell) {
-      reasons.push("H1 strongly opposes SELL.");
-    }
+    if (h1BlocksBuy) reasons.push("H1 strongly opposes BUY.");
+    if (h1BlocksSell) reasons.push("H1 strongly opposes SELL.");
   }
 
   if (buySetup && !buyStructure) {
     reasons.push("BUY blocked: no bullish M5 BOS or liquidity sweep.");
   }
 
-  if (buySetup && !buyVolume) {
-    reasons.push("BUY blocked: price is not above POC.");
-  }
-
   if (sellSetup && !sellStructure) {
     reasons.push("SELL blocked: no bearish M5 BOS or liquidity sweep.");
   }
 
-  if (sellSetup && !sellVolume) {
-    reasons.push("SELL blocked: price is not below POC.");
+  if ((buySetup || sellSetup) && !pocAvailable) {
+    reasons.push(
+      "Volume POC unavailable: no usable volume data. Trade blocked."
+    );
+  } else {
+    if (buySetup && !buyVolume) {
+      reasons.push("BUY blocked: price is not above POC.");
+    }
+
+    if (sellSetup && !sellVolume) {
+      reasons.push("SELL blocked: price is not below POC.");
+    }
   }
 
   if (signal === "HOLD" && reasons.length === 0) {
@@ -209,19 +197,21 @@ function tradePlan(signal, m5) {
 
 async function main() {
   console.log("========================================");
-  console.log("       FOREX SNIPER AI v3.1");
+  console.log("       FOREX SNIPER AI v3.2");
   console.log("========================================");
-  console.log(`Symbol: ${SYMBOL}`);
+  console.log("Symbol: EUR/USD");
   console.log(`Time: ${new Date().toISOString()}`);
+  console.log("Data source: Dukascopy downloaded candles");
+  console.log("Volume profile: candle-volume POC estimate");
   console.log("Mode: PAPER ANALYSIS ONLY");
   console.log("Live orders: DISABLED");
 
-  console.log("\nDownloading M5, M15 and H1 candles...");
+  console.log("\nLoading M5, M15 and H1 candle files...");
 
   const [m5Data, m15Data, h1Data] = await Promise.all([
-    downloadCandles("M5"),
-    downloadCandles("M15"),
-    downloadCandles("H1")
+    loadCandles("M5"),
+    loadCandles("M15"),
+    loadCandles("H1")
   ]);
 
   const m5 = analyseTimeframe(m5Data);
@@ -231,6 +221,23 @@ async function main() {
   printTimeframe("M5 ENTRY", m5);
   printTimeframe("M15 CONFIRMATION", m15);
   printTimeframe("H1 MAIN DIRECTION", h1);
+
+  console.log("\n========== VOLUME PROFILE CHECK ==========");
+  console.log(`M5 POC:  ${price(m5.poc)}`);
+  console.log(`M15 POC: ${price(m15.poc)}`);
+  console.log(`H1 POC:  ${price(h1.poc)}`);
+
+  if (Number.isFinite(m5.poc)) {
+    console.log(
+      m5.close > m5.poc
+        ? "M5 price is ABOVE POC."
+        : m5.close < m5.poc
+          ? "M5 price is BELOW POC."
+          : "M5 price is AT POC."
+    );
+  } else {
+    console.log("M5 POC unavailable: volume data is missing.");
+  }
 
   console.log("\n========== H1 CONFIRMATION RULE ==========");
   console.log("Minimum H1 confirmation: 2/4");
