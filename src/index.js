@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { getForexNews } from "./news.js";
 
-const VERSION = "3.6";
+const VERSION = "3.7";
 
 const DATA_FILES = {
   M5: "data/eurusd-m5.json",
@@ -49,7 +49,9 @@ async function loadCandles(timeframe) {
     .sort((a, b) => Number(a.time) - Number(b.time));
 
   if (candles.length < 60) {
-    throw new Error(`${timeframe}: insufficient candles (${candles.length}).`);
+    throw new Error(
+      `${timeframe}: insufficient candles (${candles.length}).`
+    );
   }
 
   return candles;
@@ -72,7 +74,9 @@ function printSqueeze(timeframe, result) {
 
   console.log(`State: ${s.state ?? "N/A"}`);
   console.log(`Momentum: ${number(s.momentum, 7)}`);
-  console.log(`Previous momentum: ${number(s.previousMomentum, 7)}`);
+  console.log(
+    `Previous momentum: ${number(s.previousMomentum, 7)}`
+  );
   console.log(`Momentum bias: ${momentumBias}`);
   console.log(`Momentum direction: ${s.direction ?? "N/A"}`);
 }
@@ -94,20 +98,47 @@ function printTimeframe(timeframe, result) {
   console.log(`Bearish votes: ${result.bearishVotes}/4`);
 
   if (result.structure) {
-    console.log(`Market structure: ${JSON.stringify(result.structure)}`);
+    console.log(
+      `Market structure: ${JSON.stringify(result.structure)}`
+    );
   }
 
   if (result.smartMoney) {
-    console.log(`Smart Money: ${JSON.stringify(result.smartMoney)}`);
+    console.log(
+      `Smart Money: ${JSON.stringify(result.smartMoney)}`
+    );
   }
 
   printSqueeze(timeframe, result);
 }
 
+// ==========================================
+// MULTI-TIMEFRAME SIGNAL ENGINE
+// ==========================================
+
 function evaluateSignal(results) {
   const m5 = results.M5;
   const m15 = results.M15;
   const h1 = results.H1;
+
+  const structure = m5.structure ?? {};
+
+  // Structure confirmation must match the trade direction.
+  const bullishM5Confirmation =
+    structure.bos === "BULLISH" ||
+    structure.sweep === "BULLISH" ||
+    (
+      structure.sweepConfirmed === true &&
+      structure.liquiditySweep === "BULLISH"
+    );
+
+  const bearishM5Confirmation =
+    structure.bos === "BEARISH" ||
+    structure.sweep === "BEARISH" ||
+    (
+      structure.sweepConfirmed === true &&
+      structure.liquiditySweep === "BEARISH"
+    );
 
   const bullish =
     m5.bullishVotes >= RULES.M5 &&
@@ -121,30 +152,37 @@ function evaluateSignal(results) {
     h1.bearishVotes >= RULES.H1 &&
     h1.bullishVotes < RULES.H1_STRONG_OPPOSITION;
 
-  const structure = m5.structure ?? {};
-
-  const m5Confirmation =
-    structure.bos === "BULLISH" ||
-    structure.bos === "BEARISH" ||
-    structure.sweep === "BULLISH" ||
-    structure.sweep === "BEARISH" ||
-    structure.sweepConfirmed === true;
-
   const abovePoc =
-    Number.isFinite(m5.poc) && m5.close > m5.poc;
+    Number.isFinite(m5.poc) &&
+    m5.close > m5.poc;
 
   const belowPoc =
-    Number.isFinite(m5.poc) && m5.close < m5.poc;
+    Number.isFinite(m5.poc) &&
+    m5.close < m5.poc;
 
-  if (bullish && m5Confirmation && abovePoc) return "BUY";
-  if (bearish && m5Confirmation && belowPoc) return "SELL";
+  if (
+    bullish &&
+    bullishM5Confirmation &&
+    abovePoc
+  ) {
+    return "BUY";
+  }
+
+  if (
+    bearish &&
+    bearishM5Confirmation &&
+    belowPoc
+  ) {
+    return "SELL";
+  }
 
   return "HOLD";
 }
 
-// H1 TTM Squeeze confirmation gate.
-// This does not change the technical signal; it assesses
-// whether the higher-timeframe momentum supports the setup.
+// ==========================================
+// H1 TTM SQUEEZE CONFIRMATION
+// ==========================================
+
 function checkTradeConfirmation(signal, results) {
   if (signal === "HOLD") {
     return {
@@ -169,14 +207,20 @@ function checkTradeConfirmation(signal, results) {
     };
   }
 
-  if (signal === "BUY" && !h1.direction.startsWith("BULLISH")) {
+  if (
+    signal === "BUY" &&
+    !h1.direction?.startsWith("BULLISH")
+  ) {
     return {
       status: "WAIT",
       reason: `H1 momentum conflicts with BUY: ${h1.direction}.`
     };
   }
 
-  if (signal === "SELL" && !h1.direction.startsWith("BEARISH")) {
+  if (
+    signal === "SELL" &&
+    !h1.direction?.startsWith("BEARISH")
+  ) {
     return {
       status: "WAIT",
       reason: `H1 momentum conflicts with SELL: ${h1.direction}.`
@@ -189,8 +233,22 @@ function checkTradeConfirmation(signal, results) {
   };
 }
 
-function tradePlan(signal, result) {
-  if (signal === "HOLD" || !Number.isFinite(result.atr14)) {
+// ==========================================
+// TRADE PLAN — SAFETY GATE
+// ==========================================
+
+function tradePlan(signal, result, confirmation) {
+  // CRITICAL:
+  // Never create entry, stop-loss or take-profit
+  // unless H1 confirmation has passed.
+
+  if (
+    signal === "HOLD" ||
+    confirmation?.status !== "H1 ALIGNED" ||
+    !Number.isFinite(result.atr14) ||
+    result.atr14 <= 0 ||
+    !Number.isFinite(result.close)
+  ) {
     return null;
   }
 
@@ -207,13 +265,21 @@ function tradePlan(signal, result) {
     };
   }
 
-  return {
-    entry,
-    stopLoss: entry + risk,
-    takeProfit: entry - reward,
-    riskReward: "1:2"
-  };
+  if (signal === "SELL") {
+    return {
+      entry,
+      stopLoss: entry + risk,
+      takeProfit: entry - reward,
+      riskReward: "1:2"
+    };
+  }
+
+  return null;
 }
+
+// ==========================================
+// FOREX NEWS
+// ==========================================
 
 async function printNews() {
   console.log("\n========== FOREX NEWS ==========");
@@ -221,7 +287,10 @@ async function printNews() {
   try {
     const news = await getForexNews();
 
-    if (!news || (Array.isArray(news) && news.length === 0)) {
+    if (
+      !news ||
+      (Array.isArray(news) && news.length === 0)
+    ) {
       console.log("No news data available.");
       return;
     }
@@ -232,11 +301,17 @@ async function printNews() {
   }
 }
 
+// ==========================================
+// MAIN
+// ==========================================
+
 async function main() {
   console.log("======================================");
   console.log(`FOREX SNIPER AI v${VERSION}`);
   console.log("EUR/USD MULTI-TIMEFRAME ANALYSIS");
-  console.log("TTM SQUEEZE + H1 CONFIRMATION");
+  console.log("M5 + M15 + H1");
+  console.log("SMART MONEY + TTM SQUEEZE");
+  console.log("H1 CONFIRMATION SAFETY GATE");
   console.log("PAPER ANALYSIS ONLY - LIVE ORDERS DISABLED");
   console.log("======================================");
 
@@ -244,42 +319,111 @@ async function main() {
 
   for (const timeframe of ["M5", "M15", "H1"]) {
     const candles = await loadCandles(timeframe);
+
     results[timeframe] = analyseTimeframe(candles);
 
-    console.log(`${timeframe} candles loaded: ${candles.length}`);
+    console.log(
+      `${timeframe} candles loaded: ${candles.length}`
+    );
+
     printTimeframe(timeframe, results[timeframe]);
   }
 
+  // Calculate the technical signal.
   const signal = evaluateSignal(results);
-  const confirmation = checkTradeConfirmation(signal, results);
-  const plan = tradePlan(signal, results.M5);
+
+  // Check whether H1 confirms the technical signal.
+  const confirmation = checkTradeConfirmation(
+    signal,
+    results
+  );
+
+  // A trade plan is possible only after H1 alignment.
+  const plan = tradePlan(
+    signal,
+    results.M5,
+    confirmation
+  );
 
   console.log("\n========== FINAL SIGNAL ==========");
+
   console.log(`TECHNICAL SIGNAL: ${signal}`);
   console.log(`TRADE CONFIRMATION: ${confirmation.status}`);
-  console.log(`Confirmation reason: ${confirmation.reason}`);
+
+  // Final action is never BUY or SELL while H1 says WAIT.
+  console.log(
+    `FINAL ACTION: ${plan ? signal : "NO TRADE"}`
+  );
+
+  console.log(
+    `Confirmation reason: ${confirmation.reason}`
+  );
 
   if (plan) {
+    console.log("\n========== CONFIRMED TRADE PLAN ==========");
+
     console.log(`Entry reference: ${price(plan.entry)}`);
     console.log(`Stop Loss reference: ${price(plan.stopLoss)}`);
     console.log(`Take Profit reference: ${price(plan.takeProfit)}`);
     console.log(`Risk/Reward: ${plan.riskReward}`);
+  } else if (
+    signal !== "HOLD" &&
+    confirmation.status !== "H1 ALIGNED"
+  ) {
+    console.log("\nNO TRADE PLAN");
+    console.log("H1 confirmation has not passed.");
+    console.log("Wait for higher-timeframe alignment.");
+    console.log("Entry, stop-loss and take-profit are suppressed.");
   } else {
-    console.log("No valid entry. Waiting for confirmation.");
+    console.log("\nNo valid entry. Waiting for confirmation.");
   }
+
+  // ========================================
+  // SQUEEZE SUMMARY
+  // ========================================
 
   console.log("\n========== SQUEEZE SUMMARY ==========");
 
   for (const timeframe of ["M5", "M15", "H1"]) {
     const s = results[timeframe].squeeze;
+
     console.log(
       `${timeframe}: ${s?.state ?? "N/A"} | ` +
-      `${s?.direction ?? "N/A"} | Momentum: ${number(s?.momentum, 7)}`
+      `${s?.direction ?? "N/A"} | ` +
+      `Momentum: ${number(s?.momentum, 7)}`
     );
   }
 
-  console.log("\nH1 confirmation is a filter, not a guarantee of success.");
+  // ========================================
+  // ORDER BLOCK SUMMARY
+  // ========================================
+
+  console.log("\n========== ORDER BLOCK SUMMARY ==========");
+
+  for (const timeframe of ["M5", "M15", "H1"]) {
+    const blocks = results[timeframe].smartMoney?.orderBlocks ?? [];
+
+    console.log(`\n${timeframe}:`);
+
+    if (blocks.length === 0) {
+      console.log("No valid Order Blocks found.");
+      continue;
+    }
+
+    for (const block of blocks) {
+      console.log(
+        `${block.direction} OB | ` +
+        `High: ${price(block.high)} | ` +
+        `Low: ${price(block.low)} | ` +
+        `Status: ${block.status}`
+      );
+    }
+  }
+
+  console.log("\n======================================");
+  console.log("H1 confirmation is a filter, not a guarantee.");
   console.log("No live orders are placed.");
+  console.log("======================================");
 
   await printNews();
 
