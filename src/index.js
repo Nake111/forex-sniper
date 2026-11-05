@@ -31,7 +31,7 @@ async function downloadCandles(timeframe) {
   url.searchParams.set("interval", settings.interval);
 
   const response = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 ForexSniper/3.0" },
+    headers: { "User-Agent": "Mozilla/5.0 ForexSniper/3.1" },
     signal: AbortSignal.timeout(20000)
   });
 
@@ -47,7 +47,10 @@ async function downloadCandles(timeframe) {
   }
 
   const quote = result.indicators?.quote?.[0];
-  if (!quote) throw new Error(`${timeframe} candle data missing`);
+
+  if (!quote) {
+    throw new Error(`${timeframe} candle data missing`);
+  }
 
   const candles = (result.timestamp || []).map((time, i) => ({
     time: new Date(time * 1000).toISOString(),
@@ -61,7 +64,9 @@ async function downloadCandles(timeframe) {
   );
 
   if (candles.length < 60) {
-    throw new Error(`${timeframe}: insufficient candles (${candles.length})`);
+    throw new Error(
+      `${timeframe}: insufficient candles (${candles.length})`
+    );
   }
 
   return candles;
@@ -129,15 +134,25 @@ function evaluate(m5, m15, h1) {
   if (!buySetup && !sellSetup) {
     reasons.push("Timeframe confirmation is incomplete.");
 
-    if (!buyM5 && !sellM5) reasons.push("M5 has no 3/4 direction.");
-    if (!buyM15 && !sellM15) reasons.push("M15 has no 3/4 direction.");
+    if (!buyM5 && !sellM5) {
+      reasons.push("M5 has no 3/4 directional confirmation.");
+    }
+
+    if (!buyM15 && !sellM15) {
+      reasons.push("M15 has no 3/4 directional confirmation.");
+    }
 
     if (!buyH1 && !sellH1) {
       reasons.push("H1 has fewer than 2 votes in either direction.");
     }
 
-    if (h1BlocksBuy) reasons.push("H1 strongly opposes BUY.");
-    if (h1BlocksSell) reasons.push("H1 strongly opposes SELL.");
+    if (h1BlocksBuy) {
+      reasons.push("H1 strongly opposes BUY.");
+    }
+
+    if (h1BlocksSell) {
+      reasons.push("H1 strongly opposes SELL.");
+    }
   }
 
   if (buySetup && !buyStructure) {
@@ -160,44 +175,41 @@ function evaluate(m5, m15, h1) {
     reasons.push("No complete confirmed setup.");
   }
 
-  return {
-    signal,
-    reasons,
-    buySetup,
-    sellSetup,
-    buyStructure,
-    sellStructure,
-    buyVolume,
-    sellVolume
-  };
+  return { signal, reasons };
 }
 
 function tradePlan(signal, m5) {
-  if (!["BUY", "SELL"].includes(signal)) return null;
+  if (!["BUY", "SELL"].includes(signal)) {
+    return null;
+  }
 
   const entry = m5.close;
   const risk = m5.atr14;
 
-  if (!Number.isFinite(risk) || risk <= 0) return null;
+  if (!Number.isFinite(risk) || risk <= 0) {
+    return null;
+  }
 
   const distance = risk * 1.5;
 
-  return signal === "BUY"
-    ? {
-        entry,
-        stopLoss: entry - distance,
-        takeProfit: entry + distance * 2
-      }
-    : {
-        entry,
-        stopLoss: entry + distance,
-        takeProfit: entry - distance * 2
-      };
+  if (signal === "BUY") {
+    return {
+      entry,
+      stopLoss: entry - distance,
+      takeProfit: entry + distance * 2
+    };
+  }
+
+  return {
+    entry,
+    stopLoss: entry + distance,
+    takeProfit: entry - distance * 2
+  };
 }
 
 async function main() {
   console.log("========================================");
-  console.log("       FOREX SNIPER AI v3.0");
+  console.log("       FOREX SNIPER AI v3.1");
   console.log("========================================");
   console.log(`Symbol: ${SYMBOL}`);
   console.log(`Time: ${new Date().toISOString()}`);
@@ -227,8 +239,12 @@ async function main() {
   const result = evaluate(m5, m15, h1);
 
   console.log("\n========== MARKET CONSENSUS ==========");
-  console.log(`Bullish votes: ${m5.bullishVotes + m15.bullishVotes + h1.bullishVotes}/12`);
-  console.log(`Bearish votes: ${m5.bearishVotes + m15.bearishVotes + h1.bearishVotes}/12`);
+  console.log(
+    `Bullish votes: ${m5.bullishVotes + m15.bullishVotes + h1.bullishVotes}/12`
+  );
+  console.log(
+    `Bearish votes: ${m5.bearishVotes + m15.bearishVotes + h1.bearishVotes}/12`
+  );
 
   console.log("\n========== FINAL SIGNAL ==========");
   console.log(`SIGNAL: ${result.signal}`);
@@ -236,9 +252,9 @@ async function main() {
   const plan = tradePlan(result.signal, m5);
 
   if (plan) {
-    console.log(`ENTRY:      ${price(plan.entry)}`);
-    console.log(`STOP LOSS:  ${price(plan.stopLoss)}`);
-    console.log(`TAKE PROFIT:${price(plan.takeProfit)}`);
+    console.log(`ENTRY:       ${price(plan.entry)}`);
+    console.log(`STOP LOSS:   ${price(plan.stopLoss)}`);
+    console.log(`TAKE PROFIT: ${price(plan.takeProfit)}`);
     console.log("RISK/REWARD: 1:2");
   } else {
     console.log("ENTRY: WAIT");
@@ -251,26 +267,21 @@ async function main() {
   console.log(`M15: BUY ${m15.bullishVotes}/4 | SELL ${m15.bearishVotes}/4`);
   console.log(`H1:  BUY ${h1.bullishVotes}/4 | SELL ${h1.bearishVotes}/4`);
 
-  if (result.reasons.length) {
+  if (result.reasons.length > 0) {
     console.log("\n========== WHY HOLD / BLOCKED ==========");
-    result.reasons.forEach(reason => console.log(`- ${reason}`));
+
+    for (const reason of result.reasons) {
+      console.log(`- ${reason}`);
+    }
   }
 
   console.log("\n========== NEWS INTELLIGENCE ==========");
 
-  const news = await getForexNews();
-
-  console.log(`Source: ${news.source}`);
-  console.log(`Articles: ${news.articles.length}`);
-  console.log(`HIGH candidates: ${news.high}`);
-  console.log(`MEDIUM relevance: ${news.medium}`);
-  console.log(`LOW relevance: ${news.low}`);
-
-  if (news.error) console.log(`News warning: ${news.error}`);
-
-  news.articles.slice(0, 10).forEach(article => {
-    console.log(`[${article.impact}] ${article.title}`);
-  });
+  try {
+    await getForexNews();
+  } catch (error) {
+    console.log(`News warning: ${error.message}`);
+  }
 
   console.log("\nNews is context only; it does not create trading signals.");
   console.log("========================================");
