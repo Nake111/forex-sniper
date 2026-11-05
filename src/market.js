@@ -1,5 +1,5 @@
-
 import { analyzeMarketStructure } from "./market-structure.js";
+import { analyzeSmartMoney } from "./smart-money.js";
 
 export function ema(values, period) {
   if (values.length < period) return null;
@@ -162,6 +162,7 @@ export function analyseTimeframe(candles) {
   const atr14 = atr(candles, 14);
   const profile = volumeProfile(candles);
   const structure = marketStructure(candles);
+  const smartMoney = analyzeSmartMoney(candles);
 
   const bullish = [
     close > ema20,
@@ -188,6 +189,7 @@ export function analyseTimeframe(candles) {
     atr14,
     poc: profile.poc,
     structure,
+    smartMoney,
     bullishVotes: bullish.filter(Boolean).length,
     bearishVotes: bearish.filter(Boolean).length,
     bullishConditions: bullish,
