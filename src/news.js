@@ -1,9 +1,13 @@
+
 const GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GOOGLE_NEWS_URL = "https://news.google.com/rss/search";
-const DAY_MS = 24 * 60 * 60 * 1000;
 
-function decodeXml(text) {
-  return text
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_ARTICLES = 15;
+const TIMEOUT_MS = 15000;
+
+function decodeXml(value) {
+  return value
     .replace(/<!\[CDATA\[|\]\]>/g, "")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
@@ -12,7 +16,7 @@ function decodeXml(text) {
     .replace(/&gt;/g, ">");
 }
 
-function parsePublishedDate(value) {
+function parseDate(value) {
   const parsed = Date.parse(value);
 
   if (Number.isFinite(parsed)) {
@@ -25,58 +29,115 @@ function parsePublishedDate(value) {
 
   if (!match) return NaN;
 
-  const [, year, month, day, hour, minute, second] = match;
+  const [, y, m, d, h, min, s] = match;
 
   return Date.UTC(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second)
+    Number(y),
+    Number(m) - 1,
+    Number(d),
+    Number(h),
+    Number(min),
+    Number(s)
   );
 }
 
-function isWithinLast24Hours(article) {
-  const published = parsePublishedDate(article.date);
-  const now = Date.now();
+function isRecent(article) {
+  const published = parseDate(article.date);
+  const age = Date.now() - published;
 
   return (
     Number.isFinite(published) &&
-    published <= now &&
-    now - published <= DAY_MS
+    age >= 0 &&
+    age <= DAY_MS
   );
 }
 
 function parseRss(xml) {
-  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
-    .map(([_, item]) => {
-      const get = (tag) => {
+  const items = [...xml.matchAll(
+    /<item>([\s\S]*?)<\/item>/g
+  )];
+
+  return items
+    .map(([, item]) => {
+      function getTag(tag) {
+        const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
         const match = item.match(
-          new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`)
+          new RegExp(
+            `<${escaped}[^>]*>([\\s\\S]*?)<\\/${escaped}>`,
+            "i"
+          )
         );
 
-        return match ? decodeXml(match[1].trim()) : "";
-      };
+        return match
+          ? decodeXml(match[1].trim())
+          : "";
+      }
 
       return {
-        title: get("title"),
-        source: get("source") || "Google News",
-        date: get("pubDate"),
-        url: get("link")
+        title: getTag("title"),
+        source: getTag("source") || "Google News",
+        date: getTag("pubDate"),
+        url: getTag("link")
       };
     })
     .filter(article =>
       article.title &&
       article.url &&
-      isWithinLast24Hours(article)
+      isRecent(article)
     )
-    .slice(0, 15);
+    .slice(0, MAX_ARTICLES);
+}
+
+async function getGdeltNews() {
+  const params = new URLSearchParams({
+    query:
+      '("EUR/USD" OR EURUSD OR "euro dollar" OR "European Central Bank" OR "Federal Reserve")',
+    mode: "artlist",
+    format: "json",
+    timespan: "24h",
+    maxrecords: String(MAX_ARTICLES),
+    sort: "datedesc"
+  });
+
+  const response = await fetch(
+    `${GDELT_URL}?${params}`,
+    {
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`GDELT HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  const articles = (data.articles || [])
+    .map(article => ({
+      title: article.title,
+      source: article.domain || "GDELT",
+      date: article.seendate,
+      url: article.url
+    }))
+    .filter(article =>
+      article.title &&
+      article.url &&
+      isRecent(article)
+    )
+    .slice(0, MAX_ARTICLES);
+
+  console.log(
+    `GDELT: ${articles.length} recent articles found.`
+  );
+
+  return articles;
 }
 
 async function getGoogleNews() {
   const params = new URLSearchParams({
-    q: '(EUR/USD OR EURUSD OR "European Central Bank" OR "Federal Reserve") when:1d',
+    q:
+      '(EUR/USD OR EURUSD OR "European Central Bank" OR "Federal Reserve") when:1d',
     hl: "en-US",
     gl: "US",
     ceid: "US:en"
@@ -84,63 +145,85 @@ async function getGoogleNews() {
 
   const response = await fetch(
     `${GOOGLE_NEWS_URL}?${params}`,
-    { signal: AbortSignal.timeout(15000) }
+    {
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    }
   );
 
   if (!response.ok) {
-    throw new Error(`Google News error: ${response.status}`);
+    throw new Error(
+      `Google News HTTP ${response.status}`
+    );
   }
 
-  return parseRss(await response.text());
-}
+  const xml = await response.text();
+  const articles = parseRss(xml);
 
-async function getGdeltNews() {
-  const params = new URLSearchParams({
-    query: '("EUR/USD" OR EURUSD OR "euro dollar" OR "European Central Bank" OR "Federal Reserve")',
-    mode: "artlist",
-    format: "json",
-    timespan: "24h",
-    maxrecords: "15",
-    sort: "datedesc"
-  });
-
-  const response = await fetch(
-    `${GDELT_URL}?${params}`,
-    { signal: AbortSignal.timeout(15000) }
+  console.log(
+    `Google News RSS: ${articles.length} recent articles found.`
   );
 
-  if (!response.ok) {
-    throw new Error(`GDELT error: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return (data.articles || [])
-    .map(article => ({
-      title: article.title,
-      source: article.domain,
-      date: article.seendate,
-      url: article.url
-    }))
-    .filter(article =>
-      article.title &&
-      article.url &&
-      isWithinLast24Hours(article)
-    )
-    .slice(0, 15);
+  return articles;
 }
 
 export async function getForexNews() {
-  try {
-    return await getGdeltNews();
-  } catch (error) {
-    console.log("GDELT unavailable. Trying Google News RSS...");
+  console.log("");
+  console.log("NEWS ENGINE STARTED");
+  console.log("-------------------");
 
-    try {
-      return await getGoogleNews();
-    } catch (backupError) {
-      console.log("Both news sources unavailable:", backupError.message);
-      return [];
+  let gdeltError = null;
+
+  // Try GDELT first.
+  try {
+    const articles = await getGdeltNews();
+
+    if (articles.length > 0) {
+      console.log("NEWS SOURCE: GDELT");
+      return articles;
     }
+
+    console.log(
+      "GDELT returned no recent articles. Trying backup."
+    );
+  } catch (error) {
+    gdeltError = error;
+
+    console.log(
+      `GDELT FAILED: ${error.message}`
+    );
+
+    console.log(
+      "Trying Google News RSS backup."
+    );
   }
+
+  // Try Google News if GDELT is empty or unavailable.
+  try {
+    const articles = await getGoogleNews();
+
+    if (articles.length > 0) {
+      console.log("NEWS SOURCE: GOOGLE NEWS RSS");
+      return articles;
+    }
+
+    console.log(
+      "Google News returned no recent articles."
+    );
+  } catch (error) {
+    console.log(
+      `GOOGLE NEWS FAILED: ${error.message}`
+    );
+  }
+
+  if (gdeltError) {
+    console.log(
+      `GDELT ERROR DETAILS: ${gdeltError.message}`
+    );
+  }
+
+  console.log(
+    "NEWS STATUS: NO RECENT ARTICLES AVAILABLE."
+  );
+
+  return [];
 }
