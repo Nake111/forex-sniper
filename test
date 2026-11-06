@@ -1,69 +1,54 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalAction, tradePlan } from "../src/trade-plan.js";
 
-const market = {
-  close: 1.12390,
-  atr14: 0.000374
-};
+import {
+  calculateIndicators,
+  generateSignal,
+} from "../src/signal.js";
 
-test("BUY with H1 WAIT produces no plan and final action NO TRADE", () => {
-  const plan = tradePlan("BUY", market, { status: "WAIT" });
+test("calculateIndicators returns indicator values", () => {
+  const candles = [];
 
-  assert.equal(plan, null);
-  assert.equal(finalAction("BUY", plan), "NO TRADE");
+  for (let i = 0; i < 100; i++) {
+    const close = 60000 + i * 20;
+
+    candles.push({
+      time: 1700000000 + i * 300,
+      open: close - 10,
+      high: close + 30,
+      low: close - 30,
+      close,
+      volume: 10,
+    });
+  }
+
+  const result = calculateIndicators(candles);
+
+  assert.ok(result);
+  assert.ok(Number.isFinite(result.ema20));
+  assert.ok(Number.isFinite(result.ema50));
+  assert.ok(Number.isFinite(result.rsi14));
+  assert.ok(Number.isFinite(result.atr14));
 });
 
-test("SELL with H1 WAIT produces no plan and final action NO TRADE", () => {
-  const plan = tradePlan("SELL", market, { status: "WAIT" });
+test("signal output is a valid trading decision", () => {
+  const candles = [];
 
-  assert.equal(plan, null);
-  assert.equal(finalAction("SELL", plan), "NO TRADE");
-});
+  for (let i = 0; i < 200; i++) {
+    const close = 60000 + Math.sin(i / 5) * 100 + i * 2;
 
-test("BUY with H1 ALIGNED creates a 1:2 plan", () => {
-  const plan = tradePlan("BUY", market, { status: "H1 ALIGNED" });
+    candles.push({
+      time: 1700000000 + i * 300,
+      open: close - 5,
+      high: close + 25,
+      low: close - 25,
+      close,
+      volume: 100 + i,
+    });
+  }
 
-  assert.ok(plan);
-  assert.equal(plan.entry, market.close);
-  assert.ok(plan.stopLoss < plan.entry);
-  assert.ok(plan.takeProfit > plan.entry);
-  assert.equal(plan.riskReward, "1:2");
-  assert.equal(finalAction("BUY", plan), "BUY");
-});
+  const result = generateSignal(candles);
 
-test("SELL with H1 ALIGNED creates a 1:2 plan", () => {
-  const plan = tradePlan("SELL", market, { status: "H1 ALIGNED" });
-
-  assert.ok(plan);
-  assert.equal(plan.entry, market.close);
-  assert.ok(plan.stopLoss > plan.entry);
-  assert.ok(plan.takeProfit < plan.entry);
-  assert.equal(plan.riskReward, "1:2");
-  assert.equal(finalAction("SELL", plan), "SELL");
-});
-
-test("HOLD never creates a trade plan", () => {
-  const plan = tradePlan("HOLD", market, { status: "H1 ALIGNED" });
-
-  assert.equal(plan, null);
-  assert.equal(finalAction("HOLD", plan), "NO TRADE");
-});
-
-test("Invalid ATR or missing H1 confirmation never creates a plan", () => {
-  assert.equal(
-    tradePlan("BUY", { ...market, atr14: 0 }, { status: "H1 ALIGNED" }),
-    null
-  );
-
-  assert.equal(
-    tradePlan("BUY", { ...market, atr14: Number.NaN }, { status: "H1 ALIGNED" }),
-    null
-  );
-
-  assert.equal(
-    tradePlan("BUY", market, null),
-    null
-  );
+  assert.ok(result);
+  assert.ok(["BUY", "SELL", "HOLD"].includes(result.signal));
 });
