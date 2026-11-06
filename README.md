@@ -25,3 +25,5 @@ Never commit API keys, passwords, broker credentials, or `.env` files.
 
 ## Disclaimer
 For research and education only. Signals are not financial advice. Backtest results do not guarantee future performance.
+
+Read and write is enabled, then reconnect or refresh the GitHub connection in ChatGPT.
