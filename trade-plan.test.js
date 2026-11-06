@@ -1,45 +1,60 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createTradePlan } from "../src/trade-plan.js";
+import { tradePlan, finalAction } from "./src/trade-plan.js";
 
-test("trade plan returns a valid HOLD result", () => {
-  const plan = createTradePlan({
-    signal: "HOLD",
-    entry: 60000,
-    atr: 500,
-  });
+test("HOLD signal does not create a trade plan", () => {
+  const plan = tradePlan("HOLD", {
+    close: 60000,
+    atr14: 500
+  }, { status: "H1 ALIGNED" });
 
-  assert.ok(plan);
-  assert.equal(plan.signal, "HOLD");
+  assert.equal(plan, null);
+  assert.equal(finalAction("HOLD", plan), "NO TRADE");
 });
 
-test("trade plan uses a stop loss and take profit", () => {
-  const plan = createTradePlan({
-    signal: "BUY",
-    entry: 60000,
-    atr: 500,
-  });
+test("BUY plan has correct stop loss and take profit", () => {
+  const plan = tradePlan("BUY", {
+    close: 60000,
+    atr14: 500
+  }, { status: "H1 ALIGNED" });
 
   assert.ok(plan);
-
-  if (plan.signal === "BUY") {
-    assert.ok(plan.stopLoss < plan.entry);
-    assert.ok(plan.takeProfit > plan.entry);
-  }
+  assert.equal(plan.entry, 60000);
+  assert.equal(plan.stopLoss, 59250);
+  assert.equal(plan.takeProfit, 61500);
+  assert.equal(plan.riskReward, "1:2");
+  assert.equal(finalAction("BUY", plan), "BUY");
 });
 
-test("SELL trade plan places stop above entry", () => {
-  const plan = createTradePlan({
-    signal: "SELL",
-    entry: 60000,
-    atr: 500,
-  });
+test("SELL plan has correct stop loss and take profit", () => {
+  const plan = tradePlan("SELL", {
+    close: 60000,
+    atr14: 500
+  }, { status: "H1 ALIGNED" });
 
   assert.ok(plan);
+  assert.equal(plan.entry, 60000);
+  assert.equal(plan.stopLoss, 60750);
+  assert.equal(plan.takeProfit, 58500);
+  assert.equal(plan.riskReward, "1:2");
+  assert.equal(finalAction("SELL", plan), "SELL");
+});
 
-  if (plan.signal === "SELL") {
-    assert.ok(plan.stopLoss > plan.entry);
-    assert.ok(plan.takeProfit < plan.entry);
-  }
+test("No trade plan without H1 confirmation", () => {
+  const plan = tradePlan("BUY", {
+    close: 60000,
+    atr14: 500
+  }, { status: "WAIT" });
+
+  assert.equal(plan, null);
+});
+
+test("No trade plan with invalid ATR", () => {
+  const plan = tradePlan("BUY", {
+    close: 60000,
+    atr14: 0
+  }, { status: "H1 ALIGNED" });
+
+  assert.equal(plan, null);
 });
