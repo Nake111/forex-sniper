@@ -1,12 +1,15 @@
 
-name: Forex Sniper Check
+name: BTC Sniper Check
 
 on:
   push:
-    branches: [main]
+    branches: [BTCUSD]
   pull_request:
-    branches: [main]
+    branches: [BTCUSD]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check:
@@ -30,11 +33,11 @@ jobs:
       - name: Test trade-plan safety
         run: npm test
 
-      - name: Download EUR/USD data
+      - name: Download BTC/USD data
         run: npm run download
 
-      - name: Run Forex Sniper
+      - name: Run BTC Sniper analysis
         run: npm start
 
-      - name: Run historical backtest
+      - name: Run BTC/USD historical backtest
         run: npm run backtest

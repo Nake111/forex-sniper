@@ -1,43 +1,26 @@
 
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
-import { getForexNews } from "./news.js";
-import { finalAction, tradePlan } from "./trade-plan.js";
+import { tradePlan, finalAction } from "./trade-plan.js";
 
-const VERSION = "3.8";
+const WINDOW = 120;
+const MIN_HISTORY = 60;
 
-const DATA_FILES = {
-  M5: "data/eurusd-m5.json",
-  M15: "data/eurusd-m15.json",
-  H1: "data/eurusd-h1.json"
-};
+function getTime(candle) {
+  const raw = candle.timestamp ?? candle.time ?? candle.date;
+  let time = typeof raw === "number" ? raw : Date.parse(raw);
 
-const RULES = {
-  M5: 3,
-  M15: 3,
-  H1: 2,
-  H1_STRONG_OPPOSITION: 3
-};
-
-function price(value) {
-  return Number.isFinite(value) ? value.toFixed(5) : "N/A";
+  if (!Number.isFinite(time)) return NaN;
+  return time < 1e12 ? time * 1000 : time;
 }
 
-function number(value, digits = 2) {
-  return Number.isFinite(value) ? value.toFixed(digits) : "N/A";
-}
+async function loadCandles(path, timeframe, interval) {
+  const raw = JSON.parse(await readFile(path, "utf8"));
 
-async function loadCandles(timeframe) {
-  const raw = await readFile(DATA_FILES[timeframe], "utf8");
-  const parsed = JSON.parse(raw);
-
-  if (!Array.isArray(parsed)) {
-    throw new Error(`${timeframe}: candle file is not an array.`);
-  }
-
-  const candles = parsed
+  const candles = raw
     .map(c => ({
-      time: c.timestamp,
+      ...c,
+      timestamp: getTime(c),
       open: Number(c.open),
       high: Number(c.high),
       low: Number(c.low),
@@ -45,309 +28,166 @@ async function loadCandles(timeframe) {
       volume: Number(c.volume ?? 0)
     }))
     .filter(c =>
-      [c.open, c.high, c.low, c.close].every(Number.isFinite)
+      Number.isFinite(c.timestamp) &&
+      [c.open, c.high, c.low, c.close].every(Number.isFinite) &&
+      c.high >= c.low &&
+      c.timestamp + interval <= Date.now()
     )
-    .sort((a, b) => Number(a.time) - Number(b.time));
+    .sort((a, b) => a.timestamp - b.timestamp);
 
-  if (candles.length < 60) {
-    throw new Error(
-      `${timeframe}: insufficient candles (${candles.length}).`
-    );
+  if (candles.length < MIN_HISTORY) {
+    throw new Error(`${timeframe}: not enough closed candles`);
   }
 
-  return candles;
+  return candles.slice(-WINDOW);
 }
 
-function printSqueeze(timeframe, result) {
-  const s = result.squeeze;
+function evaluateSignal({ M5, M15, H1 }) {
+  const s = M5.structure ?? {};
 
-  console.log(`\n${timeframe} TTM SQUEEZE`);
+  const bullishStructure =
+    s.bos === "BULLISH" ||
+    s.sweep === "BULLISH" ||
+    (s.sweepConfirmed && s.liquiditySweep === "BULLISH");
 
-  if (!s) {
-    console.log("Status: NOT AVAILABLE");
-    return;
-  }
-
-  const momentumBias =
-    !Number.isFinite(s.momentum) ? "N/A" :
-    s.momentum > 0 ? "BULLISH" :
-    s.momentum < 0 ? "BEARISH" : "NEUTRAL";
-
-  console.log(`State: ${s.state ?? "N/A"}`);
-  console.log(`Momentum: ${number(s.momentum, 7)}`);
-  console.log(`Previous momentum: ${number(s.previousMomentum, 7)}`);
-  console.log(`Momentum bias: ${momentumBias}`);
-  console.log(`Momentum direction: ${s.direction ?? "N/A"}`);
-}
-
-function printTimeframe(timeframe, result) {
-  console.log(`\n========== ${timeframe} ANALYSIS ==========`);
-
-  console.log(`Close: ${price(result.close)}`);
-  console.log(`EMA20: ${price(result.ema20)}`);
-  console.log(`EMA50: ${price(result.ema50)}`);
-  console.log(`RSI14: ${number(result.rsi14)}`);
-  console.log(`MACD: ${number(result.macd, 7)}`);
-  console.log(`MACD Signal: ${number(result.macdSignal, 7)}`);
-  console.log(`MACD Histogram: ${number(result.macdHistogram, 7)}`);
-  console.log(`ATR14: ${number(result.atr14, 6)}`);
-  console.log(`Volume Profile POC: ${price(result.poc)}`);
-
-  console.log(`Bullish votes: ${result.bullishVotes}/4`);
-  console.log(`Bearish votes: ${result.bearishVotes}/4`);
-
-  if (result.structure) {
-    console.log(`Market structure: ${JSON.stringify(result.structure)}`);
-  }
-
-  if (result.smartMoney) {
-    console.log(`Smart Money: ${JSON.stringify(result.smartMoney)}`);
-  }
-
-  printSqueeze(timeframe, result);
-}
-
-// ==========================================
-// MULTI-TIMEFRAME SIGNAL ENGINE
-// ==========================================
-
-function evaluateSignal(results) {
-  const m5 = results.M5;
-  const m15 = results.M15;
-  const h1 = results.H1;
-
-  const structure = m5.structure ?? {};
-
-  const bullishM5Confirmation =
-    structure.bos === "BULLISH" ||
-    structure.sweep === "BULLISH" ||
-    (
-      structure.sweepConfirmed === true &&
-      structure.liquiditySweep === "BULLISH"
-    );
-
-  const bearishM5Confirmation =
-    structure.bos === "BEARISH" ||
-    structure.sweep === "BEARISH" ||
-    (
-      structure.sweepConfirmed === true &&
-      structure.liquiditySweep === "BEARISH"
-    );
+  const bearishStructure =
+    s.bos === "BEARISH" ||
+    s.sweep === "BEARISH" ||
+    (s.sweepConfirmed && s.liquiditySweep === "BEARISH");
 
   const bullish =
-    m5.bullishVotes >= RULES.M5 &&
-    m15.bullishVotes >= RULES.M15 &&
-    h1.bullishVotes >= RULES.H1 &&
-    h1.bearishVotes < RULES.H1_STRONG_OPPOSITION;
+    M5.bullishVotes >= 3 &&
+    M15.bullishVotes >= 3 &&
+    H1.bullishVotes >= 2 &&
+    H1.bearishVotes < 3;
 
   const bearish =
-    m5.bearishVotes >= RULES.M5 &&
-    m15.bearishVotes >= RULES.M15 &&
-    h1.bearishVotes >= RULES.H1 &&
-    h1.bullishVotes < RULES.H1_STRONG_OPPOSITION;
+    M5.bearishVotes >= 3 &&
+    M15.bearishVotes >= 3 &&
+    H1.bearishVotes >= 2 &&
+    H1.bullishVotes < 3;
 
-  const abovePoc =
-    Number.isFinite(m5.poc) &&
-    m5.close > m5.poc;
+  if (
+    bullish &&
+    bullishStructure &&
+    Number.isFinite(M5.poc) &&
+    M5.close > M5.poc
+  ) return "BUY";
 
-  const belowPoc =
-    Number.isFinite(m5.poc) &&
-    m5.close < m5.poc;
-
-  if (bullish && bullishM5Confirmation && abovePoc) {
-    return "BUY";
-  }
-
-  if (bearish && bearishM5Confirmation && belowPoc) {
-    return "SELL";
-  }
+  if (
+    bearish &&
+    bearishStructure &&
+    Number.isFinite(M5.poc) &&
+    M5.close < M5.poc
+  ) return "SELL";
 
   return "HOLD";
 }
 
-// ==========================================
-// H1 TTM SQUEEZE CONFIRMATION
-// ==========================================
-
-function checkTradeConfirmation(signal, results) {
+function confirmSignal(signal, H1) {
   if (signal === "HOLD") {
-    return {
-      status: "NO TRADE",
-      reason: "Technical conditions do not meet entry rules."
-    };
+    return { status: "NO TRADE" };
   }
 
-  const h1 = results.H1.squeeze;
+  const squeeze = H1.squeeze;
 
-  if (!h1 || !Number.isFinite(h1.momentum)) {
-    return {
-      status: "WAIT",
-      reason: "H1 TTM Squeeze data is unavailable."
-    };
-  }
-
-  if (h1.state !== "SQUEEZE_RELEASED") {
-    return {
-      status: "WAIT",
-      reason: `H1 squeeze state is ${h1.state}, not released.`
-    };
+  if (
+    !squeeze ||
+    !Number.isFinite(squeeze.momentum) ||
+    squeeze.state !== "SQUEEZE_RELEASED"
+  ) {
+    return { status: "WAIT" };
   }
 
   if (
     signal === "BUY" &&
-    !h1.direction?.startsWith("BULLISH")
+    !squeeze.direction?.startsWith("BULLISH")
   ) {
-    return {
-      status: "WAIT",
-      reason: `H1 momentum conflicts with BUY: ${h1.direction}.`
-    };
+    return { status: "WAIT" };
   }
 
   if (
     signal === "SELL" &&
-    !h1.direction?.startsWith("BEARISH")
+    !squeeze.direction?.startsWith("BEARISH")
   ) {
-    return {
-      status: "WAIT",
-      reason: `H1 momentum conflicts with SELL: ${h1.direction}.`
-    };
+    return { status: "WAIT" };
   }
 
-  return {
-    status: "H1 ALIGNED",
-    reason: `H1 squeeze supports ${signal}.`
-  };
+  return { status: "H1 ALIGNED" };
 }
 
-// ==========================================
-// FOREX NEWS
-// ==========================================
-
-async function printNews() {
-  console.log("\n========== FOREX NEWS ==========");
-
-  try {
-    const news = await getForexNews();
-
-    if (!news || (Array.isArray(news) && news.length === 0)) {
-      console.log("No news data available.");
-      return;
-    }
-
-    console.log(JSON.stringify(news, null, 2));
-  } catch (error) {
-    console.log(`News unavailable: ${error.message}`);
-  }
+function printTimeframe(name, result) {
+  console.log(`\n${name} ANALYSIS`);
+  console.log("-----------------------");
+  console.log("Close:", result.close);
+  console.log("EMA 20:", result.ema20);
+  console.log("EMA 50:", result.ema50);
+  console.log("RSI 14:", result.rsi14);
+  console.log("MACD:", result.macd);
+  console.log("MACD Signal:", result.macdSignal);
+  console.log("ATR 14:", result.atr14);
+  console.log("POC:", result.poc);
+  console.log("Value Area High:", result.valueAreaHigh);
+  console.log("Value Area Low:", result.valueAreaLow);
+  console.log("BOS:", result.structure.bos);
+  console.log("Liquidity Sweep:", result.structure.sweep);
+  console.log("Squeeze:", result.squeeze.state);
+  console.log("Squeeze Direction:", result.squeeze.direction);
+  console.log("Bullish Votes:", result.bullishVotes);
+  console.log("Bearish Votes:", result.bearishVotes);
 }
-
-// ==========================================
-// MAIN
-// ==========================================
 
 async function main() {
   console.log("======================================");
-  console.log(`FOREX SNIPER AI v${VERSION}`);
-  console.log("EUR/USD MULTI-TIMEFRAME ANALYSIS");
-  console.log("M5 + M15 + H1");
-  console.log("SMART MONEY + TTM SQUEEZE");
-  console.log("H1 CONFIRMATION SAFETY GATE");
-  console.log("PAPER ANALYSIS ONLY - LIVE ORDERS DISABLED");
+  console.log("          BTCUSD SNIPER AI");
+  console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
+  console.log("Live trading: DISABLED");
 
-  const results = {};
+  const [m5, m15, h1] = await Promise.all([
+    loadCandles("data/btcusd-m5.json", "M5", 5 * 60 * 1000),
+    loadCandles("data/btcusd-m15.json", "M15", 15 * 60 * 1000),
+    loadCandles("data/btcusd-h1.json", "H1", 60 * 60 * 1000)
+  ]);
 
-  for (const timeframe of ["M5", "M15", "H1"]) {
-    const candles = await loadCandles(timeframe);
+  const results = {
+    M5: analyseTimeframe(m5),
+    M15: analyseTimeframe(m15),
+    H1: analyseTimeframe(h1)
+  };
 
-    results[timeframe] = analyseTimeframe(candles);
-
-    console.log(`${timeframe} candles loaded: ${candles.length}`);
-    printTimeframe(timeframe, results[timeframe]);
-  }
+  printTimeframe("M5", results.M5);
+  printTimeframe("M15", results.M15);
+  printTimeframe("H1", results.H1);
 
   const signal = evaluateSignal(results);
-
-  const confirmation = checkTradeConfirmation(
-    signal,
-    results
-  );
-
-  const plan = tradePlan(
-    signal,
-    results.M5,
-    confirmation
-  );
-
-  console.log("\n========== FINAL SIGNAL ==========");
-  console.log(`TECHNICAL SIGNAL: ${signal}`);
-  console.log(`TRADE CONFIRMATION: ${confirmation.status}`);
-  console.log(`FINAL ACTION: ${finalAction(signal, plan)}`);
-  console.log(`Confirmation reason: ${confirmation.reason}`);
-
-  if (plan) {
-    console.log("\n========== CONFIRMED TRADE PLAN ==========");
-    console.log(`Entry reference: ${price(plan.entry)}`);
-    console.log(`Stop Loss reference: ${price(plan.stopLoss)}`);
-    console.log(`Take Profit reference: ${price(plan.takeProfit)}`);
-    console.log(`Risk/Reward: ${plan.riskReward}`);
-  } else if (
-    signal !== "HOLD" &&
-    confirmation.status !== "H1 ALIGNED"
-  ) {
-    console.log("\nNO TRADE PLAN");
-    console.log("H1 confirmation has not passed.");
-    console.log("Wait for higher-timeframe alignment.");
-    console.log("Entry, stop-loss and take-profit are suppressed.");
-  } else {
-    console.log("\nNo valid entry. Waiting for confirmation.");
-  }
-
-  console.log("\n========== SQUEEZE SUMMARY ==========");
-
-  for (const timeframe of ["M5", "M15", "H1"]) {
-    const s = results[timeframe].squeeze;
-
-    console.log(
-      `${timeframe}: ${s?.state ?? "N/A"} | ` +
-      `${s?.direction ?? "N/A"} | ` +
-      `Momentum: ${number(s?.momentum, 7)}`
-    );
-  }
-
-  console.log("\n========== ORDER BLOCK SUMMARY ==========");
-
-  for (const timeframe of ["M5", "M15", "H1"]) {
-    const blocks =
-      results[timeframe].smartMoney?.orderBlocks ?? [];
-
-    console.log(`\n${timeframe}:`);
-
-    if (blocks.length === 0) {
-      console.log("No valid Order Blocks found.");
-      continue;
-    }
-
-    for (const block of blocks) {
-      console.log(
-        `${block.direction} OB | ` +
-        `High: ${price(block.high)} | ` +
-        `Low: ${price(block.low)} | ` +
-        `Status: ${block.status}`
-      );
-    }
-  }
+  const confirmation = confirmSignal(signal, results.H1);
+  const plan = tradePlan(signal, results.M5, confirmation);
+  const action = finalAction(signal, plan);
 
   console.log("\n======================================");
-  console.log("H1 confirmation is a filter, not a guarantee.");
-  console.log("No live orders are placed.");
+  console.log("           FINAL BTCUSD SIGNAL");
   console.log("======================================");
+  console.log("Candidate:", signal);
+  console.log("Confirmation:", confirmation.status);
+  console.log("FINAL ACTION:", action);
 
-  await printNews();
+  if (plan) {
+    console.log("ENTRY:", plan.entry.toFixed(2));
+    console.log("STOP LOSS:", plan.stopLoss.toFixed(2));
+    console.log("TAKE PROFIT:", plan.takeProfit.toFixed(2));
+    console.log("RISK / REWARD:", plan.riskReward);
+  } else {
+    console.log("No confirmed trade. Waiting for confirmation.");
+  }
 
-  console.log("\n========== ANALYSIS COMPLETE ==========");
+  console.log("\nM5 candles:", m5.length);
+  console.log("M15 candles:", m15.length);
+  console.log("H1 candles:", h1.length);
+  console.log("Paper analysis only — no orders sent.");
 }
 
 main().catch(error => {
-  console.error("FOREX SNIPER ERROR:", error);
+  console.error("BTCUSD ANALYSIS ERROR:", error);
   process.exitCode = 1;
 });
