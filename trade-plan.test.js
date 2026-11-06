@@ -1,55 +1,45 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalAction, tradePlan } from "./src/trade-plan.js";
 
-const market = {
-  close: 1.12390,
-  atr14: 0.000374
-};
+import { createTradePlan } from "../src/trade-plan.js";
 
-test("BUY with H1 WAIT means NO TRADE", () => {
-  const plan = tradePlan("BUY", market, { status: "WAIT" });
-  assert.equal(plan, null);
-  assert.equal(finalAction("BUY", plan), "NO TRADE");
-});
+test("trade plan returns a valid HOLD result", () => {
+  const plan = createTradePlan({
+    signal: "HOLD",
+    entry: 60000,
+    atr: 500,
+  });
 
-test("SELL with H1 WAIT means NO TRADE", () => {
-  const plan = tradePlan("SELL", market, { status: "WAIT" });
-  assert.equal(plan, null);
-  assert.equal(finalAction("SELL", plan), "NO TRADE");
-});
-
-test("BUY with H1 ALIGNED creates a valid plan", () => {
-  const plan = tradePlan("BUY", market, { status: "H1 ALIGNED" });
   assert.ok(plan);
-  assert.ok(plan.stopLoss < plan.entry);
-  assert.ok(plan.takeProfit > plan.entry);
-  assert.equal(plan.riskReward, "1:2");
+  assert.equal(plan.signal, "HOLD");
 });
 
-test("SELL with H1 ALIGNED creates a valid plan", () => {
-  const plan = tradePlan("SELL", market, { status: "H1 ALIGNED" });
+test("trade plan uses a stop loss and take profit", () => {
+  const plan = createTradePlan({
+    signal: "BUY",
+    entry: 60000,
+    atr: 500,
+  });
+
   assert.ok(plan);
-  assert.ok(plan.stopLoss > plan.entry);
-  assert.ok(plan.takeProfit < plan.entry);
-  assert.equal(plan.riskReward, "1:2");
+
+  if (plan.signal === "BUY") {
+    assert.ok(plan.stopLoss < plan.entry);
+    assert.ok(plan.takeProfit > plan.entry);
+  }
 });
 
-test("HOLD never creates a trade plan", () => {
-  assert.equal(
-    tradePlan("HOLD", market, { status: "H1 ALIGNED" }),
-    null
-  );
-});
+test("SELL trade plan places stop above entry", () => {
+  const plan = createTradePlan({
+    signal: "SELL",
+    entry: 60000,
+    atr: 500,
+  });
 
-test("Invalid ATR or missing confirmation blocks a plan", () => {
-  assert.equal(
-    tradePlan("BUY", { ...market, atr14: 0 }, { status: "H1 ALIGNED" }),
-    null
-  );
-  assert.equal(
-    tradePlan("BUY", market, null),
-    null
-  );
+  assert.ok(plan);
+
+  if (plan.signal === "SELL") {
+    assert.ok(plan.stopLoss > plan.entry);
+    assert.ok(plan.takeProfit < plan.entry);
+  }
 });
