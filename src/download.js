@@ -1,5 +1,8 @@
+
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, writeFile } from "node:fs/promises";
+
+const DAYS_BACK = 180;
 
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
@@ -10,15 +13,19 @@ async function downloadTimeframe(timeframe, filename) {
   to.setUTCDate(to.getUTCDate() + 1);
 
   const from = new Date();
-  from.setUTCDate(from.getUTCDate() - 30);
+  from.setUTCDate(from.getUTCDate() - DAYS_BACK);
+
+  const fromDate = formatDate(from);
+  const toDate = formatDate(to);
 
   console.log(`Downloading BTC/USD ${timeframe} candles...`);
+  console.log(`Period: ${fromDate} to ${toDate}`);
 
   const candles = await getHistoricalRates({
     instrument: "btcusd",
     dates: {
-      from: formatDate(from),
-      to: formatDate(to)
+      from: fromDate,
+      to: toDate
     },
     timeframe,
     format: "json"
@@ -46,7 +53,7 @@ async function main() {
   await downloadTimeframe("m15", "btcusd-m15.json");
   await downloadTimeframe("h1", "btcusd-h1.json");
 
-  console.log("All BTC/USD timeframes downloaded successfully.");
+  console.log("All BTC/USD 180-day timeframes downloaded successfully.");
 }
 
 main().catch(error => {
