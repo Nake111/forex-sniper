@@ -305,7 +305,9 @@ export function analyseTimeframe(candles) {
   const atr14 = atr(candles, 14);
 
   // Use the dedicated Volume Profile calculation.
-  const profile = calculateVolumeProfile(candles, 24, 0.70);\n  const vwap = rollingVwap(candles, 24);\n  const cvd = cumulativeVolumeDeltaProxy(candles, 5);
+  const profile = calculateVolumeProfile(candles, 24, 0.70);
+  const vwap = rollingVwap(candles, 24);
+  const cvd = cumulativeVolumeDeltaProxy(candles, 5);
 
   const structure = marketStructure(candles);
   const smartMoney = analyzeSmartMoney(candles);
@@ -339,7 +341,9 @@ export function analyseTimeframe(candles) {
     poc: profile.poc,
     valueAreaHigh: profile.valueAreaHigh,
     valueAreaLow: profile.valueAreaLow,
-    profileVolume: profile.totalVolume,\n    vwap,\n    cvd,
+    profileVolume: profile.totalVolume,
+    vwap,
+    cvd,
 
     squeeze,
     structure,
