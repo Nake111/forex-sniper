@@ -1,12 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
-import { evaluateSignal, confirmSignal } from "./signal.js";
+import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
+import { getForexNews } from "./news.js";
+import { buildMacroContext } from "./macro.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced"].includes(SIGNAL_PROFILE)) {
+if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE)) {
   throw new Error("SIGNAL_PROFILE must be baseline, strict or advanced");
 }
 
@@ -77,7 +79,7 @@ function printTimeframe(name, result) {
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
-async function analyseMarket(market) {
+async function analyseMarket(market, macroContext) {
   console.log("\n======================================");
   console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
@@ -95,7 +97,9 @@ async function analyseMarket(market) {
 
   for (const tf of TIMEFRAMES) printTimeframe(tf.key, results[tf.key]);
 
-  const candidate = evaluateSignal(results, SIGNAL_PROFILE);
+  const candidate = evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
+  console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
@@ -124,7 +128,15 @@ async function analyseMarket(market) {
 }
 
 async function main() {
-  const outcomes = await Promise.allSettled(MARKETS.map(analyseMarket));
+  let macroContext;
+  try {
+    const articles = await getForexNews();
+    macroContext = buildMacroContext(articles);
+  } catch (error) {
+    macroContext = buildMacroContext([]);
+    console.error("Macro news unavailable:", error.message);
+  }
+  const outcomes = await Promise.allSettled(MARKETS.map(market => analyseMarket(market, macroContext)));
   let failed = false;
   outcomes.forEach((outcome, index) => {
     if (outcome.status === "rejected") {
