@@ -51,7 +51,9 @@ jobs:
         run: |
           set -o pipefail
           npm run backtest:all | tee backtests.txt
-          npm run backtest:experiments | tee -a backtests.txt\n          npm run backtest:advanced | tee -a backtests.txt
+          npm run backtest:experiments | tee -a backtests.txt
+          npm run backtest:advanced | tee -a backtests.txt
+          npm run backtest:advanced | tee -a backtests.txt
 
       - name: Upload signal report
         uses: actions/upload-artifact@v4
