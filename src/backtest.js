@@ -12,6 +12,10 @@ if (!["BTCUSD", "EURUSD"].includes(MARKET)) {
 }
 const DATA_PREFIX = MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
+const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
+if (!["baseline", "strict"].includes(SIGNAL_PROFILE)) {
+  throw new Error("SIGNAL_PROFILE must be baseline or strict");
+}
 
 const WINDOW = 120;
 const MIN_HISTORY = 60;
@@ -179,7 +183,7 @@ async function main() {
       H1: cachedH1
     };
 
-    const signal = evaluateSignal(results);
+    const signal = evaluateSignal(results, SIGNAL_PROFILE);
     const confirm = confirmSignal(signal, cachedH1);
     const plan = tradePlan(signal, currentM5, confirm);
 
@@ -288,6 +292,7 @@ async function main() {
   console.log("\n========== " + MARKET + " HISTORICAL BACKTEST ==========");
   console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : "BTC/USD");
   console.log("SIGNAL: M5 + M15 + H1");
+  console.log("PROFILE:", SIGNAL_PROFILE);
 
   console.log(
     `Period: ${new Date(m5[0].time).toISOString()} to ` +
