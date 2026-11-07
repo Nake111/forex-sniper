@@ -5,6 +5,10 @@ import { evaluateSignal, confirmSignal } from "./signal.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
+const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
+if (!["baseline", "strict", "advanced"].includes(SIGNAL_PROFILE)) {
+  throw new Error("SIGNAL_PROFILE must be baseline, strict or advanced");
+}
 
 const MARKETS = [
   { symbol: "EURUSD", label: "EUR/USD", prefix: "eurusd", interval: 0.00001 },
@@ -63,6 +67,8 @@ function printTimeframe(name, result) {
   console.log("MACD / Signal:", result.macd, "/", result.macdSignal);
   console.log("ATR 14:", result.atr14);
   console.log("ADX 14:", result.adx14);
+  console.log("VWAP 24:", result.vwap);
+  console.log("CVD pressure proxy:", result.cvd.direction, "slope:", result.cvd.slope);
   console.log("POC / VAH / VAL:", result.poc, "/", result.valueAreaHigh, "/", result.valueAreaLow);
   console.log("BOS / Sweep:", result.structure.bos, "/", result.structure.sweep);
   console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
@@ -87,7 +93,7 @@ async function analyseMarket(market) {
 
   for (const tf of TIMEFRAMES) printTimeframe(tf.key, results[tf.key]);
 
-  const candidate = evaluateSignal(results);
+  const candidate = evaluateSignal(results, SIGNAL_PROFILE);
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
@@ -95,6 +101,7 @@ async function analyseMarket(market) {
   console.log("\n======================================");
   console.log(`          FINAL ${market.symbol} SIGNAL`);
   console.log("======================================");
+  console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   console.log("CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
   if (confirmation.reason) console.log("REASON:", confirmation.reason);
