@@ -71,6 +71,8 @@ function printTimeframe(name, result) {
   console.log("CVD pressure proxy:", result.cvd.direction, "slope:", result.cvd.slope);
   console.log("POC / VAH / VAL:", result.poc, "/", result.valueAreaHigh, "/", result.valueAreaLow);
   console.log("BOS / Sweep:", result.structure.bos, "/", result.structure.sweep);
+  console.log("Recent OB zones:", JSON.stringify(result.smartMoney.orderBlocks));
+  console.log("Recent unfilled FVG zones:", JSON.stringify(result.smartMoney.fairValueGaps));
   console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
@@ -112,6 +114,7 @@ async function analyseMarket(market) {
     console.log("STOP LOSS:", plan.stopLoss.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("TAKE PROFIT:", plan.takeProfit.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("RISK / REWARD:", plan.riskReward);
+    console.log("STOP METHOD:", plan.stopType);
   } else {
     console.log("No confirmed trade. Wait for a valid setup.");
   }
