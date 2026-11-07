@@ -56,6 +56,22 @@ The output contains separate EUR/USD and BTC/USD reports. If one market is missi
 
 Open **Actions → Forex Sniper Analysis → Run workflow** to install dependencies, run syntax checks and tests, download fresh candles, and create a report artifact.
 
+## Backtest
+
+Run the BTC/USD historical simulation (default):
+
+```bash
+npm run backtest
+```
+
+Run EUR/USD:
+
+```bash
+MARKET=EURUSD npm run backtest
+```
+
+The default round-trip cost assumptions are 10 basis points for BTC/USD and 0.5 basis points for EUR/USD. Override with `BACKTEST_COST_BPS` to model your own estimated spread and fees. These are assumptions, not a quote from your broker.
+
 ## Tests
 
 ```bash
