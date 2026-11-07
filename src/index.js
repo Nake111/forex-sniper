@@ -1,193 +1,130 @@
-
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
+import { evaluateSignal, confirmSignal } from "./signal.js";
 
-const WINDOW = 120;
+const WINDOW = 240;
 const MIN_HISTORY = 60;
+
+const MARKETS = [
+  { symbol: "EURUSD", label: "EUR/USD", prefix: "eurusd", interval: 0.00001 },
+  { symbol: "BTCUSD", label: "BTC/USD", prefix: "btcusd", interval: 0.01 }
+];
+
+const TIMEFRAMES = [
+  { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000 },
+  { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000 },
+  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000 }
+];
 
 function getTime(candle) {
   const raw = candle.timestamp ?? candle.time ?? candle.date;
-  let time = typeof raw === "number" ? raw : Date.parse(raw);
-
+  const time = typeof raw === "number" ? raw : Date.parse(raw);
   if (!Number.isFinite(time)) return NaN;
   return time < 1e12 ? time * 1000 : time;
 }
 
 async function loadCandles(path, timeframe, interval) {
   const raw = JSON.parse(await readFile(path, "utf8"));
+  if (!Array.isArray(raw)) throw new Error(`${path}: expected candle array`);
 
-  const candles = raw
-    .map(c => ({
-      ...c,
-      timestamp: getTime(c),
-      open: Number(c.open),
-      high: Number(c.high),
-      low: Number(c.low),
-      close: Number(c.close),
-      volume: Number(c.volume ?? 0)
-    }))
-    .filter(c =>
-      Number.isFinite(c.timestamp) &&
-      [c.open, c.high, c.low, c.close].every(Number.isFinite) &&
-      c.high >= c.low &&
-      c.timestamp + interval <= Date.now()
-    )
-    .sort((a, b) => a.timestamp - b.timestamp);
+  const candles = raw.map(c => ({
+    ...c,
+    timestamp: getTime(c),
+    open: Number(c.open),
+    high: Number(c.high),
+    low: Number(c.low),
+    close: Number(c.close),
+    volume: Number(c.volume ?? 0)
+  })).filter(c =>
+    Number.isFinite(c.timestamp) &&
+    [c.open, c.high, c.low, c.close].every(Number.isFinite) &&
+    c.high >= Math.max(c.open, c.close, c.low) &&
+    c.low <= Math.min(c.open, c.close, c.high) &&
+    c.timestamp + interval <= Date.now()
+  ).sort((a, b) => a.timestamp - b.timestamp);
 
-  if (candles.length < MIN_HISTORY) {
-    throw new Error(`${timeframe}: not enough closed candles`);
+  const unique = candles.filter((c, i) =>
+    i === 0 || c.timestamp !== candles[i - 1].timestamp
+  );
+
+  if (unique.length < MIN_HISTORY) {
+    throw new Error(`${timeframe}: only ${unique.length} valid closed candles; need ${MIN_HISTORY}`);
   }
-
-  return candles.slice(-WINDOW);
-}
-
-function evaluateSignal({ M5, M15, H1 }) {
-  const s = M5.structure ?? {};
-
-  const bullishStructure =
-    s.bos === "BULLISH" ||
-    s.sweep === "BULLISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BULLISH");
-
-  const bearishStructure =
-    s.bos === "BEARISH" ||
-    s.sweep === "BEARISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BEARISH");
-
-  const bullish =
-    M5.bullishVotes >= 3 &&
-    M15.bullishVotes >= 3 &&
-    H1.bullishVotes >= 2 &&
-    H1.bearishVotes < 3;
-
-  const bearish =
-    M5.bearishVotes >= 3 &&
-    M15.bearishVotes >= 3 &&
-    H1.bearishVotes >= 2 &&
-    H1.bullishVotes < 3;
-
-  if (
-    bullish &&
-    bullishStructure &&
-    Number.isFinite(M5.poc) &&
-    M5.close > M5.poc
-  ) return "BUY";
-
-  if (
-    bearish &&
-    bearishStructure &&
-    Number.isFinite(M5.poc) &&
-    M5.close < M5.poc
-  ) return "SELL";
-
-  return "HOLD";
-}
-
-function confirmSignal(signal, H1) {
-  if (signal === "HOLD") {
-    return { status: "NO TRADE" };
-  }
-
-  const squeeze = H1.squeeze;
-
-  if (
-    !squeeze ||
-    !Number.isFinite(squeeze.momentum) ||
-    squeeze.state !== "SQUEEZE_RELEASED"
-  ) {
-    return { status: "WAIT" };
-  }
-
-  if (
-    signal === "BUY" &&
-    !squeeze.direction?.startsWith("BULLISH")
-  ) {
-    return { status: "WAIT" };
-  }
-
-  if (
-    signal === "SELL" &&
-    !squeeze.direction?.startsWith("BEARISH")
-  ) {
-    return { status: "WAIT" };
-  }
-
-  return { status: "H1 ALIGNED" };
+  return unique.slice(-WINDOW);
 }
 
 function printTimeframe(name, result) {
   console.log(`\n${name} ANALYSIS`);
   console.log("-----------------------");
   console.log("Close:", result.close);
-  console.log("EMA 20:", result.ema20);
-  console.log("EMA 50:", result.ema50);
+  console.log("EMA 20 / 50:", result.ema20, "/", result.ema50);
   console.log("RSI 14:", result.rsi14);
-  console.log("MACD:", result.macd);
-  console.log("MACD Signal:", result.macdSignal);
+  console.log("MACD / Signal:", result.macd, "/", result.macdSignal);
   console.log("ATR 14:", result.atr14);
-  console.log("POC:", result.poc);
-  console.log("Value Area High:", result.valueAreaHigh);
-  console.log("Value Area Low:", result.valueAreaLow);
-  console.log("BOS:", result.structure.bos);
-  console.log("Liquidity Sweep:", result.structure.sweep);
-  console.log("Squeeze:", result.squeeze.state);
-  console.log("Squeeze Direction:", result.squeeze.direction);
-  console.log("Bullish Votes:", result.bullishVotes);
-  console.log("Bearish Votes:", result.bearishVotes);
+  console.log("POC / VAH / VAL:", result.poc, "/", result.valueAreaHigh, "/", result.valueAreaLow);
+  console.log("BOS / Sweep:", result.structure.bos, "/", result.structure.sweep);
+  console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
+  console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
-async function main() {
-  console.log("======================================");
-  console.log("          BTCUSD SNIPER AI");
+async function analyseMarket(market) {
+  console.log("\n======================================");
+  console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
   console.log("Live trading: DISABLED");
 
-  const [m5, m15, h1] = await Promise.all([
-    loadCandles("data/btcusd-m5.json", "M5", 5 * 60 * 1000),
-    loadCandles("data/btcusd-m15.json", "M15", 15 * 60 * 1000),
-    loadCandles("data/btcusd-h1.json", "H1", 60 * 60 * 1000)
-  ]);
+  const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
+    key: tf.key,
+    candles: await loadCandles(`data/${market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
+  })));
 
-  const results = {
-    M5: analyseTimeframe(m5),
-    M15: analyseTimeframe(m15),
-    H1: analyseTimeframe(h1)
-  };
+  const results = Object.fromEntries(frames.map(({ key, candles }) =>
+    [key, analyseTimeframe(candles)]
+  ));
 
-  printTimeframe("M5", results.M5);
-  printTimeframe("M15", results.M15);
-  printTimeframe("H1", results.H1);
+  for (const tf of TIMEFRAMES) printTimeframe(tf.key, results[tf.key]);
 
-  const signal = evaluateSignal(results);
-  const confirmation = confirmSignal(signal, results.H1);
-  const plan = tradePlan(signal, results.M5, confirmation);
-  const action = finalAction(signal, plan);
+  const candidate = evaluateSignal(results);
+  const confirmation = confirmSignal(candidate, results.H1);
+  const plan = tradePlan(candidate, results.M5, confirmation);
+  const action = finalAction(candidate, plan);
 
   console.log("\n======================================");
-  console.log("           FINAL BTCUSD SIGNAL");
+  console.log(`          FINAL ${market.symbol} SIGNAL`);
   console.log("======================================");
-  console.log("Candidate:", signal);
-  console.log("Confirmation:", confirmation.status);
+  console.log("CANDIDATE:", candidate);
+  console.log("CONFIRMATION:", confirmation.status);
+  if (confirmation.reason) console.log("REASON:", confirmation.reason);
   console.log("FINAL ACTION:", action);
 
   if (plan) {
-    console.log("ENTRY:", plan.entry.toFixed(2));
-    console.log("STOP LOSS:", plan.stopLoss.toFixed(2));
-    console.log("TAKE PROFIT:", plan.takeProfit.toFixed(2));
+    console.log("ENTRY:", plan.entry.toFixed(market.symbol === "EURUSD" ? 5 : 2));
+    console.log("STOP LOSS:", plan.stopLoss.toFixed(market.symbol === "EURUSD" ? 5 : 2));
+    console.log("TAKE PROFIT:", plan.takeProfit.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("RISK / REWARD:", plan.riskReward);
   } else {
-    console.log("No confirmed trade. Waiting for confirmation.");
+    console.log("No confirmed trade. Wait for a valid setup.");
   }
 
-  console.log("\nM5 candles:", m5.length);
-  console.log("M15 candles:", m15.length);
-  console.log("H1 candles:", h1.length);
+  for (const { key, candles } of frames) console.log(`${key} closed candles:`, candles.length);
   console.log("Paper analysis only — no orders sent.");
 }
 
+async function main() {
+  const outcomes = await Promise.allSettled(MARKETS.map(analyseMarket));
+  let failed = false;
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === "rejected") {
+      failed = true;
+      console.error(`\n${MARKETS[index].label} ANALYSIS ERROR:`, outcome.reason);
+    }
+  });
+  if (failed) process.exitCode = 1;
+}
+
 main().catch(error => {
-  console.error("BTCUSD ANALYSIS ERROR:", error);
+  console.error("FOREX SNIPER ERROR:", error);
   process.exitCode = 1;
 });
