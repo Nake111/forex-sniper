@@ -33,6 +33,26 @@ test("aligned bearish M5/M15/H1 plus bearish BOS returns SELL", () => {
   }), "SELL");
 });
 
+test("strict profile requires stronger H1 agreement and RSI momentum", () => {
+  const weakH1 = frame();
+  weakH1.bullishVotes = 2;
+  assert.equal(evaluateSignal({
+    M5: frame(), M15: frame(), H1: weakH1
+  }, "strict"), "HOLD");
+
+  const weakM5Momentum = frame();
+  weakM5Momentum.rsi14 = 53;
+  assert.equal(evaluateSignal({
+    M5: weakM5Momentum, M15: frame(), H1: frame()
+  }, "strict"), "HOLD");
+});
+
+test("strict profile accepts fully aligned high-momentum setup", () => {
+  assert.equal(evaluateSignal({
+    M5: frame(), M15: frame(), H1: frame()
+  }, "strict"), "BUY");
+});
+
 test("mixed timeframes return HOLD", () => {
   assert.equal(evaluateSignal({ M5: frame(), M15: frame("BEARISH"), H1: frame() }), "HOLD");
 });
