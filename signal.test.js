@@ -41,8 +41,18 @@ test("missing indicator data safely returns HOLD", () => {
   assert.equal(evaluateSignal({ M5: {}, M15: {}, H1: {} }), "HOLD");
 });
 
-test("H1 momentum confirms BUY without requiring a squeeze release state", () => {
+test("H1 momentum confirms BUY when squeeze is released", () => {
   assert.equal(confirmSignal("BUY", frame()).status, "H1 ALIGNED");
+});
+
+test("H1 momentum also confirms BUY when no squeeze is active", () => {
+  const h1 = frame();
+  h1.squeeze.state = "NO_SQUEEZE";
+  assert.equal(confirmSignal("BUY", h1).status, "H1 ALIGNED");
+});
+
+test("missing H1 momentum blocks entry", () => {
+  assert.equal(confirmSignal("BUY", {}).status, "WAIT");
 });
 
 test("active H1 squeeze blocks entry", () => {
