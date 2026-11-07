@@ -1,6 +1,7 @@
 export const SIGNAL_PROFILES = {
   baseline: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 2, maxOpposingH1Votes: 2, minBullishRsi: 50, maxBearishRsi: 50 },
   strict: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45 },
+  institutional: { minScore: 9, minScoreGap: 3, minM5Adx: 18, minM15Adx: 18, maxRetestBars: 12 },
   advanced: {
     minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1,
     minBullishRsi: 55, maxBearishRsi: 45, requireVwapCvd: true,
@@ -32,7 +33,43 @@ export function hasDirectionalRetest(frame, direction, maxBars = 12) {
   });
 }
 
-export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
+export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
+  const bullish = [], bearish = [];
+  const add = (condition, points, label) => {
+    if (condition === "BULLISH") { bullish.push({ points, label }); return; }
+    if (condition === "BEARISH") { bearish.push({ points, label }); }
+  };
+  add(H1?.regime === "BULL_TREND" ? "BULLISH" : H1?.regime === "BEAR_TREND" ? "BEARISH" : null, 2, "H1 EMA50/200 trend");
+  add(M15?.regime === "BULL_TREND" ? "BULLISH" : M15?.regime === "BEAR_TREND" ? "BEARISH" : null, 2, "M15 EMA50/200 trend");
+  add(M5?.regime === "BULL_TREND" ? "BULLISH" : M5?.regime === "BEAR_TREND" ? "BEARISH" : null, 1, "M5 EMA50/200 trend");
+  add(Number.isFinite(M5?.adx14) && Number.isFinite(M15?.adx14) && M5.adx14 >= 18 && M15.adx14 >= 18
+    ? (M5.close >= M5.ema50 && M15.close >= M15.ema50 ? "BULLISH" : M5.close <= M5.ema50 && M15.close <= M15.ema50 ? "BEARISH" : null) : null, 1, "Trend strength");
+  add(Number.isFinite(M5?.rsi14) && M5.rsi14 >= 52 && M5.rsi14 <= 70 ? "BULLISH"
+    : Number.isFinite(M5?.rsi14) && M5.rsi14 <= 48 && M5.rsi14 >= 30 ? "BEARISH" : null, 1, "RSI momentum");
+  add(Number.isFinite(M5?.macdHistogram) && M5.macdHistogram > 0 ? "BULLISH"
+    : Number.isFinite(M5?.macdHistogram) && M5.macdHistogram < 0 ? "BEARISH" : null, 1, "MACD momentum");
+  add(Number.isFinite(M5?.vwap) && M5.close > M5.vwap && M5.cvd?.direction === "BUYING" && M5.cvd?.slope > 0 ? "BULLISH"
+    : Number.isFinite(M5?.vwap) && M5.close < M5.vwap && M5.cvd?.direction === "SELLING" && M5.cvd?.slope < 0 ? "BEARISH" : null, 1, "VWAP and volume pressure proxy");
+  add(Number.isFinite(M5?.poc) && M5.close > M5.poc ? "BULLISH"
+    : Number.isFinite(M5?.poc) && M5.close < M5.poc ? "BEARISH" : null, 1, "Volume profile POC");
+  add(M5?.structure?.bos === "BULLISH" || M5?.structure?.sweep === "BULLISH" ? "BULLISH"
+    : M5?.structure?.bos === "BEARISH" || M5?.structure?.sweep === "BEARISH" ? "BEARISH" : null, 2, "Structure or liquidity sweep");
+  add(hasDirectionalRetest(M5, "BULLISH", 12) ? "BULLISH"
+    : hasDirectionalRetest(M5, "BEARISH", 12) ? "BEARISH" : null, 2, "OB/FVG directional retest");
+  const bullScore = bullish.reduce((sum, item) => sum + item.points, 0);
+  const bearScore = bearish.reduce((sum, item) => sum + item.points, 0);
+  const blocked = macro?.eventRisk === "HIGH";
+  const signal = !blocked && bullScore >= 9 && bullScore - bearScore >= 3 ? "BUY"
+    : !blocked && bearScore >= 9 && bearScore - bullScore >= 3 ? "SELL" : "HOLD";
+  return {
+    signal, bullishScore: bullScore, bearishScore: bearScore,
+    scoreScale: 14, eventRisk: macro?.eventRisk ?? "UNKNOWN",
+    reasons: signal === "BUY" ? bullish.map(x => x.label) : signal === "SELL" ? bearish.map(x => x.label) : [],
+    blockedReason: blocked ? "Recent high-impact macro headline: wait for volatility to settle" : null
+  };
+}
+
+export function evaluateSignal({ M5, M15, H1 }, profile = "baseline", macro = {}) {
   const rules = typeof profile === "string" ? SIGNAL_PROFILES[profile] : profile;
   if (!rules) throw new Error(`Unknown signal profile: ${profile}`);
   const structure = M5?.structure ?? {};
@@ -45,6 +82,7 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
     Number.isFinite(frame.ema50) && Number.isFinite(frame.rsi14) &&
     Number.isFinite(frame.macd) && Number.isFinite(frame.macdSignal));
   if (!valid) return "HOLD";
+  if (profile === "institutional") return scoreInstitutionalSetup({ M5, M15, H1 }, macro).signal;
 
   const bullish = M5.bullishVotes >= rules.minM5Votes &&
     M15.bullishVotes >= rules.minM15Votes && H1.bullishVotes >= rules.minH1Votes &&
