@@ -1,17 +1,10 @@
 export const SIGNAL_PROFILES = {
-  baseline: {
-    minM5Votes: 3, minM15Votes: 3, minH1Votes: 2,
-    maxOpposingH1Votes: 2, minBullishRsi: 50, maxBearishRsi: 50
-  },
-  strict: {
-    minM5Votes: 3, minM15Votes: 3, minH1Votes: 3,
-    maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45
-  },
+  baseline: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 2, maxOpposingH1Votes: 2, minBullishRsi: 50, maxBearishRsi: 50 },
+  strict: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45 },
   advanced: {
-    minM5Votes: 3, minM15Votes: 3, minH1Votes: 3,
-    maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45,
-    requireVwapCvd: true, minM5Adx: 18, minM15Adx: 18,
-    requireRetest: true, maxRetestBars: 12
+    minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1,
+    minBullishRsi: 55, maxBearishRsi: 45, requireVwapCvd: true,
+    minM5Adx: 18, minM15Adx: 18, requireRetest: true, maxRetestBars: 12
   }
 };
 
@@ -24,12 +17,12 @@ export function hasDirectionalRetest(frame, direction, maxBars = 12) {
     ...(frame.smartMoney?.orderBlocks ?? []).filter(zone =>
       zone.direction === direction && !zone.invalidated &&
       Number.isFinite(zone.high) && Number.isFinite(zone.low) &&
-      Number.isFinite(zone.midpoint) && zone.barsAgo <= maxBars
+      Number.isFinite(zone.midpoint) && zone.barsAgo >= 1 && zone.barsAgo <= maxBars
     ).map(zone => ({ high: zone.high, low: zone.low, midpoint: zone.midpoint })),
     ...(frame.smartMoney?.fairValueGaps ?? []).filter(zone =>
       zone.direction === direction && !zone.filled &&
       Number.isFinite(zone.top) && Number.isFinite(zone.bottom) &&
-      zone.barsAgo <= maxBars
+      zone.barsAgo >= 1 && zone.barsAgo <= maxBars
     ).map(zone => ({ high: zone.top, low: zone.bottom, midpoint: (zone.top + zone.bottom) / 2 }))
   ];
   return zones.some(zone => {
