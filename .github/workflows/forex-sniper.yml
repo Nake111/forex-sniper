@@ -1,0 +1,57 @@
+name: Forex Sniper Analysis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "data/**"
+      - "package.json"
+      - "package-lock.json"
+      - "*.test.js"
+      - ".github/workflows/forex-sniper.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check syntax
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Download EUR/USD and BTC/USD candles
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "30"
+
+      - name: Generate signal report
+        run: |
+          set -o pipefail
+          npm start | tee signals.txt
+
+      - name: Upload signal report
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-signals
+          path: signals.txt
+          if-no-files-found: error
+          retention-days: 14
