@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rsi, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";\nimport { evaluateSignal } from "./src/signal.js";
+import { rsi, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";
+import { evaluateSignal } from "./src/signal.js";
 
 test("RSI returns 50 for a completely flat market", () => {
   assert.equal(rsi(Array(20).fill(1.25), 14), 50);
