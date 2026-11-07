@@ -14,6 +14,15 @@ export const SIGNAL_PROFILES = {
     maxOpposingH1Votes: 1,
     minBullishRsi: 55,
     maxBearishRsi: 45
+  },
+  advanced: {
+    minM5Votes: 3,
+    minM15Votes: 3,
+    minH1Votes: 3,
+    maxOpposingH1Votes: 1,
+    minBullishRsi: 55,
+    maxBearishRsi: 45,
+    requireVwapCvd: true
   }
 };
 
@@ -50,7 +59,8 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
     H1.bearishVotes <= rules.maxOpposingH1Votes &&
     M5.rsi14 >= rules.minBullishRsi &&
     bullishStructure &&
-    (!Number.isFinite(M5.poc) || M5.close > M5.poc);
+    (!Number.isFinite(M5.poc) || M5.close > M5.poc) &&
+    (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close > M5.vwap && M5.cvd?.direction === "BUYING" && M5.cvd?.slope > 0));
 
   const bearish =
     M5.bearishVotes >= rules.minM5Votes &&
@@ -59,7 +69,8 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
     H1.bullishVotes <= rules.maxOpposingH1Votes &&
     M5.rsi14 <= rules.maxBearishRsi &&
     bearishStructure &&
-    (!Number.isFinite(M5.poc) || M5.close < M5.poc);
+    (!Number.isFinite(M5.poc) || M5.close < M5.poc) &&
+    (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close < M5.vwap && M5.cvd?.direction === "SELLING" && M5.cvd?.slope < 0));
 
   if (bullish && !bearish) return "BUY";
   if (bearish && !bullish) return "SELL";
