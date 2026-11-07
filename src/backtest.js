@@ -5,7 +5,12 @@ import { tradePlan } from "./trade-plan.js";
 
 // Round-trip trading cost in basis points.
 // 10 bps = 0.10% of entry price. Adjust for your broker/exchange.
-const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? 10);
+const MARKET = (process.env.MARKET ?? "BTCUSD").toUpperCase();
+if (!["BTCUSD", "EURUSD"].includes(MARKET)) {
+  throw new Error("MARKET must be BTCUSD or EURUSD");
+}
+const DATA_PREFIX = MARKET.toLowerCase();
+const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 
 const WINDOW = 120;
 const MIN_HISTORY = 60;
@@ -181,9 +186,9 @@ async function main() {
   }
 
   const [m5, m15, h1] = await Promise.all([
-    load("data/btcusd-m5.json", "M5"),
-    load("data/btcusd-m15.json", "M15"),
-    load("data/btcusd-h1.json", "H1")
+    load(`data/${DATA_PREFIX}-m5.json`, "M5"),
+    load(`data/${DATA_PREFIX}-m15.json`, "M15"),
+    load(`data/${DATA_PREFIX}-h1.json`, "H1")
   ]);
 
   const trades = [];
@@ -296,7 +301,7 @@ async function main() {
       ? exit.price - entry
       : entry - exit.price;
 
-    // Convert round-trip basis-point cost into BTC price units.
+    // Convert round-trip basis-point cost into instrument price units.
     const costInPrice = entry * COST_BPS / 10000;
 
     const netMove = grossMove - costInPrice;
@@ -345,8 +350,8 @@ async function main() {
     ? profitable.length / trades.length * 100
     : 0;
 
-  console.log("\n========== BTC/USD HISTORICAL BACKTEST ==========");
-  console.log("PAIR: BTC/USD");
+  console.log("\n========== ${MARKET} HISTORICAL BACKTEST ==========");
+  console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : "BTC/USD");
   console.log("SIGNAL: M5 + M15 + H1");
 
   console.log(
@@ -373,7 +378,7 @@ async function main() {
   console.log(`Net profitable trades: ${profitable.length}`);
   console.log(`Net unprofitable trades: ${unprofitable.length}`);
   console.log(`Win rate: ${winRate.toFixed(2)}%`);
-  console.log(`Net price movement: $${totalNetMove.toFixed(2)} per BTC`);
+  console.log(`Net price movement: ${totalNetMove.toFixed(MARKET === "EURUSD" ? 5 : 2)} per unit`);
   console.log(`Net result: ${totalNetR.toFixed(2)} R`);
 
   console.log(
@@ -399,6 +404,6 @@ async function main() {
 }
 
 main().catch(error => {
-  console.error("BTCUSD BACKTEST ERROR:", error);
+  console.error(`${MARKET} BACKTEST ERROR:`, error);
   process.exitCode = 1;
 });
