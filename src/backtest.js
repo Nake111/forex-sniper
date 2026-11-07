@@ -350,7 +350,7 @@ async function main() {
     ? profitable.length / trades.length * 100
     : 0;
 
-  console.log("\n========== ${MARKET} HISTORICAL BACKTEST ==========");
+  console.log("\n========== " + MARKET + " HISTORICAL BACKTEST ==========");
   console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : "BTC/USD");
   console.log("SIGNAL: M5 + M15 + H1");
 
