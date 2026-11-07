@@ -1,62 +1,53 @@
-
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, writeFile } from "node:fs/promises";
 
-const DAYS_BACK = 180;
+const DAYS_BACK = Number(process.env.DATA_DAYS_BACK ?? 180);
+const MARKETS = [
+  { label: "EUR/USD", instrument: "eurusd", prefix: "eurusd" },
+  { label: "BTC/USD", instrument: "btcusd", prefix: "btcusd" }
+];
+const TIMEFRAMES = ["m5", "m15", "h1"];
 
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-async function downloadTimeframe(timeframe, filename) {
+async function downloadOne(market, timeframe) {
   const to = new Date();
-  to.setUTCDate(to.getUTCDate() + 1);
-
-  const from = new Date();
+  const from = new Date(to);
   from.setUTCDate(from.getUTCDate() - DAYS_BACK);
 
-  const fromDate = formatDate(from);
-  const toDate = formatDate(to);
-
-  console.log(`Downloading BTC/USD ${timeframe} candles...`);
-  console.log(`Period: ${fromDate} to ${toDate}`);
-
+  console.log(`Downloading ${market.label} ${timeframe.toUpperCase()} candles...`);
   const candles = await getHistoricalRates({
-    instrument: "btcusd",
-    dates: {
-      from: fromDate,
-      to: toDate
-    },
+    instrument: market.instrument,
+    dates: { from: formatDate(from), to: formatDate(to) },
     timeframe,
-    format: "json"
+    format: "json",
+    volumes: true,
+    useCache: true
   });
 
   if (!Array.isArray(candles) || candles.length < 100) {
-    throw new Error(
-      `Not enough BTC/USD ${timeframe} candles downloaded`
-    );
+    throw new Error(`Not enough ${market.label} ${timeframe.toUpperCase()} candles: ${candles?.length ?? 0}`);
   }
 
-  await writeFile(
-    `data/${filename}`,
-    JSON.stringify(candles, null, 2)
-  );
-
-  console.log(`${timeframe} candles: ${candles.length}`);
-  console.log(`Saved: data/${filename}`);
+  const path = `data/${market.prefix}-${timeframe}.json`;
+  await writeFile(path, JSON.stringify(candles));
+  console.log(`${market.label} ${timeframe.toUpperCase()}: ${candles.length} candles saved to ${path}`);
 }
 
 async function main() {
+  if (!Number.isInteger(DAYS_BACK) || DAYS_BACK < 30 || DAYS_BACK > 730) {
+    throw new Error("DATA_DAYS_BACK must be an integer between 30 and 730");
+  }
   await mkdir("data", { recursive: true });
-
-  await downloadTimeframe("m5", "btcusd-m5.json");
-  await downloadTimeframe("m15", "btcusd-m15.json");
-  await downloadTimeframe("h1", "btcusd-h1.json");
-
-  console.log("All BTC/USD 180-day timeframes downloaded successfully.");
+  for (const market of MARKETS) {
+    for (const timeframe of TIMEFRAMES) await downloadOne(market, timeframe);
+  }
+  console.log("All EUR/USD and BTC/USD datasets downloaded.");
 }
 
 main().catch(error => {
-  console.error("BTC/USD download failed:", error);
+  console.error("Market data download failed:", error);
   process.exitCode = 1;
 });
