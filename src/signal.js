@@ -1,4 +1,27 @@
-export function evaluateSignal({ M5, M15, H1 }) {
+export const SIGNAL_PROFILES = {
+  baseline: {
+    minM5Votes: 3,
+    minM15Votes: 3,
+    minH1Votes: 2,
+    maxOpposingH1Votes: 2,
+    minBullishRsi: 50,
+    maxBearishRsi: 50
+  },
+  strict: {
+    minM5Votes: 3,
+    minM15Votes: 3,
+    minH1Votes: 3,
+    maxOpposingH1Votes: 1,
+    minBullishRsi: 55,
+    maxBearishRsi: 45
+  }
+};
+
+export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
+  const rules = typeof profile === "string"
+    ? SIGNAL_PROFILES[profile]
+    : profile;
+  if (!rules) throw new Error(`Unknown signal profile: ${profile}`);
   const structure = M5?.structure ?? {};
   const bullishStructure =
     structure.bos === "BULLISH" ||
@@ -21,18 +44,20 @@ export function evaluateSignal({ M5, M15, H1 }) {
   if (!valid) return "HOLD";
 
   const bullish =
-    M5.bullishVotes >= 3 &&
-    M15.bullishVotes >= 3 &&
-    H1.bullishVotes >= 2 &&
-    H1.bearishVotes <= 2 &&
+    M5.bullishVotes >= rules.minM5Votes &&
+    M15.bullishVotes >= rules.minM15Votes &&
+    H1.bullishVotes >= rules.minH1Votes &&
+    H1.bearishVotes <= rules.maxOpposingH1Votes &&
+    M5.rsi14 >= rules.minBullishRsi &&
     bullishStructure &&
     (!Number.isFinite(M5.poc) || M5.close > M5.poc);
 
   const bearish =
-    M5.bearishVotes >= 3 &&
-    M15.bearishVotes >= 3 &&
-    H1.bearishVotes >= 2 &&
-    H1.bullishVotes <= 2 &&
+    M5.bearishVotes >= rules.minM5Votes &&
+    M15.bearishVotes >= rules.minM15Votes &&
+    H1.bearishVotes >= rules.minH1Votes &&
+    H1.bullishVotes <= rules.maxOpposingH1Votes &&
+    M5.rsi14 <= rules.maxBearishRsi &&
     bearishStructure &&
     (!Number.isFinite(M5.poc) || M5.close < M5.poc);
 
