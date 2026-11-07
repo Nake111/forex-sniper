@@ -6,7 +6,7 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/market.js && node --check src/signal.js && node --check src/trade-plan.js && node --check src/download.js && node --check src/backtest.js",
+    "check": "node --check src/index.js && node --check src/market-regime.js && node --check src/macro.js && node --check src/market.js && node --check src/signal.js && node --check src/trade-plan.js && node --check src/download.js && node --check src/backtest.js",
     "test": "node --test",
     "start": "node src/index.js",
     "download": "node src/download.js",
@@ -14,8 +14,10 @@
     "backtest:all": "MARKET=EURUSD node src/backtest.js && MARKET=BTCUSD node src/backtest.js",
     "backtest:experiments": "MARKET=EURUSD SIGNAL_PROFILE=strict node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=strict node src/backtest.js",
     "backtest:advanced": "MARKET=EURUSD SIGNAL_PROFILE=advanced node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=advanced node src/backtest.js",
+    "backtest:institutional": "MARKET=EURUSD SIGNAL_PROFILE=institutional node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=institutional node src/backtest.js",
     "backtest:holdout": "BACKTEST_START_RATIO=0.7 MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 MARKET=BTCUSD node src/backtest.js",
-    "backtest:holdout:advanced": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=BTCUSD node src/backtest.js"
+    "backtest:holdout:advanced": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=BTCUSD node src/backtest.js",
+    "backtest:holdout:institutional": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=BTCUSD node src/backtest.js"
   },
   "dependencies": { "dukascopy-node": "^1.40.0" }
 }
