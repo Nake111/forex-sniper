@@ -12,6 +12,10 @@ on:
       - "*.test.js"
       - ".github/workflows/forex-sniper.yml"
 
+concurrency:
+  group: forex-sniper-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
