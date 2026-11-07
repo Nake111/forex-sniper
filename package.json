@@ -1,21 +1,16 @@
-
 {
   "name": "forex-sniper",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Educational EUR/USD market analysis and signal research",
+  "description": "Dual-market EUR/USD and BTC/USD multi-timeframe signal research",
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
+  "engines": { "node": ">=20" },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/trade-plan.js && node --check src/backtest.js",
-    "test": "node --test trade-plan.test.js",
+    "check": "node --check src/index.js && node --check src/market.js && node --check src/signal.js && node --check src/trade-plan.js && node --check src/download.js && node --check src/backtest.js",
+    "test": "node --test",
     "start": "node src/index.js",
     "download": "node src/download.js",
     "backtest": "node src/backtest.js"
   },
-  "dependencies": {
-    "dukascopy-node": "^1.40.0"
-  }
+  "dependencies": { "dukascopy-node": "^1.40.0" }
 }
