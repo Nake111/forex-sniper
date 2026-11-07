@@ -238,6 +238,55 @@ export function marketStructure(candles) {
 }
 
 // ==========================================
+ // ROLLING VWAP + CANDLE-BASED CVD PROXY
+ // ==========================================
+
+export function rollingVwap(candles, period = 24) {
+  if (!Array.isArray(candles) || candles.length < 1) return null;
+  const window = candles.slice(-period);
+  let pv = 0;
+  let volume = 0;
+  for (const candle of window) {
+    const typical = (Number(candle.high) + Number(candle.low) + Number(candle.close)) / 3;
+    const weight = Math.max(0, Number(candle.volume) || 0);
+    pv += typical * weight;
+    volume += weight;
+  }
+  // If the feed has no usable volume, do not fabricate a VWAP.
+  return volume > 0 ? pv / volume : null;
+}
+
+export function cumulativeVolumeDeltaProxy(candles, slopeBars = 5) {
+  if (!Array.isArray(candles) || candles.length < 2) {
+    return { value: null, recentDelta: null, slope: null, direction: "UNAVAILABLE" };
+  }
+  const deltas = candles.map(candle => {
+    const high = Number(candle.high);
+    const low = Number(candle.low);
+    const close = Number(candle.close);
+    const volume = Math.max(0, Number(candle.volume) || 0);
+    const range = high - low;
+    if (!(range > 0) || !Number.isFinite(close)) return 0;
+    // Estimates pressure from close location within each candle.
+    // This is not exchange bid/ask aggressor delta.
+    return ((2 * close - high - low) / range) * volume;
+  });
+  const cumulative = [];
+  deltas.reduce((sum, delta, index) => {
+    cumulative[index] = sum + delta;
+    return cumulative[index];
+  }, 0);
+  const count = Math.min(slopeBars, cumulative.length - 1);
+  const slope = cumulative.at(-1) - cumulative[cumulative.length - 1 - count];
+  return {
+    value: cumulative.at(-1),
+    recentDelta: deltas.slice(-count).reduce((sum, value) => sum + value, 0),
+    slope,
+    direction: slope > 0 ? "BUYING" : slope < 0 ? "SELLING" : "FLAT"
+  };
+}
+
+// ==========================================
 // COMPLETE TIMEFRAME ANALYSIS
 // ==========================================
 
@@ -256,7 +305,7 @@ export function analyseTimeframe(candles) {
   const atr14 = atr(candles, 14);
 
   // Use the dedicated Volume Profile calculation.
-  const profile = calculateVolumeProfile(candles, 24, 0.70);
+  const profile = calculateVolumeProfile(candles, 24, 0.70);\n  const vwap = rollingVwap(candles, 24);\n  const cvd = cumulativeVolumeDeltaProxy(candles, 5);
 
   const structure = marketStructure(candles);
   const smartMoney = analyzeSmartMoney(candles);
@@ -290,7 +339,7 @@ export function analyseTimeframe(candles) {
     poc: profile.poc,
     valueAreaHigh: profile.valueAreaHigh,
     valueAreaLow: profile.valueAreaLow,
-    profileVolume: profile.totalVolume,
+    profileVolume: profile.totalVolume,\n    vwap,\n    cvd,
 
     squeeze,
     structure,
