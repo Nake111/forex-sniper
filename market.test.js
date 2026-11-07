@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { rsi, adx, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";
-import { evaluateSignal, hasDirectionalRetest } from "./src/signal.js";
+import { classifyMarketRegime } from "./src/market-regime.js";
+import { buildMacroContext } from "./src/macro.js";
+import { evaluateSignal, hasDirectionalRetest, scoreInstitutionalSetup } from "./src/signal.js";
 
 test("RSI returns 50 for a completely flat market", () => assert.equal(rsi(Array(20).fill(1.25), 14), 50));
 test("RSI returns 100 for gains without losses", () => assert.equal(rsi(Array.from({ length: 20 }, (_, i) => i + 1), 14), 100));
@@ -66,4 +68,33 @@ test("advanced profile rejects weak ADX trend regimes", () => {
   frames.M5.adx14 = 25;
   frames.M15.adx14 = 16;
   assert.equal(evaluateSignal(frames, "advanced"), "HOLD");
+});
+
+test("market regime distinguishes aligned trends, ranges and volatility spikes", () => {
+  assert.equal(classifyMarketRegime({ close: 110, ema50: 105, ema200: 100, adx14: 25, atr14: 2, atrBaseline: 2 }), "BULL_TREND");
+  assert.equal(classifyMarketRegime({ close: 90, ema50: 95, ema200: 100, adx14: 25, atr14: 2, atrBaseline: 2 }), "BEAR_TREND");
+  assert.equal(classifyMarketRegime({ close: 110, ema50: 105, ema200: 100, adx14: 12, atr14: 2, atrBaseline: 2 }), "LOW_TREND_RANGE");
+  assert.equal(classifyMarketRegime({ close: 110, ema50: 105, ema200: 100, adx14: 25, atr14: 4, atrBaseline: 2 }), "HIGH_VOLATILITY");
+});
+
+test("macro context blocks entries only for a recent high-impact headline", () => {
+  const recent = [{ title: "Federal Reserve rate decision announced", date: new Date().toISOString(), relevance: "HIGH", source: "test", url: "https://example.com" }];
+  assert.equal(buildMacroContext(recent).eventRisk, "HIGH");
+  assert.equal(buildMacroContext([]).eventRisk, "NORMAL");
+});
+
+test("institutional scoring requires macro risk clearance and directional confluence", () => {
+  const frames = { M5: bullishFrame(), M15: bullishFrame(), H1: bullishFrame() };
+  for (const frame of Object.values(frames)) {
+    frame.ema200 = 95;
+    frame.regime = "BULL_TREND";
+    frame.macdHistogram = 1;
+    frame.close = 110;
+    frame.ema50 = 100;
+    frame.adx14 = 25;
+    frame.poc = 100;
+  }
+  const clear = scoreInstitutionalSetup(frames, { eventRisk: "NORMAL" });
+  assert.equal(clear.signal, "BUY");
+  assert.equal(scoreInstitutionalSetup(frames, { eventRisk: "HIGH" }).signal, "HOLD");
 });
