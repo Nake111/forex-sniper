@@ -64,8 +64,6 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
     (!Number.isFinite(M5.poc) || M5.close > M5.poc) &&
     (!Number.isFinite(rules.minM5Adx) || (Number.isFinite(M5.adx14) && M5.adx14 >= rules.minM5Adx)) &&
     (!Number.isFinite(rules.minM15Adx) || (Number.isFinite(M15.adx14) && M15.adx14 >= rules.minM15Adx)) &&
-    (!Number.isFinite(rules.minM5Adx) || (Number.isFinite(M5.adx14) && M5.adx14 >= rules.minM5Adx)) &&
-    (!Number.isFinite(rules.minM15Adx) || (Number.isFinite(M15.adx14) && M15.adx14 >= rules.minM15Adx)) &&
     (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close > M5.vwap && M5.cvd?.direction === "BUYING" && M5.cvd?.slope > 0));
 
   const bearish =
@@ -76,6 +74,8 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline") {
     M5.rsi14 <= rules.maxBearishRsi &&
     bearishStructure &&
     (!Number.isFinite(M5.poc) || M5.close < M5.poc) &&
+    (!Number.isFinite(rules.minM5Adx) || (Number.isFinite(M5.adx14) && M5.adx14 >= rules.minM5Adx)) &&
+    (!Number.isFinite(rules.minM15Adx) || (Number.isFinite(M15.adx14) && M15.adx14 >= rules.minM15Adx)) &&
     (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close < M5.vwap && M5.cvd?.direction === "SELLING" && M5.cvd?.slope < 0));
 
   if (bullish && !bearish) return "BUY";
