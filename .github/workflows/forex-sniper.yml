@@ -50,11 +50,13 @@ jobs:
           npm run backtest:all | tee backtests.txt
           npm run backtest:experiments | tee -a backtests.txt
           npm run backtest:advanced | tee -a backtests.txt
+          npm run backtest:institutional | tee -a backtests.txt
       - name: Run chronological 30% holdout validation
         run: |
           set -o pipefail
           npm run backtest:holdout | tee -a backtests.txt
           npm run backtest:holdout:advanced | tee -a backtests.txt
+          npm run backtest:holdout:institutional | tee -a backtests.txt
       - name: Upload signal report
         uses: actions/upload-artifact@v4
         with:
