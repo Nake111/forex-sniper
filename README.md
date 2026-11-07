@@ -1,120 +1,66 @@
-# Kronos Fine-tuning on Custom CSV Datasets
+# Forex Sniper — EUR/USD + BTC/USD
 
-This module provides a comprehensive pipeline for fine-tuning Kronos models on your own CSV-formatted financial data. It supports both sequential training (tokenizer followed by predictor) and individual component training, with full distributed training capabilities.
+A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD**. It analyses closed M5, M15 and H1 candles and prints a separate signal report for each market.
 
+## What it does
 
-## 1. Data Preparation
+- Downloads historical M5, M15 and H1 candles from Dukascopy using `dukascopy-node`.
+- Calculates EMA 20/50, RSI 14, MACD, ATR, volume profile (POC/VAH/VAL), market structure and squeeze momentum.
+- Evaluates each market independently and prints `BUY`, `SELL` or `NO TRADE`.
+- Produces an ATR-based entry, stop-loss and take-profit only when the M5/M15 setup and H1 confirmation align.
+- Includes unit tests for signal direction and confirmation logic.
 
-### Required Data Format
+**Safety:** this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
-Your CSV file must contain the following columns:
-- `timestamps`: DateTime stamps for each data point
-- `open`: Opening price
-- `high`: Highest price
-- `low`: Lowest price  
-- `close`: Closing price
-- `volume`: Trading volume
-- `amount`: Trading amount
+## Requirements
 
-(volume and amount can be 0 if not available)
+- Node.js 20+
+- npm
 
-### Sample Data Format
-
-| timestamps | open | close | high | low | volume | amount |
-|------------|------|-------|------|-----|--------|--------|
-| 2019/11/26 9:35 | 182.45215 | 184.45215 | 184.95215 | 182.45215 | 15136000 | 0 |
-| 2019/11/26 9:40 | 184.35215 | 183.85215 | 184.55215 | 183.45215 | 4433300 | 0 |
-| 2019/11/26 9:45 | 183.85215 | 183.35215 | 183.95215 | 182.95215 | 3070900 | 0 |
-
-> **Reference**: Check `data/HK_ali_09988_kline_5min_all.csv` for a complete example of the proper data format.
-
-
-## 2. Config Preparation
-
-
-Please edit the correct data path & pretrained model path and set your training parameters.
-
-```yaml
-# Data configuration
-data:
-  data_path: "/path/to/your/data.csv"
-  lookback_window: 512        # Historical data points to use
-  predict_window: 48           # Future points to predict
-  max_context: 512            # Maximum context length
-
-...
-
-```
-There are some other settings here, please see `configs/config_ali09988_candle-5min.yaml` for more comments.
-
-## 3. Training
-
-### Method 1: Sequential Training (Recommended)
-
-The `train_sequential.py` script handles the complete training pipeline automatically:
+## Setup
 
 ```bash
-# Complete training (tokenizer + predictor)
-python train_sequential.py --config configs/config_ali09988_candle-5min.yaml
-
-# Skip existing models
-python train_sequential.py --config configs/config_ali09988_candle-5min.yaml --skip-existing
-
-# Only train tokenizer
-python train_sequential.py --config configs/config_ali09988_candle-5min.yaml --skip-basemodel
-
-# Only train predictor
-python train_sequential.py --config configs/config_ali09988_candle-5min.yaml --skip-tokenizer
+npm install
+npm run check
+npm test
 ```
 
-### Method 2: Individual Component Training
+## Download market data
 
-Train each component separately for more control:
+Downloads 180 days by default for both instruments and all three timeframes:
 
 ```bash
-# Step 1: Train tokenizer
-python finetune_tokenizer.py --config configs/config_ali09988_candle-5min.yaml
-
-# Step 2: Train predictor (requires fine-tuned tokenizer)
-python finetune_base_model.py --config configs/config_ali09988_candle-5min.yaml
+npm run download
 ```
 
-### DDP Training
-
-For faster training on multiple GPUs:
+To change the download period (30–730 days):
 
 ```bash
-# Set communication backend (nccl for NVIDIA GPUs, gloo for CPU/mixed)
-DIST_BACKEND=nccl \
-torchrun --standalone --nproc_per_node=8 train_sequential.py --config configs/config_ali09988_candle-5min.yaml
+DATA_DAYS_BACK=90 npm run download
 ```
 
-## 4. Training Results
+The six datasets are saved under `data/`:
 
-The training process generates several outputs:
+- `eurusd-m5.json`, `eurusd-m15.json`, `eurusd-h1.json`
+- `btcusd-m5.json`, `btcusd-m15.json`, `btcusd-h1.json`
 
-### Model Checkpoints
-- **Tokenizer**: Saved to `{base_save_path}/{exp_name}/tokenizer/best_model/`
-- **Predictor**: Saved to `{base_save_path}/{exp_name}/basemodel/best_model/`
+## Run both signal engines
 
-### Training Logs
-- **Console output**: Real-time training progress and metrics
-- **Log files**: Detailed logs saved to `{base_save_path}/logs/`
-- **Validation tracking**: Best models are saved based on validation loss
+```bash
+npm start
+```
 
-## 5. Prediction Vis
+The output contains separate EUR/USD and BTC/USD reports. If one market is missing valid data, the other market is still analysed; the process exits with an error status so the missing dataset is visible.
 
-The following images show example training results on alibaba (HK stock) data:
+## GitHub Actions
 
-![Training Result 1](examples/HK_ali_09988_kline_5min_all_historical_20250919_073929.png)
+Open **Actions → Forex Sniper Analysis → Run workflow** to install dependencies, run syntax checks and tests, download fresh candles, and create a report artifact.
 
-![Training Result 2](examples/HK_ali_09988_kline_5min_all_historical_20250919_073944.png)
+## Tests
 
-![Training Result 3](examples/HK_ali_09988_kline_5min_all_historical_20250919_074012.png)
+```bash
+npm test
+npm run check
+```
 
-![Training Result 4](examples/HK_ali_09988_kline_5min_all_historical_20250919_074042.png)
-
-![Training Result 5](examples/HK_ali_09988_kline_5min_all_historical_20250919_074251.png)
-
-
-
+A HOLD / NO TRADE result is intentional when the timeframes disagree or confirmation is missing. Do not loosen filters just to force more trades; judge changes by out-of-sample backtests and risk-adjusted results.
