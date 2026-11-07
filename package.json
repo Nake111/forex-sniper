@@ -13,7 +13,8 @@
     "start": "node src/index.js",
     "download": "node src/download.js",
     "backtest": "node src/backtest.js",
-    "backtest:all": "MARKET=EURUSD node src/backtest.js && MARKET=BTCUSD node src/backtest.js"
+    "backtest:all": "MARKET=EURUSD node src/backtest.js && MARKET=BTCUSD node src/backtest.js",
+    "backtest:experiments": "MARKET=EURUSD SIGNAL_PROFILE=strict node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=strict node src/backtest.js"
   },
   "dependencies": {
     "dukascopy-node": "^1.40.0"
