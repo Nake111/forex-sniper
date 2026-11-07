@@ -40,17 +40,30 @@ jobs:
       - name: Download EUR/USD and BTC/USD candles
         run: npm run download
         env:
-          DATA_DAYS_BACK: "30"
+          DATA_DAYS_BACK: "180"
 
       - name: Generate signal report
         run: |
           set -o pipefail
           npm start | tee signals.txt
 
+      - name: Run EUR/USD and BTC/USD historical backtests
+        run: |
+          set -o pipefail
+          npm run backtest:all | tee backtests.txt
+
       - name: Upload signal report
         uses: actions/upload-artifact@v4
         with:
           name: forex-sniper-signals
           path: signals.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload backtest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-backtests
+          path: backtests.txt
           if-no-files-found: error
           retention-days: 14
