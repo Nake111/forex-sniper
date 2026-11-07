@@ -8,7 +8,7 @@ if (!["BTCUSD", "EURUSD"].includes(MARKET)) throw new Error("MARKET must be BTCU
 const DATA_PREFIX = MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict or advanced");
+if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict or advanced");
 const START_RATIO = Number(process.env.BACKTEST_START_RATIO ?? 0);
 if (!Number.isFinite(START_RATIO) || START_RATIO < 0 || START_RATIO >= 1) throw new Error("BACKTEST_START_RATIO must be in [0, 1)");
 
@@ -99,7 +99,7 @@ async function main() {
     const currentM5 = analyse(m5, i);
     if (!currentM5 || !cachedM15 || !cachedH1) { i++; continue; }
     const results = { M5: currentM5, M15: cachedM15, H1: cachedH1 };
-    const signal = evaluateSignal(results, SIGNAL_PROFILE);
+    const signal = evaluateSignal(results, SIGNAL_PROFILE, { eventRisk: "NORMAL" });
     const confirmation = confirmSignal(signal, cachedH1);
     const plan = tradePlan(signal, currentM5, confirmation);
     signalsChecked++;
