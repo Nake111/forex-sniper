@@ -14,7 +14,7 @@ export function buildMacroContext(articles = [], now = Date.now()) {
   });
   return {
     status: articles.length ? "NEWS_AVAILABLE" : "NEWS_UNAVAILABLE",
-    eventRisk: recentHighImpact.length ? "HIGH" : "NORMAL",
+    eventRisk: recentHighImpact.length ? "HIGH" : articles.length ? "NORMAL" : "UNKNOWN",
     recentHighImpactCount: recentHighImpact.length,
     headlines: recentHighImpact.slice(0, 3).map(article => ({
       title: article.title, source: article.source, date: article.date, url: article.url
