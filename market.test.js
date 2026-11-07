@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rsi, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";
+import { rsi, adx, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";
 import { evaluateSignal } from "./src/signal.js";
 
 test("RSI returns 50 for a completely flat market", () => {
@@ -55,4 +55,17 @@ test("advanced profile requires VWAP and CVD confirmation", () => {
   assert.equal(evaluateSignal(frames, "advanced"), "BUY");
   frames.M5.vwap = 115;
   assert.equal(evaluateSignal(frames, "advanced"), "HOLD");
+});
+
+test("ADX is unavailable before enough candles", () => {
+  assert.equal(adx(Array.from({ length: 20 }, (_, i) => ({ high: i + 2, low: i, close: i + 1 }))), null);
+});
+
+test("ADX detects a persistent directional trend", () => {
+  const candles = Array.from({ length: 60 }, (_, i) => ({
+    high: 100 + i * 2 + 1,
+    low: 100 + i * 2 - 1,
+    close: 100 + i * 2 + 0.5
+  }));
+  assert.ok(adx(candles) > 18);
 });
