@@ -62,6 +62,7 @@ function printTimeframe(name, result) {
   console.log("RSI 14:", result.rsi14);
   console.log("MACD / Signal:", result.macd, "/", result.macdSignal);
   console.log("ATR 14:", result.atr14);
+  console.log("ADX 14:", result.adx14);
   console.log("POC / VAH / VAL:", result.poc, "/", result.valueAreaHigh, "/", result.valueAreaLow);
   console.log("BOS / Sweep:", result.structure.bos, "/", result.structure.sweep);
   console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
