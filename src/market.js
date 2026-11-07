@@ -82,6 +82,62 @@ export function macd(values) {
   };
 }
 
+
+export function adx(candles, period = 14) {
+  if (!Array.isArray(candles) || !Number.isInteger(period) || period < 2 || candles.length < period * 2 + 1) return null;
+
+  const tr = [];
+  const plusDM = [];
+  const minusDM = [];
+
+  for (let i = 1; i < candles.length; i++) {
+    const current = candles[i];
+    const previous = candles[i - 1];
+    const upMove = Number(current.high) - Number(previous.high);
+    const downMove = Number(previous.low) - Number(current.low);
+
+    tr.push(Math.max(
+      Number(current.high) - Number(current.low),
+      Math.abs(Number(current.high) - Number(previous.close)),
+      Math.abs(Number(current.low) - Number(previous.close))
+    ));
+    plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+    minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+  }
+
+  let trSmooth = tr.slice(0, period).reduce((a, b) => a + b, 0);
+  let plusSmooth = plusDM.slice(0, period).reduce((a, b) => a + b, 0);
+  let minusSmooth = minusDM.slice(0, period).reduce((a, b) => a + b, 0);
+  const dx = [];
+
+  for (let i = period - 1; i < tr.length; i++) {
+    if (i > period - 1) {
+      trSmooth = trSmooth - trSmooth / period + tr[i];
+      plusSmooth = plusSmooth - plusSmooth / period + plusDM[i];
+      minusSmooth = minusSmooth - minusSmooth / period + minusDM[i];
+    }
+
+    if (trSmooth <= 0) {
+      dx.push(0);
+      continue;
+    }
+
+    const plusDI = 100 * plusSmooth / trSmooth;
+    const minusDI = 100 * minusSmooth / trSmooth;
+    const denominator = plusDI + minusDI;
+    dx.push(denominator > 0 ? 100 * Math.abs(plusDI - minusDI) / denominator : 0);
+  }
+
+  if (dx.length < period) return null;
+  let value = dx.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+  for (let i = period; i < dx.length; i++) {
+    value = (value * (period - 1) + dx[i]) / period;
+  }
+
+  return value;
+}
+
 export function atr(candles, period = 14) {
   if (candles.length <= period) return null;
 
@@ -303,6 +359,7 @@ export function analyseTimeframe(candles) {
   const rsi14 = rsi(closes, 14);
   const macdData = macd(closes);
   const atr14 = atr(candles, 14);
+  const adx14 = adx(candles, 14);
 
   // Use the dedicated Volume Profile calculation.
   const profile = calculateVolumeProfile(candles, 24, 0.70);
@@ -336,6 +393,7 @@ export function analyseTimeframe(candles) {
     macdSignal: macdData.signal,
     macdHistogram: macdData.histogram,
     atr14,
+    adx14,
 
     // Volume Profile
     poc: profile.poc,
