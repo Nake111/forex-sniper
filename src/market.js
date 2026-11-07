@@ -1,6 +1,7 @@
 import { analyzeMarketStructure } from "./market-structure.js";
 import { analyzeSmartMoney } from "./smart-money.js";
 import { calculateVolumeProfile } from "./volume-profile.js";
+import { classifyMarketRegime } from "./market-regime.js";
 
 export function ema(values, period) {
   if (values.length < period) return null;
@@ -201,9 +202,11 @@ export function analyseTimeframe(candles) {
   const close = closes.at(-1);
   const ema20 = ema(closes, 20);
   const ema50 = ema(closes, 50);
+  const ema200 = ema(closes, 200);
   const rsi14 = rsi(closes, 14);
   const macdData = macd(closes);
   const atr14 = atr(candles, 14);
+  const atrBaseline = candles.length > 30 ? atr(candles.slice(0, -14), 14) : null;
   const adx14 = adx(candles, 14);
   const profile = calculateVolumeProfile(candles, 24, 0.70);
   const vwap = rollingVwap(candles, 24);
@@ -211,11 +214,12 @@ export function analyseTimeframe(candles) {
   const structure = marketStructure(candles);
   const smartMoney = analyzeSmartMoney(candles);
   const squeeze = squeezeMomentum(candles);
+  const regime = classifyMarketRegime({ close, ema50, ema200, adx14, atr14, atrBaseline });
   const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal];
   const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal];
   return {
     close, lastCandle: { open: Number(lastCandle.open), high: Number(lastCandle.high), low: Number(lastCandle.low), close: Number(lastCandle.close) },
-    ema20, ema50, rsi14, macd: macdData.line, macdSignal: macdData.signal,
+    ema20, ema50, ema200, regime, atrBaseline, rsi14, macd: macdData.line, macdSignal: macdData.signal,
     macdHistogram: macdData.histogram, atr14, adx14,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
     profileVolume: profile.totalVolume, vwap, cvd, squeeze, structure, smartMoney,
