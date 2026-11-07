@@ -48,7 +48,7 @@ test("advanced profile requires VWAP and CVD confirmation", () => {
   const bullish = () => ({
     close: 110, ema20: 105, ema50: 100, rsi14: 60,
     macd: 2, macdSignal: 1, bullishVotes: 4, bearishVotes: 0,
-    poc: 100, structure: { bos: "BULLISH" },
+    poc: 100, adx14: 25, structure: { bos: "BULLISH" },
     vwap: 105, cvd: { direction: "BUYING", slope: 10 }
   });
   const frames = { M5: bullish(), M15: bullish(), H1: bullish() };
@@ -68,4 +68,19 @@ test("ADX detects a persistent directional trend", () => {
     close: 100 + i * 2 + 0.5
   }));
   assert.ok(adx(candles) > 18);
+});
+
+test("advanced profile rejects weak ADX trend regimes", () => {
+  const bullish = () => ({
+    close: 110, ema20: 105, ema50: 100, rsi14: 60,
+    macd: 2, macdSignal: 1, bullishVotes: 4, bearishVotes: 0,
+    poc: 100, adx14: 25, structure: { bos: "BULLISH" },
+    vwap: 105, cvd: { direction: "BUYING", slope: 10 }
+  });
+  const frames = { M5: bullish(), M15: bullish(), H1: bullish() };
+  frames.M5.adx14 = 14;
+  assert.equal(evaluateSignal(frames, "advanced"), "HOLD");
+  frames.M5.adx14 = 25;
+  frames.M15.adx14 = 16;
+  assert.equal(evaluateSignal(frames, "advanced"), "HOLD");
 });
