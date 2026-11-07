@@ -13,8 +13,8 @@ if (!["BTCUSD", "EURUSD"].includes(MARKET)) {
 const DATA_PREFIX = MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict"].includes(SIGNAL_PROFILE)) {
-  throw new Error("SIGNAL_PROFILE must be baseline or strict");
+if (!["baseline", "strict", "advanced"].includes(SIGNAL_PROFILE)) {
+  throw new Error("SIGNAL_PROFILE must be baseline, strict or advanced");
 }
 
 const WINDOW = 120;
