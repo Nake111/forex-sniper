@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rsi } from "./src/market.js";
+import { rsi, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";\nimport { evaluateSignal } from "./src/signal.js";
 
 test("RSI returns 50 for a completely flat market", () => {
   assert.equal(rsi(Array(20).fill(1.25), 14), 50);
@@ -16,4 +16,42 @@ test("RSI returns 0 for losses without gains", () => {
 
 test("RSI returns null when there is insufficient history", () => {
   assert.equal(rsi([1, 2, 3], 14), null);
+});
+
+test("rolling VWAP weights typical price by volume", () => {
+  const candles = [
+    { high: 11, low: 9, close: 10, volume: 1 },
+    { high: 21, low: 19, close: 20, volume: 3 }
+  ];
+  assert.equal(rollingVwap(candles, 2), 17.5);
+});
+
+test("rolling VWAP returns null when volume is unavailable", () => {
+  assert.equal(rollingVwap([{ high: 2, low: 1, close: 1.5, volume: 0 }]), null);
+});
+
+test("CVD proxy detects buying and selling candle pressure", () => {
+  const buying = [
+    { high: 10, low: 0, close: 9, volume: 100 },
+    { high: 10, low: 0, close: 9, volume: 100 }
+  ];
+  const selling = [
+    { high: 10, low: 0, close: 1, volume: 100 },
+    { high: 10, low: 0, close: 1, volume: 100 }
+  ];
+  assert.equal(cumulativeVolumeDeltaProxy(buying).direction, "BUYING");
+  assert.equal(cumulativeVolumeDeltaProxy(selling).direction, "SELLING");
+});
+
+test("advanced profile requires VWAP and CVD confirmation", () => {
+  const bullish = () => ({
+    close: 110, ema20: 105, ema50: 100, rsi14: 60,
+    macd: 2, macdSignal: 1, bullishVotes: 4, bearishVotes: 0,
+    poc: 100, structure: { bos: "BULLISH" },
+    vwap: 105, cvd: { direction: "BUYING", slope: 10 }
+  });
+  const frames = { M5: bullish(), M15: bullish(), H1: bullish() };
+  assert.equal(evaluateSignal(frames, "advanced"), "BUY");
+  frames.M5.vwap = 115;
+  assert.equal(evaluateSignal(frames, "advanced"), "HOLD");
 });
