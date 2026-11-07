@@ -18,42 +18,39 @@ permissions:
 jobs:
   analyse:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Install dependencies
         run: npm install
-
       - name: Check syntax
         run: npm run check
-
       - name: Run tests
         run: npm test
-
       - name: Download EUR/USD and BTC/USD candles
         run: npm run download
         env:
           DATA_DAYS_BACK: "180"
-
       - name: Generate signal report
         run: |
           set -o pipefail
           npm start | tee signals.txt
-
-      - name: Run EUR/USD and BTC/USD historical backtests
+      - name: Run full-history profile comparisons
         run: |
           set -o pipefail
           npm run backtest:all | tee backtests.txt
           npm run backtest:experiments | tee -a backtests.txt
           npm run backtest:advanced | tee -a backtests.txt
-
+      - name: Run chronological 30% holdout validation
+        run: |
+          set -o pipefail
+          npm run backtest:holdout | tee -a backtests.txt
+          npm run backtest:holdout:advanced | tee -a backtests.txt
       - name: Upload signal report
         uses: actions/upload-artifact@v4
         with:
@@ -61,7 +58,6 @@ jobs:
           path: signals.txt
           if-no-files-found: error
           retention-days: 14
-
       - name: Upload backtest report
         uses: actions/upload-artifact@v4
         with:
