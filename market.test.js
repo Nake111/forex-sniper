@@ -80,7 +80,7 @@ test("market regime distinguishes aligned trends, ranges and volatility spikes",
 test("macro context blocks entries only for a recent high-impact headline", () => {
   const recent = [{ title: "Federal Reserve rate decision announced", date: new Date().toISOString(), relevance: "HIGH", source: "test", url: "https://example.com" }];
   assert.equal(buildMacroContext(recent).eventRisk, "HIGH");
-  assert.equal(buildMacroContext([]).eventRisk, "NORMAL");
+  assert.equal(buildMacroContext([]).eventRisk, "UNKNOWN");
 });
 
 test("institutional scoring requires macro risk clearance and directional confluence", () => {
