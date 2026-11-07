@@ -28,7 +28,7 @@ test("SELL with H1 ALIGNED creates an ATR fallback plan", () => {
   assert.equal(plan.riskReward, "1:2");
 });
 test("structure stop uses swing invalidation with ATR buffer", () => {
-  const plan = tradePlan("BUY", { ...market, structure: { swingLow: 1.1232 } }, { status: "H1 ALIGNED" });
+  const plan = tradePlan("BUY", { ...market, structure: { swingLow: 1.1232, swingLowBarsAgo: 8 } }, { status: "H1 ALIGNED" });
   assert.equal(plan.stopType, "MARKET_STRUCTURE");
   assert.ok(plan.stopLoss < 1.1232);
   assert.ok(plan.riskDistance > market.atr14 * 0.8);
