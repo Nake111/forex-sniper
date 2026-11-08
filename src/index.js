@@ -114,6 +114,16 @@ async function main() {
     bullishEvidence: combined.bullishEvidence,
     bearishEvidence: combined.bearishEvidence,
     blockers: combined.blockers,
+    marketContext: Object.fromEntries(["M5", "M15", "H1"].map(tf => {
+      const r = results[tf];
+      return [tf, {
+        close: r.close, ema20: r.ema20, ema50: r.ema50, ema200: r.ema200,
+        rsi14: r.rsi14, macd: r.macd, macdSignal: r.macdSignal, atr14: r.atr14,
+        volumeProfile: { poc: r.poc, valueAreaHigh: r.valueAreaHigh, valueAreaLow: r.valueAreaLow },
+        structure: r.structure, squeeze: r.squeeze,
+        smartMoney: r.smartMoney
+      }];
+    })),
     action,
     plan: plan ? {
       entry: plan.entry,
