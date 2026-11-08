@@ -234,14 +234,17 @@ async function main() {
     if (market.symbol === "XAUUSD") {
       const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
       const liveGoldContext = await loadGoldLiveContext();
-      const goldMacroBias = combineGoldMacroBias(goldMacro.yields?.change10Y, liveGoldContext.dxyDirection);
+      const yieldDate = Date.parse(goldMacro.yields?.latest?.date ?? "");
+      const yieldAgeDays = Number.isFinite(yieldDate) ? Math.max(0, (Date.now() - yieldDate) / 86_400_000) : null;
+      const freshYieldChange = yieldAgeDays !== null && yieldAgeDays <= 5 ? goldMacro.yields?.change10Y : null;
+      const goldMacroBias = combineGoldMacroBias(freshYieldChange, liveGoldContext.dxyDirection);
       const headlineRisk = context.eventRisk ?? "UNKNOWN";
       const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
       const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
         : calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
       context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
       console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
-      console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
+      console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
     }
     if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
     return analyseMarket(market, context);
