@@ -113,22 +113,23 @@ A separate browser dashboard is available in [dashboard/](dashboard/). It connec
 - GitHub Pages deployment: [Deploy Quant Swarm Dashboard](.github/workflows/deploy-dashboard.yml)
 - Paper trading only: the local ledger is stored in the browser; it is not a verified exchange account balance or audited backtest.
 - Polymarket outcome token ordering and market availability can change; unavailable quotes are shown as unavailable rather than inferred.
-- The six dashboard votes are deterministic indicators, not six independent LLMs. Grok is not connected and no API key is required.
+- The six dashboard votes are deterministic indicators, not six independent LLMs. The optional six-agent Gemini research layer can be enabled with a Gemini API key; deterministic indicators and research agents continue without it.
 - No live orders, wallet connection, deposits, or withdrawals are supported.
 
 After the Pages workflow succeeds, enable/open the site from Repository Settings → Pages. The expected project URL is https://nake111.github.io/forex-sniper/ if GitHub Pages is available for this repository.
 
 
-## Polymarket + Grok Quant Swarm additions
+## Polymarket + Gemini Quant Swarm additions
 
-- `src/llm-agents.js`: six independent role prompts (technical, structure, quant, macro, risk, contrarian) using an optional xAI/OpenAI-compatible chat-completions endpoint. Configure the GitHub Actions secret `GROK_API_KEY`; optionally set `LLM_API_URL` and `LLM_MODEL`. The six-agent group fails closed to HOLD if any agent fails or vetoes. Without a key, it stays disabled and the existing deterministic research agents remain active.
+- `src/llm-agents.js`: six independent Gemini role prompts (technical, structure, quant, macro, risk, contrarian) using Google's Gemini Developer API. Configure the GitHub Actions secret `GEMINI_API_KEY`; optionally set `GEMINI_MODEL` (default `gemini-2.5-flash`) and `LLM_TIMEOUT_MS`.
+- Gemini 2.5 Flash currently has a free API tier, subject to model availability, quota and rate limits. Free-tier content may be used by Google to improve products; do not send private or sensitive information. Check Google's current pricing and terms before use.
+- Six separate requests are made in parallel. If any agent fails or vetoes, the LLM gate returns HOLD. Without a key, it stays disabled and the deterministic research agents remain active.
 - `src/polymarket-quant.js`: read-only BTC Up/Down market discovery, outcome-token mapping by labels, current bid/ask context and seconds-to-expiry. The exact settlement reference/strike is not inferred from the question title; expiry direction is not promoted to an executable signal.
 - `src/polymarket-backtest.js`: run `npm run backtest:polymarket`. This first-pass test uses public CLOB token-price history, transparent fee/slippage assumptions and next-sample mark-to-market. It is not resolution-based PnL, does not reconstruct historical order books or actual fills, and must not be presented as verified profitability.
 - `tests/polymarket-quant.test.js` and `tests/llm-agents.test.js`: safety tests for expiry handling, outcome mapping and no-key behavior.
 - `.github/workflows/quant-swarm-check.yml`: validates the new modules on main-branch changes.
 
-To enable Grok, add `GROK_API_KEY` under GitHub repository Settings → Secrets and variables → Actions. Never put the key in dashboard HTML, source files, logs or committed `.env` files. LLM output is treated as untrusted research and can only veto/confirm an existing candidate; it cannot place orders.
-
+To enable Gemini, create an API key in [Google AI Studio](https://aistudio.google.com/) and add it as `GEMINI_API_KEY` under GitHub repository Settings → Secrets and variables → Actions. Never put the key in dashboard HTML, source files, logs or committed `.env` files. LLM output is treated as untrusted research and can only veto/confirm an existing candidate; it cannot place orders.
 
 ### Expiry forecasting and performance audit
 
