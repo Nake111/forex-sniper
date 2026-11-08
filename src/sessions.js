@@ -27,14 +27,15 @@ function candleTime(candle) {
 }
 
 export function getSessionContext(candles, options = {}) {
-  const offset = Number.isFinite(options.utcOffset) ? options.utcOffset : 0;
-  if (!Array.isArray(candles) || candles.length === 0) return emptyContext(offset);
+  const offsetHours = Number.isFinite(options.utcOffset) ? options.utcOffset : 0;
+  const offsetMs = offsetHours * 60 * 60_000;
+  if (!Array.isArray(candles) || candles.length === 0) return emptyContext(offsetHours);
 
   const last = candles.at(-1);
   const timestamp = candleTime(last);
   if (!Number.isFinite(timestamp)) return emptyContext(offset);
 
-  const local = new Date(timestamp + offset * 60_000);
+  const local = new Date(timestamp + offsetMs);
   const minute = local.getUTCHours() * 60 + local.getUTCMinutes();
   const active = SESSION_DEFS.filter(session => isActive(minute, session.start, session.end));
   if (!active.length) return emptyContext(offset);
@@ -42,7 +43,7 @@ export function getSessionContext(candles, options = {}) {
   const ranges = active.map(session => {
     const localStart = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
     if (session.start > session.end && minute < session.end) localStart.setUTCDate(localStart.getUTCDate() - 1);
-    const startUtc = localStart.getTime() + session.start * 60_000 - offset * 60_000;
+    const startUtc = localStart.getTime() + session.start * 60_000 - offsetMs;
     const sessionBars = candles.filter(candle => {
       const time = candleTime(candle);
       return Number.isFinite(time) && time >= startUtc && time <= timestamp;
@@ -89,7 +90,7 @@ export function getSessionContext(candles, options = {}) {
   return {
     active: names,
     primary,
-    utcOffset: offset,
+    utcOffset: offsetHours,
     rangeHigh,
     rangeLow,
     rangePosition,
