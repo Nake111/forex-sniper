@@ -6,7 +6,9 @@ import { summarizeSessionPerformance } from "./session-performance.js";
 
 const MARKET = (process.env.MARKET ?? "BTCUSD").toUpperCase();
 if (!["BTCUSD", "EURUSD", "XAUUSD"].includes(MARKET)) throw new Error("MARKET must be BTCUSD, EURUSD or XAUUSD");
-const DATA_PREFIX = MARKET.toLowerCase();
+const DATA_PREFIX = MARKET === "BTCUSD"
+  ? (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase()
+  : MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
 if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
@@ -148,7 +150,10 @@ async function main() {
   const winRate = trades.length ? profitable.length / trades.length * 100 : 0;
 
   console.log(`\n========== ${MARKET} HISTORICAL BACKTEST ==========`);
-  console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : "BTC/USD");
+  console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : MARKET === "XAUUSD" ? "XAU/USD" : "BTC/USD");
+  if (MARKET === "BTCUSD" && DATA_PREFIX === "btcusdt") {
+    console.log("DATA SOURCE: Binance BTCUSDT spot candles (USDT proxy; not a broker BTC/USD quote).");
+  }
   console.log("SIGNAL: M5 + M15 + H1");
   console.log("PROFILE:", SIGNAL_PROFILE);
   console.log("TEST START RATIO:", START_RATIO);
