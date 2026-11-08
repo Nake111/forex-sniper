@@ -328,6 +328,65 @@ export function onBalanceVolume(candles, slopeBars = 5) {
   return { value: values.at(-1), slope, direction: slope > 0 ? "BUYING" : slope < 0 ? "SELLING" : "FLAT" };
 }
 
+
+export function williamsR(candles, period = 14) {
+  if (!Array.isArray(candles) || candles.length < period) return { value: null, direction: "UNAVAILABLE", state: "UNAVAILABLE" };
+  const window = candles.slice(-period);
+  const highest = Math.max(...window.map(c => Number(c.high)));
+  const lowest = Math.min(...window.map(c => Number(c.low)));
+  const close = Number(candles.at(-1).close);
+  const value = highest === lowest ? -50 : -100 * (highest - close) / (highest - lowest);
+  return {
+    value, highest, lowest,
+    direction: value > -50 ? "BULLISH" : value < -50 ? "BEARISH" : "NEUTRAL",
+    state: value >= -20 ? "OVERBOUGHT" : value <= -80 ? "OVERSOLD" : "MIDRANGE"
+  };
+}
+
+export function keltnerChannels(candles, period = 20, multiplier = 2) {
+  if (!Array.isArray(candles) || candles.length < period + 1) {
+    return { middle: null, upper: null, lower: null, direction: "UNAVAILABLE", breakout: "UNAVAILABLE" };
+  }
+  const closes = candles.map(c => Number(c.close));
+  const middle = ema(closes, period);
+  const ranges = [];
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i], previousClose = Number(candles[i - 1].close);
+    ranges.push(Math.max(Number(c.high) - Number(c.low), Math.abs(Number(c.high) - previousClose), Math.abs(Number(c.low) - previousClose)));
+  }
+  const atrValue = rollingMean(ranges.slice(-period));
+  const upper = middle + multiplier * atrValue;
+  const lower = middle - multiplier * atrValue;
+  const close = closes.at(-1);
+  const breakout = close > upper ? "BULLISH" : close < lower ? "BEARISH" : "NONE";
+  return { middle, upper, lower, atr: atrValue, breakout, direction: breakout };
+}
+
+export function aroon(candles, period = 25) {
+  if (!Array.isArray(candles) || candles.length < period) {
+    return { up: null, down: null, oscillator: null, direction: "UNAVAILABLE" };
+  }
+  const window = candles.slice(-period);
+  let highIndex = 0, lowIndex = 0;
+  for (let i = 1; i < window.length; i++) {
+    if (Number(window[i].high) >= Number(window[highIndex].high)) highIndex = i;
+    if (Number(window[i].low) <= Number(window[lowIndex].low)) lowIndex = i;
+  }
+  const up = 100 * (period - 1 - (period - 1 - highIndex)) / (period - 1);
+  const down = 100 * (period - 1 - (period - 1 - lowIndex)) / (period - 1);
+  const oscillator = up - down;
+  return { up, down, oscillator, direction: oscillator >= 20 ? "BULLISH" : oscillator <= -20 ? "BEARISH" : "NEUTRAL" };
+}
+
+export function rateOfChange(values, period = 12) {
+  if (!Array.isArray(values) || values.length <= period) return { value: null, direction: "UNAVAILABLE" };
+  const previous = Number(values.at(-1 - period));
+  const current = Number(values.at(-1));
+  if (!Number.isFinite(previous) || !Number.isFinite(current) || previous === 0) return { value: null, direction: "UNAVAILABLE" };
+  const value = 100 * (current - previous) / previous;
+  return { value, direction: value > 0 ? "BULLISH" : value < 0 ? "BEARISH" : "NEUTRAL" };
+}
+
 export function marketStructure(candles) {
   const structure = analyzeMarketStructure(candles, 3);
   return { ...structure, sweep: structure.sweepConfirmed ? structure.liquiditySweep : "NONE" };
@@ -398,15 +457,20 @@ export function analyseTimeframe(candles) {
   const psar = parabolicSar(candles, 0.02, 0.2);
   const donchian20 = donchianChannels(candles, 20);
   const obv = onBalanceVolume(candles, 5);
+  const williams = williamsR(candles, 14);
+  const keltner = keltnerChannels(candles, 20, 2);
+  const aroonData = aroon(candles, 25);
+  const roc12 = rateOfChange(closes, 12);
   const regime = classifyMarketRegime({ close, ema50, ema200, adx14, atr14, atrBaseline });
-  const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal, supertrend14.direction === "BULLISH", ichimokuCloud.direction === "BULLISH", Number.isFinite(mfi14) && mfi14 > 50, Number.isFinite(cci20) && cci20 > 0, stochRsi.direction === "BULLISH", psar.direction === "BULLISH", donchian20.breakout === "BULLISH", obv.direction === "BUYING"];
-  const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal, supertrend14.direction === "BEARISH", ichimokuCloud.direction === "BEARISH", Number.isFinite(mfi14) && mfi14 < 50, Number.isFinite(cci20) && cci20 < 0, stochRsi.direction === "BEARISH", psar.direction === "BEARISH", donchian20.breakout === "BEARISH", obv.direction === "SELLING"];
+  const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal, supertrend14.direction === "BULLISH", ichimokuCloud.direction === "BULLISH", Number.isFinite(mfi14) && mfi14 > 50, Number.isFinite(cci20) && cci20 > 0, stochRsi.direction === "BULLISH", psar.direction === "BULLISH", donchian20.breakout === "BULLISH", obv.direction === "BUYING", williams.direction === "BULLISH", keltner.breakout === "BULLISH", aroonData.direction === "BULLISH", roc12.direction === "BULLISH"];
+  const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal, supertrend14.direction === "BEARISH", ichimokuCloud.direction === "BEARISH", Number.isFinite(mfi14) && mfi14 < 50, Number.isFinite(cci20) && cci20 < 0, stochRsi.direction === "BEARISH", psar.direction === "BEARISH", donchian20.breakout === "BEARISH", obv.direction === "SELLING", williams.direction === "BEARISH", keltner.breakout === "BEARISH", aroonData.direction === "BEARISH", roc12.direction === "BEARISH"];
   return {
     close, lastCandle: { timestamp: Number(lastCandle.timestamp ?? lastCandle.time), open: Number(lastCandle.open), high: Number(lastCandle.high), low: Number(lastCandle.low), close: Number(lastCandle.close) },
     sessionContext,
     ema20, ema50, ema200, regime, atrBaseline, rsi14, macd: macdData.line, macdSignal: macdData.signal,
     macdHistogram: macdData.histogram, atr14, adx14,
     supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20, stochRsi, psar, donchian: donchian20, obv,
+    williamsR: williams, keltner, aroon: aroonData, roc: roc12,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
     profileVolume: profile.totalVolume, vwap, cvd, squeeze, structure, smartMoney,
     bullishVotes: bullish.filter(Boolean).length, bearishVotes: bearish.filter(Boolean).length,
