@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,7 +37,7 @@ def _timestamp(value: Any, field: str) -> datetime:
         raise ValueError(f"{field} is not a valid ISO-8601 timestamp") from exc
     if parsed.tzinfo is None:
         raise ValueError(f"{field} must include a timezone")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def _price(plan: dict[str, Any], key: str) -> float:
