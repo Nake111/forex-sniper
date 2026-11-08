@@ -29,3 +29,13 @@ test("multi-agent layer never upgrades a HOLD technical signal", () => {
   const report = runTradingAgents({ market: "XAUUSD", frames: bullishFrames(), macro: { eventRisk: "NORMAL" } });
   assert.equal(gateSignalWithAgents("HOLD", report).signal, "HOLD");
 });
+
+test("risk manager vetoes stale market data", () => {
+  const report = runTradingAgents({
+    market: "EURUSD",
+    frames: bullishFrames(),
+    macro: { eventRisk: "NORMAL", dataStale: true }
+  });
+  assert.equal(report.portfolioManager.decision, "HOLD");
+  assert.ok(report.riskManager.blocks.includes("STALE_MARKET_DATA"));
+});
