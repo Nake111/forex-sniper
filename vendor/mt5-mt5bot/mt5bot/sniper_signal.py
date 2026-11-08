@@ -3,6 +3,7 @@
 This module is independent of MetaTrader. It rejects HOLD, stale, malformed,
 and mismatched signals before an execution adapter can use a trade plan.
 """
+
 from __future__ import annotations
 
 import json
