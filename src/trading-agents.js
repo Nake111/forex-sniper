@@ -77,6 +77,7 @@ export function runTradingAgents({ market, frames, macro = {} }) {
   const volatilityExtreme = Number.isFinite(atr) && Number.isFinite(atrBase) && atrBase > 0 && atr / atrBase > 2.5;
   const riskBlocks = [];
   if (macro.eventRisk === "HIGH") riskBlocks.push("HIGH_IMPACT_NEWS");
+  if (macro.dataStale === true) riskBlocks.push("STALE_MARKET_DATA");
   if (volatilityExtreme) riskBlocks.push("ABNORMAL_VOLATILITY");
   if (!frames?.M5 || !frames?.M15 || !frames?.H1) riskBlocks.push("MISSING_TIMEFRAME_DATA");
 
