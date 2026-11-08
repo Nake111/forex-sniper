@@ -1,5 +1,5 @@
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal } from "./signal.js";
@@ -92,6 +92,29 @@ async function main() {
   const confirmation = confirmSignal(signal, results.H1);
   const plan = tradePlan(signal, results.M5, confirmation);
   const action = finalAction(signal, plan);
+
+  const signalRecord = {
+    schemaVersion: 1,
+    symbol: "BTCUSD",
+    generatedAt: new Date().toISOString(),
+    signalBarTime: new Date(m5.at(-1).timestamp).toISOString(),
+    timeframe: "M5",
+    candidate: signal,
+    confirmation: confirmation.status,
+    action,
+    plan: plan ? {
+      entry: plan.entry,
+      stopLoss: plan.stopLoss,
+      takeProfit: plan.takeProfit,
+      riskReward: plan.riskReward
+    } : null
+  };
+  await writeFile(
+    "data/latest-signal.json",
+    JSON.stringify(signalRecord, null, 2) + "\\n",
+    "utf8"
+  );
+  console.log("Signal contract written: data/latest-signal.json");
 
   console.log("\n======================================");
   console.log("           FINAL BTCUSD SIGNAL");
