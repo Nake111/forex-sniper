@@ -5,6 +5,7 @@ import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
+import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -160,6 +161,20 @@ async function analyseMarket(market, macroContext) {
     [key, analyseTimeframe(candles)]
   ));
 
+  let goldNewsWindow = null;
+  if (market.symbol === "XAUUSD") {
+    goldNewsWindow = getGoldNewsWindow(macroContext.calendar?.events ?? [], Date.now());
+    console.log("GOLD NEWS-CANDLE WINDOW:", JSON.stringify(goldNewsWindow));
+    if (goldNewsWindow.phase === "POST_RELEASE_CONFIRMATION" && goldNewsWindow.event) {
+      const m5Candles = frames.find(frame => frame.key === "M5").candles;
+      const setup = evaluateGoldNewsCandle(m5Candles, goldNewsWindow.event, Date.now());
+      console.log("GOLD NEWS-CANDLE SETUP:", JSON.stringify(setup));
+      if (setup.signal !== "HOLD") {
+        console.log("NEWS CANDLE SAFETY: candidate only. Vantage-specific spread and slippage are not connected; do not treat this as an executable order.");
+      }
+    }
+  }
+
   for (const tf of TIMEFRAMES) printTimeframe(tf.key, results[tf.key]);
 
   // BTC options positioning is supplemental context only; spot FX has no equivalent
@@ -187,6 +202,9 @@ async function analyseMarket(market, macroContext) {
 
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   const candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
+    console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
+  }
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
