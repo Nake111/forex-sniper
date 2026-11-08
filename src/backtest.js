@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan } from "./trade-plan.js";
+import { evaluateSignal, confirmSignal } from "./signal.js";
 
 // Round-trip trading cost in basis points.
 // 10 bps = 0.10% of entry price. Adjust for your broker/exchange.
@@ -50,81 +51,7 @@ function latestClosed(candles, interval, closeTime, previous) {
 
   while (
     index + 1 < candles.length &&
-    candles[index + 1].time + interval <= closeTime
-  ) {
-    index++;
-  }
-
-  return index;
-}
-
-function evaluateSignal({ M5: m5, M15: m15, H1: h1 }) {
-  const s = m5.structure ?? {};
-
-  const bullishStructure =
-    s.bos === "BULLISH" ||
-    s.sweep === "BULLISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BULLISH");
-
-  const bearishStructure =
-    s.bos === "BEARISH" ||
-    s.sweep === "BEARISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BEARISH");
-
-  const bullish =
-    m5.bullishVotes >= 3 &&
-    m15.bullishVotes >= 3 &&
-    h1.bullishVotes >= 2 &&
-    h1.bearishVotes < 3;
-
-  const bearish =
-    m5.bearishVotes >= 3 &&
-    m15.bearishVotes >= 3 &&
-    h1.bearishVotes >= 2 &&
-    h1.bullishVotes < 3;
-
-  if (
-    bullish &&
-    bullishStructure &&
-    Number.isFinite(m5.poc) &&
-    m5.close > m5.poc
-  ) return "BUY";
-
-  if (
-    bearish &&
-    bearishStructure &&
-    Number.isFinite(m5.poc) &&
-    m5.close < m5.poc
-  ) return "SELL";
-
-  return "HOLD";
-}
-
-function confirmation(signal, h1) {
-  if (signal === "HOLD") return { status: "NO TRADE" };
-
-  const s = h1.squeeze;
-
-  if (!s || !Number.isFinite(s.momentum)) {
-    return { status: "WAIT" };
-  }
-
-  if (s.state !== "SQUEEZE_RELEASED") {
-    return { status: "WAIT" };
-  }
-
-  if (signal === "BUY" && !s.direction?.startsWith("BULLISH")) {
-    return { status: "WAIT" };
-  }
-
-  if (signal === "SELL" && !s.direction?.startsWith("BEARISH")) {
-    return { status: "WAIT" };
-  }
-
-  return { status: "H1 ALIGNED" };
-}
-
-function analyse(candles, index) {
+    candles[index + 1].time + intefunction analyse(candles, index) {
   const start = Math.max(0, index - WINDOW + 1);
   const window = candles.slice(start, index + 1);
 
@@ -240,7 +167,7 @@ async function main() {
     };
 
     const signal = evaluateSignal(results);
-    const confirm = confirmation(signal, cachedH1);
+    const confirm = confirmSignal(signal, cachedH1);
     const plan = tradePlan(signal, currentM5, confirm);
 
     signalsChecked++;
