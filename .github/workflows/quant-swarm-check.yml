@@ -1,0 +1,34 @@
+name: Quant Swarm Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/llm-agents.js"
+      - "src/polymarket-quant.js"
+      - "src/polymarket-backtest.js"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/quant-swarm-check.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Smoke test Polymarket backtest module
+        run: node --check src/polymarket-backtest.js
