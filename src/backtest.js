@@ -151,8 +151,10 @@ async function main() {
 
   console.log(`\n========== ${MARKET} HISTORICAL BACKTEST ==========`);
   console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : MARKET === "XAUUSD" ? "XAU/USD" : "BTC/USD");
-  if (MARKET === "BTCUSD" && DATA_PREFIX === "btcusdt") {
-    console.log("DATA SOURCE: Binance BTCUSDT spot candles (USDT proxy; not a broker BTC/USD quote).");
+  if (MARKET === "BTCUSD" && DATA_PREFIX === "kraken-btcusd") {
+    console.log("DATA SOURCE: Kraken XBT/USD spot candles (venue reference; not a broker BTC/USD CFD quote).");
+  } else if (MARKET === "BTCUSD") {
+    console.log("DATA SOURCE: Dukascopy BTCUSD historical candles.");
   }
   console.log("SIGNAL: M5 + M15 + H1");
   console.log("PROFILE:", SIGNAL_PROFILE);
