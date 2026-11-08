@@ -99,6 +99,20 @@ function combineGoldMacroBias(yieldChange, dxyDirection) {
 }
 
 
+async function loadTradingViewSnapshot(market) {
+  try {
+    const snapshot = JSON.parse(await readFile("data/tradingview-chart.json", "utf8"));
+    const ticker = String(snapshot.ticker ?? "").toUpperCase();
+    const mappedMarket = ticker === "BINANCE:BTCUSDT" ? "BTCUSD" : ticker === "OANDA:EURUSD" ? "EURUSD" : ticker === "OANDA:XAUUSD" ? "XAUUSD" : null;
+    const action = String(snapshot.action ?? "").toUpperCase();
+    const barTime = Number(snapshot.bar_time), timeframeMinutes = Number(snapshot.timeframe_minutes);
+    if (mappedMarket !== market.symbol || !["BUY", "SELL", "HOLD"].includes(action) || !Number.isFinite(barTime) || !Number.isFinite(timeframeMinutes) || timeframeMinutes <= 0) return null;
+    const ageMs = Date.now() - barTime;
+    const maxAgeMs = Math.min(4 * 60 * 60 * 1000, Math.max(15 * 60 * 1000, timeframeMinutes * 120000));
+    if (ageMs < -60000 || ageMs > maxAgeMs) { console.log("TRADINGVIEW SNAPSHOT IGNORED: stale/future candle", ageMs); return null; }
+    return { ...snapshot, action, ageMs };
+  } catch { return null; }
+}
 function printTimeframe(name, result) {
   console.log(`
 ${name} ANALYSIS`);
@@ -217,6 +231,8 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
+  const tradingViewSnapshot = await loadTradingViewSnapshot(market);
+  if (tradingViewSnapshot) console.log("TRADINGVIEW CHART SNAPSHOT:", JSON.stringify({ ticker: tradingViewSnapshot.ticker, timeframe: tradingViewSnapshot.timeframe, bar_time: tradingViewSnapshot.bar_time, open: tradingViewSnapshot.open, high: tradingViewSnapshot.high, low: tradingViewSnapshot.low, close: tradingViewSnapshot.close, volume: tradingViewSnapshot.volume, ema20: tradingViewSnapshot.ema20, ema50: tradingViewSnapshot.ema50, rsi14: tradingViewSnapshot.rsi14, atr14: tradingViewSnapshot.atr14, action: tradingViewSnapshot.action, ageSeconds: Math.round(tradingViewSnapshot.ageMs / 1000) }));
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
@@ -242,6 +258,14 @@ async function analyseMarket(market, macroContext) {
     candidate = "HOLD";
   } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
     console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
+  }
+  if (tradingViewSnapshot && candidate !== "HOLD" && tradingViewSnapshot.action !== "HOLD" && tradingViewSnapshot.action !== candidate) {
+    console.log("TRADINGVIEW DIRECTION CONFLICT: HOLD — chart snapshot disagrees with local candidate.");
+    candidate = "HOLD";
+  } else if (tradingViewSnapshot && candidate !== "HOLD" && tradingViewSnapshot.action === candidate) {
+    console.log("TRADINGVIEW CONFIRMATION: closed candle agrees with local candidate.");
+  } else if (tradingViewSnapshot) {
+    console.log("TRADINGVIEW SNAPSHOT: informational only; it cannot promote local HOLD.");
   }
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
