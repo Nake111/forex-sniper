@@ -166,7 +166,7 @@ function classifyArticle(article) {
 
   // Specific major economic announcements.
   const highImpactEvent =
-    /\brate decision\b|raises interest rates|cuts interest rates|inflation (?:rises|falls|jumps|drops) to|cpi report|consumer price index|nonfarm payroll|\bnfp\b|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting/.test(title);
+    /\brate decision\b|raises interest rates|cuts interest rates|inflation (?:rises|falls|jumps|drops) to|cpi report|consumer price index|nonfarm payroll|\bnfp\b|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting|spot bitcoin etf|bitcoin etf|sec (?:approves|rejects|sues|charges)|exchange hack|crypto exchange insolvency|stablecoin depeg|major crypto regulation/.test(title);
 
   if (highImpactEvent) {
     score += 2;
