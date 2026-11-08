@@ -48,7 +48,7 @@ test("one failed Gemini role forces HOLD even if the other five agree", async ()
     }), { status: 200, headers: { "content-type": "application/json" } });
   };
   try {
-    const result = await runIndependentLlmAgents({ market: "BTCUSD" }, { apiKey: "test-key" });
+    const result = await runIndependentLlmAgents({ market: "BTCUSD" }, { apiKey: "test-key", requestIntervalMs: 0 });
     assert.equal(result.status, "PARTIAL");
     assert.equal(result.decision, "HOLD");
     assert.equal(result.agents.filter(agent => agent.error).length, 1);
