@@ -19,7 +19,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 17
     steps:
       - name: Checkout BTC signal branch
         uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Fetch public exchange market data
+      - name: Validate code and strategy tests\n        run: npm run check && npm test\n\n      - name: Fetch public exchange market data
         run: npm run sync:market
 
       - name: Run BTC signal analysis using online candles
