@@ -62,10 +62,19 @@ jobs:
           path: signals.txt
           if-no-files-found: warn
           retention-days: 14
-      - name: Run baseline chronological 30% holdout validation
+      - name: Compare baseline, advanced and institutional strategies on a 30% chronological holdout
         run: |
           set -o pipefail
-          npm run backtest:holdout | tee backtests.txt
+          {
+            echo '=== BASELINE ==='
+            npm run backtest:holdout
+            echo '=== ADVANCED ==='
+            npm run backtest:holdout:advanced
+            echo '=== INSTITUTIONAL ==='
+            npm run backtest:holdout:institutional
+            echo '=== GOLD-SPECIFIC ==='
+            BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js
+          } 2>&1 | tee backtests.txt
       - name: Upload backtest report
         if: always()
         uses: actions/upload-artifact@v4
