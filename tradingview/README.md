@@ -1,28 +1,45 @@
 # TradingView integration
 
-## Dashboard charts
-The Quant Swarm dashboard embeds TradingView charts for OANDA:EURUSD, BINANCE:BTCUSDT and OANDA:XAUUSD. TradingView supplies chart data; its feed may differ from the candle feed used by Forex Sniper.
+## 1. Dashboard charts
+The dashboard embeds TradingView charts for OANDA:EURUSD, BINANCE:BTCUSDT and OANDA:XAUUSD. TradingView chart feeds may differ from the data feed used by Forex Sniper.
 
-## Pine Script alerts
-1. Open TradingView → Pine Editor.
-2. Copy `tradingview/forex-sniper-alerts.pine` into a new indicator and add it to a chart.
-3. Suggested symbols: OANDA:EURUSD, BINANCE:BTCUSDT and OANDA:XAUUSD.
-4. In indicator settings, enter a unique high-entropy value in **Webhook shared secret**.
-5. Create an alert using **Any alert() function call**, once per bar close.
-6. Set the alert webhook URL to the deployed Cloudflare Worker URL.
+## 2. Deploy the webhook Worker (one-time)
+The Worker source is in `tradingview-worker/src/index.js`; it is not deployed automatically by GitHub.
 
-## Deploy webhook bridge
-The Worker is source code only; it is not deployed automatically by GitHub. Deploy from `tradingview-worker`:
-```sh
-cd tradingview-worker
-npx wrangler deploy
-npx wrangler secret put TV_WEBHOOK_SECRET
-npx wrangler secret put GITHUB_TOKEN
-```
-Set the Cloudflare Worker variable `GITHUB_REPOSITORY=Nake111/forex-sniper`. The GitHub fine-grained token needs **Actions: read/write** and **Contents: read** access to this repository. Keep the webhook secret private; TradingView alert configuration contains it. Never reuse your GitHub token as the webhook secret.
+1. Sign in to Cloudflare and open **Workers & Pages**.
+2. Choose **Create application** → **Create Worker** and give it a name such as `forex-sniper-tv`.
+3. Choose **Edit code**. Replace the starter code with the full contents of `tradingview-worker/src/index.js` from this repository, then **Deploy**.
+4. Open the Worker → **Settings** → **Variables and Secrets**.
+5. Add a **Secret** named `TV_WEBHOOK_SECRET`. Use a long random value (at least 32 random characters). Save it privately.
+6. Add a **Secret** named `GITHUB_TOKEN`. This must be a GitHub fine-grained personal access token for only `Nake111/forex-sniper`, with **Contents: Read and write** permission. The repository-dispatch endpoint requires Contents write permission. Never paste this token into TradingView or chat.
+7. Add a plain-text **Variable** named `GITHUB_REPOSITORY` with value `Nake111/forex-sniper`.
+8. Deploy the Worker settings. Your webhook URL is `https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/WEBHOOK_SECRET`, where the final path segment is the exact `TV_WEBHOOK_SECRET` value. Keep this URL private; rotate the secret if exposed.
 
-## What happens
-The Worker validates the JSON shared secret and forwards valid alerts as GitHub `repository_dispatch` events (`tradingview_alert`). The Forex Sniper analysis workflow then runs. This is alert ingestion and research only; no orders are sent. The TradingView alert is an additional input, not an automatic override of the multi-timeframe risk gates.
+The Worker also checks the sender IP against TradingView's published webhook IP list. TradingView publishes these addresses in its webhook documentation; IP allowlisting is an additional filter, not cryptographic proof of origin.
 
-## Limitations
-TradingView chart embedding is available without a TradingView API key. TradingView webhooks require an eligible TradingView plan/account feature. The webhook Worker requires a Cloudflare account and deployment, plus a GitHub token stored as a Worker secret. TradingView alerts are not a substitute for broker quotes, spread checks or execution confirmation.
+## 3. Add the Pine Script indicator
+1. Open TradingView in a browser and sign in.
+2. Open a chart and select the symbol:
+   - `OANDA:EURUSD`
+   - `BINANCE:BTCUSDT`
+   - `OANDA:XAUUSD`
+3. Open **Pine Editor** at the bottom of the chart.
+4. In GitHub, open `tradingview/forex-sniper-alerts.pine`, copy all the code, paste it into Pine Editor, and select **Save**.
+5. Select **Add to chart**.
+6. Repeat for each market chart. Choose the timeframe you want to monitor (start with 15 minutes).
+
+## 4. Create the alert
+1. Click **Alert** (clock icon) in TradingView.
+2. In Condition, select **Forex Sniper Confirmation Alerts**.
+3. Select **Any alert() function call**.
+4. Enable **Webhook URL** and paste the Cloudflare Worker URL from step 2, including the secret path.
+5. Create the alert. Keep the alert active. Repeat for each symbol/timeframe you want.
+6. TradingView requires two-factor authentication to use webhook alerts. Webhook alerts may also depend on your TradingView subscription. See TradingView's official guide.
+
+## 5. Confirm it works
+When the indicator produces a BUY or SELL on a closed candle, TradingView sends JSON to the Worker. The Worker checks the path secret and TradingView source IP, then sends a `tradingview_alert` repository dispatch. GitHub Actions should start **Forex Sniper Analysis**.
+Check GitHub → Actions for a new run. A valid alert is an input for analysis only; it does not place orders and does not bypass Forex Sniper's risk filters.
+
+## Official setup references
+- TradingView webhook setup: https://www.tradingview.com/support/solutions/43000529348-how-to-configure-webhook-alerts/
+- Cloudflare Worker secrets: https://developers.cloudflare.com/workers/configuration/secrets/
