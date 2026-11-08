@@ -35,7 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Validate code and strategy tests\n        run: npm run check && npm test\n\n      - name: Fetch public exchange market data
+      - name: Validate code and strategy tests
+        run: npm run check && npm test
+
+      - name: Fetch public exchange market data
         run: npm run sync:market
 
       - name: Run BTC signal analysis using online candles
