@@ -54,8 +54,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           GEMINI_REQUEST_INTERVAL_MS: "6500"
-          GEMINI_RETRY_COUNT: "2"
-          GEMINI_RETRY_BASE_DELAY_MS: "15000"
+          LLM_TIMEOUT_MS: "15000"
+          GEMINI_RETRY_COUNT: "1"
+          GEMINI_RETRY_BASE_DELAY_MS: "10000"
       - name: Upload signal report immediately
         if: always()
         uses: actions/upload-artifact@v4
