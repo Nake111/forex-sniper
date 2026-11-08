@@ -1,7 +1,6 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalAction, tradePlan } from "./src/trade-plan.js";
+import { finalAction, tradePlan } from "./trade-plan.js";
 
 const market = {
   close: 1.12390,
