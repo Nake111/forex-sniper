@@ -42,7 +42,7 @@ test("six specialist roles are confirmed in one Gemini request", async () => {
   }
 });
 
-test("a Gemini timeout fails closed to HOLD for all six roles", async () => {
+test("a Gemini timeout is reported without fabricated specialist votes", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new DOMException("timed out", "TimeoutError"); };
   try {
@@ -56,7 +56,7 @@ test("a Gemini timeout fails closed to HOLD for all six roles", async () => {
   }
 });
 
-test("incomplete six-role response fails closed to HOLD", async () => {
+test("incomplete six-role response is reported as unavailable", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({
     candidates: [{ content: { parts: [{ text: JSON.stringify({ agents: [{ role: "technical", direction: "BUY", confidence: 90, evidence: ["x"], veto: false }] }) }] } }]
