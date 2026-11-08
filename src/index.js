@@ -202,7 +202,7 @@ async function analyseMarket(market, macroContext) {
   }
 
   const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext });
-  console.log("\\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
+  console.log("\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
 
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
