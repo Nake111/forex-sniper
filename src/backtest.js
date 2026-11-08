@@ -51,7 +51,15 @@ function latestClosed(candles, interval, closeTime, previous) {
 
   while (
     index + 1 < candles.length &&
-    candles[index + 1].time + intefunction analyse(candles, index) {
+    candles[index + 1].time + interval <= closeTime
+  ) {
+    index++;
+  }
+
+  return index;
+}
+
+function analyse(candles, index) {
   const start = Math.max(0, index - WINDOW + 1);
   const window = candles.slice(start, index + 1);
 
