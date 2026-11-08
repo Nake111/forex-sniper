@@ -130,8 +130,7 @@ ${name} ANALYSIS`);
 }
 
 async function analyseMarket(market, macroContext) {
-  console.log("
-======================================");
+  console.log("\n======================================");
   console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
@@ -169,8 +168,7 @@ async function analyseMarket(market, macroContext) {
     try {
       const options = await fetchBtcOptionsWalls();
       const context = summarizeOptionsContext(options, results.M5.close);
-      console.log("
-QUANT OPTIONS WALLS (BTC — nearest expiry)");
+      console.log("\nQUANT OPTIONS WALLS (BTC — nearest expiry)");
       console.log("Expiry / days:", options.expiry, "/", options.daysToExpiry.toFixed(2));
       console.log("Spot reference:", options.spot);
       console.log("Call wall (OI):", options.callWall);
@@ -182,8 +180,7 @@ QUANT OPTIONS WALLS (BTC — nearest expiry)");
       console.log("Price vs walls:", context.bias);
       for (const note of options.dataNotes) console.log("OPTIONS DATA NOTE:", note);
     } catch (error) {
-      console.log("
-QUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
+      console.log("\nQUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
       console.log("Options data unavailable; normal spot analysis continues.");
     }
   }
@@ -199,8 +196,7 @@ QUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
 
-  console.log("
-======================================");
+  console.log("\n======================================");
   console.log(`          FINAL ${market.symbol} SIGNAL`);
   console.log("======================================");
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
