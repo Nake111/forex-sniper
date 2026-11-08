@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      BTC_DATA_PREFIX: btcusdt
+      BTC_DATA_PREFIX: kraken-btcusd
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,6 +70,7 @@ jobs:
         env:
           DATA_DAYS_BACK: "180"
           DOWNLOAD_CONCURRENCY: "3"
+          BTC_DATA_PREFIX: btcusd
           DUKASCOPY_BATCH_SIZE: "10"
           DUKASCOPY_BATCH_PAUSE_MS: "100"
           DUKASCOPY_REQUEST_INTERVAL_MS: "100"
@@ -88,6 +89,8 @@ jobs:
             echo '=== GOLD-SPECIFIC ==='
             BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js
           } 2>&1 | tee backtests.txt
+        env:
+          BTC_DATA_PREFIX: btcusd
       - name: Upload backtest report
         if: always()
         uses: actions/upload-artifact@v4
