@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { evaluateSignal, confirmSignal } from "./signal.js";
 import { tradePlan } from "./trade-plan.js";
+import { summarizeSessionPerformance } from "./session-performance.js";
 
 const MARKET = (process.env.MARKET ?? "BTCUSD").toUpperCase();
 if (!["BTCUSD", "EURUSD"].includes(MARKET)) throw new Error("MARKET must be BTCUSD or EURUSD");
@@ -128,6 +129,8 @@ async function main() {
     const netR = netMove / risk;
     trades.push({
       side: signal, outcome: exit.outcome,
+      session: currentM5.sessionContext?.primary ?? "UNKNOWN",
+      sessionBreakout: currentM5.sessionContext?.breakout ?? "NONE",
       entryTime: new Date(m5[entryIndex].time).toISOString(),
       exitTime: new Date(m5[exitIndex].time).toISOString(),
       netMove, netPercent: (netMove / entry) * 100, netR
@@ -163,6 +166,10 @@ async function main() {
   console.log(`Net result: ${totalNetR.toFixed(2)} R`);
   console.log(`Profit factor: ${factor === null ? "N/A" : factor.toFixed(2)}`);
   console.log(`Maximum drawdown: ${maxDrawdown(trades).toFixed(2)} R`);
+  console.log("\\nSESSION PERFORMANCE (signal-time session; descriptive, not a trade filter):");
+  for (const row of summarizeSessionPerformance(trades)) {
+    console.log(`${row.session}: trades=${row.trades}, winRate=${row.winRate.toFixed(2)}%, netR=${row.netR.toFixed(2)}, profitFactor=${row.profitFactor === null ? "N/A" : row.profitFactor.toFixed(2)}`);
+  }
   console.log(`Round-trip cost assumption: ${COST_BPS} bps`);
   console.log(`Equivalent percentage cost: ${(COST_BPS / 100).toFixed(3)}%`);
   console.log("Entry: next M5 candle open; structural stop/target distances are anchored at signal close.");
