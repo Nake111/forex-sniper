@@ -105,10 +105,10 @@ export async function runIndependentLlmAgents(context, options = {}) {
     console.warn("Gemini six-agent panel failed closed after", elapsedMs, "ms:", error.message);
     return {
       enabled: true, status: timedOut ? "TIMEOUT" : "ERROR", provider: "Google Gemini", model: MODEL,
-      mode: "single-request-six-role-panel", elapsedMs, targetMs: 2000,
-      agents: ROLES.map(([role]) => ({ role, direction: "HOLD", confidence: 0, evidence: [], veto: true, error: error.message })),
-      votes: { buy: 0, sell: 0, hold: 6 }, decision: "HOLD",
-      reason: timedOut ? "Gemini did not respond before the 2-second deadline; safe HOLD." : "Gemini confirmation failed; safe HOLD."
+      mode: "single-request-six-role-panel", elapsedMs, targetMs: TIMEOUT_MS,
+      agents: [],
+      votes: null, decision: null,
+      reason: timedOut ? "Gemini did not respond before the configured deadline; retain the local decision." : "Gemini confirmation failed; retain the local decision."
     };
   }
 }
