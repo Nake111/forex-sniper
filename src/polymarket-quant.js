@@ -32,8 +32,8 @@ export function secondsToExpiry(endDate, now = Date.now()) {
 }
 export function mapOutcomeTokens(market) {
   const outcomes = market.outcomes.map(x => String(x).toLowerCase());
-  const upIndex = outcomes.findIndex(x => /^(up|yes)$/i.test(x) || x.includes("up"));
-  const downIndex = outcomes.findIndex(x => /^(down|no)$/i.test(x) || x.includes("down"));
+  const upIndex = outcomes.findIndex(x => x === "up" || x.includes("up"));
+  const downIndex = outcomes.findIndex(x => x === "down" || x.includes("down"));
   if (upIndex < 0 || downIndex < 0 || upIndex === downIndex) return null;
   return { up: market.tokenIds[upIndex], down: market.tokenIds[downIndex] };
 }
