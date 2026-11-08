@@ -40,8 +40,7 @@ async function loadCandles(path, timeframe) {
 }
 
 function printTimeframe(name, result) {
-  console.log("
-" + name + " ANALYSIS");
+  console.log("\n" + name + " ANALYSIS");
   console.log("-----------------------");
   for (const key of ["close", "ema20", "ema50", "ema200", "rsi14", "macd", "macdSignal", "atr14", "poc", "valueAreaHigh", "valueAreaLow"]) {
     console.log(key + ":", result[key]);
@@ -102,7 +101,8 @@ async function main() {
     schemaVersion: 2,
     symbol: "BTCUSD",
     generatedAt: new Date().toISOString(),
-    dataSource: process.env.MARKET_DATA_SOURCE === "dukascopy" ? "Dukascopy historical rates" : "Binance Spot BTCUSDT public API; not a direct Vantage feed",\n    onlineMarketSnapshot: onlineMarket,
+    dataSource: process.env.MARKET_DATA_SOURCE === "dukascopy" ? "Dukascopy historical rates" : "Binance Spot BTCUSDT public API; not a direct Vantage feed",
+    onlineMarketSnapshot: onlineMarket,
     signalBarTime: new Date(m5.at(-1).timestamp).toISOString(),
     candleCounts: { M5: m5.length, M15: m15.length, H1: h1.length },
     freshness,
@@ -133,11 +133,9 @@ async function main() {
       riskReward: plan.riskReward
     } : null
   };
-  await writeFile("data/latest-signal.json", JSON.stringify(record, null, 2) + "
-", "utf8");
+  await writeFile("data/latest-signal.json", JSON.stringify(record, null, 2) + "\n", "utf8");
 
-  console.log("
-========== FINAL BTCUSD SIGNAL ==========");
+  console.log("\n========== FINAL BTCUSD SIGNAL ==========");
   console.log("LEGACY SMC SIGNAL:", legacySignal);
   console.log("DONCHIAN SIGNAL:", donchianSignal);
   console.log("COMBINED SIGNAL:", signal);
