@@ -6,6 +6,7 @@ import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.js";
+import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -200,14 +201,21 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
+  const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext });
+  console.log("\\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
+
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
-  const candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
+  const agentGate = gateSignalWithAgents(candidate, agentReport);
+  console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
+  console.log("MULTI-AGENT GATE:", agentGate.reason);
+  candidate = agentGate.signal;
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
   const confirmation = confirmSignal(candidate, results.H1);
