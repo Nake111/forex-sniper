@@ -26,21 +26,43 @@ function parseJson(text) {
   if (start < 0 || end <= start) throw new Error("Agent did not return JSON");
   return JSON.parse(String(text).slice(start, end + 1));
 }
-async function runOne(role, system, context, apiKey) {
+async function runOne(role, system, context, apiKey, requestIntervalMs, retryCount, retryBaseDelayMs) {
   const endpoint = API_BASE.replace(/\/$/, "") + "/models/" + encodeURIComponent(MODEL) + ":generateContent";
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system + ' Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data.' }] },
-      contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
-      generationConfig: { maxOutputTokens: 350, responseMimeType: "application/json" }
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS)
+  const requestBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: system + ' Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data.' }] },
+    contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
+    generationConfig: { maxOutputTokens: 350, responseMimeType: "application/json" }
   });
-  if (!response.ok) {
+  let response;
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    await paceRequest(requestIntervalMs);
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: requestBody,
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+      });
+    } catch (error) {
+      if (attempt >= retryCount) throw error;
+      const delay = retryBaseDelayMs * (2 ** attempt);
+      console.warn("Gemini agent", role, "network error; retry", attempt + 1, "after", delay, "ms:", error.message);
+      if (delay > 0) await wait(delay);
+      continue;
+    }
+    if (response.ok) break;
+    const status = response.status;
     const detail = await response.text().catch(() => "");
-    throw new Error("Gemini HTTP " + response.status + (detail ? ": " + detail.slice(0, 240) : ""));
+    const retryable = status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+    if (!retryable || attempt >= retryCount) {
+      throw new Error("Gemini HTTP " + status + (detail ? ": " + detail.slice(0, 320) : ""));
+    }
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const delay = Number.isFinite(retryAfter) && retryAfter > 0
+      ? Math.min(60000, retryAfter * 1000)
+      : retryBaseDelayMs * (2 ** attempt);
+    console.warn("Gemini agent", role, "HTTP", status, "; retry", attempt + 1, "after", delay, "ms:", detail.slice(0, 160));
+    if (delay > 0) await wait(delay);
   }
   const payload = await response.json();
   const responseText = payload.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
@@ -56,11 +78,12 @@ export async function runIndependentLlmAgents(context, options = {}) {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey) return { enabled: false, status: "NOT_CONFIGURED", agents: [], decision: "HOLD", reason: "Set GEMINI_API_KEY in GitHub Actions secrets to enable Gemini agents." };
   const requestIntervalMs = Number.isFinite(options.requestIntervalMs) ? options.requestIntervalMs : REQUEST_INTERVAL_MS;
+  const retryCount = Number.isInteger(options.retryCount) ? Math.max(0, options.retryCount) : Number(process.env.GEMINI_RETRY_COUNT || 2);
+  const retryBaseDelayMs = Number.isFinite(options.retryBaseDelayMs) ? Math.max(0, options.retryBaseDelayMs) : Number(process.env.GEMINI_RETRY_BASE_DELAY_MS || 15000);
   const results = [];
   for (let index = 0; index < ROLES.length; index += 1) {
-    await paceRequest(requestIntervalMs);
     try {
-      results.push({ status: "fulfilled", value: await runOne(ROLES[index][0], ROLES[index][1], context, apiKey) });
+      results.push({ status: "fulfilled", value: await runOne(ROLES[index][0], ROLES[index][1], context, apiKey, requestIntervalMs, retryCount, retryBaseDelayMs) });
     } catch (reason) {
       results.push({ status: "rejected", reason });
     }
