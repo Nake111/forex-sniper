@@ -177,7 +177,12 @@ async function main() {
   }
   const outcomes = await Promise.allSettled(MARKETS.map(async market => {
     const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;
-    const context = marketNews ? buildMacroContext(marketNews) : macroContext;
+    let context = marketNews ? buildMacroContext(marketNews) : macroContext;
+    if (market.symbol === "XAUUSD") {
+      const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
+      context = { ...context, ...goldMacro, headlines: context.headlines ?? [] };
+      console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
+    }
     if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
     return analyseMarket(market, context);
   }));
