@@ -14,12 +14,12 @@
     "download": "node src/download.js",
     "backtest": "node src/backtest.js",
     "backtest:all": "MARKET=EURUSD node src/backtest.js && MARKET=BTCUSD node src/backtest.js && MARKET=XAUUSD node src/backtest.js",
-    "backtest:experiments": "MARKET=EURUSD SIGNAL_PROFILE=strict node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=strict node src/backtest.js",
-    "backtest:advanced": "MARKET=EURUSD SIGNAL_PROFILE=advanced node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=advanced node src/backtest.js",
-    "backtest:institutional": "MARKET=EURUSD SIGNAL_PROFILE=institutional node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=institutional node src/backtest.js",
+    "backtest:experiments": "MARKET=EURUSD SIGNAL_PROFILE=strict node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=strict node src/backtest.js && MARKET=XAUUSD SIGNAL_PROFILE=strict node src/backtest.js",
+    "backtest:advanced": "MARKET=EURUSD SIGNAL_PROFILE=advanced node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=advanced node src/backtest.js && MARKET=XAUUSD SIGNAL_PROFILE=advanced node src/backtest.js",
+    "backtest:institutional": "MARKET=EURUSD SIGNAL_PROFILE=institutional node src/backtest.js && MARKET=BTCUSD SIGNAL_PROFILE=institutional node src/backtest.js && MARKET=XAUUSD SIGNAL_PROFILE=institutional node src/backtest.js",
     "backtest:holdout": "BACKTEST_START_RATIO=0.7 MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 MARKET=BTCUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 MARKET=XAUUSD node src/backtest.js",
-    "backtest:holdout:advanced": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=BTCUSD node src/backtest.js",
-    "backtest:holdout:institutional": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=BTCUSD node src/backtest.js",
+    "backtest:holdout:advanced": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=BTCUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=advanced MARKET=XAUUSD node src/backtest.js",
+    "backtest:holdout:institutional": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=BTCUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=XAUUSD node src/backtest.js",
     "live:btc": "node src/live-feed.js"
   },
   "dependencies": {
