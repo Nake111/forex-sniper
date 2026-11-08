@@ -1,6 +1,6 @@
 # Forex Sniper — EUR/USD + BTC/USD
 
-A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD**. It analyses closed M5, M15 and H1 candles and prints a separate signal report for each market.
+A Node.js market-analysis and paper-signal project for **EUR/USD**, **BTC/USD** and **XAU/USD**. It analyses closed M5, M15 and H1 candles and prints a separate signal report for each market.
 
 ## What it does
 
