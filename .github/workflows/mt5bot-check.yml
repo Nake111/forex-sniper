@@ -1,0 +1,41 @@
+name: MT5 Bot Framework Checks
+
+on:
+  push:
+    branches: [Btcusd]
+    paths:
+      - "vendor/mt5-mt5bot/**"
+      - ".github/workflows/mt5bot-check.yml"
+  pull_request:
+    paths:
+      - "vendor/mt5-mt5bot/**"
+      - ".github/workflows/mt5bot-check.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: vendor/mt5-mt5bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install framework and development tools
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
+      - name: Type check
+        run: mypy mt5bot
+      - name: Run unit tests
+        run: pytest
+      - name: Smoke-test EURUSD sample backtest
+        run: python main.py backtest --csv tests/data/eurusd_m15_sample.csv
