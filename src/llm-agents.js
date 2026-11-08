@@ -15,6 +15,63 @@ const ROLES = [
 ];
 const VALID_DIRECTIONS = new Set(["BUY", "SELL", "HOLD"]);
 
+function compactFrame(frame) {
+  if (!frame) return null;
+  const fields = [
+    "close", "regime", "ema20", "ema50", "rsi14", "macd", "macdSignal",
+    "macdHistogram", "atr14", "adx14", "bullishVotes", "bearishVotes",
+    "vwap", "poc", "valueAreaHigh", "valueAreaLow"
+  ];
+  const result = Object.fromEntries(fields.filter(key => frame[key] !== undefined).map(key => [key, frame[key]]));
+  result.supertrend = frame.supertrend?.direction ?? null;
+  result.ichimoku = frame.ichimoku?.direction ?? null;
+  result.squeeze = frame.squeeze ? { state: frame.squeeze.state, direction: frame.squeeze.direction, momentum: frame.squeeze.momentum } : null;
+  result.cvd = frame.cvd ? { direction: frame.cvd.direction, slope: frame.cvd.slope } : null;
+  result.structure = frame.structure ? {
+    bos: frame.structure.bos, sweep: frame.structure.sweep,
+    sweepConfirmed: frame.structure.sweepConfirmed, liquiditySweep: frame.structure.liquiditySweep
+  } : null;
+  result.orderBlocks = (frame.smartMoney?.orderBlocks ?? []).slice(0, 2).map(zone => ({
+    direction: zone.direction, high: zone.high, low: zone.low, barsAgo: zone.barsAgo, invalidated: zone.invalidated
+  }));
+  result.fairValueGaps = (frame.smartMoney?.fairValueGaps ?? []).slice(0, 2).map(zone => ({
+    direction: zone.direction, top: zone.top, bottom: zone.bottom, barsAgo: zone.barsAgo, filled: zone.filled
+  }));
+  return result;
+}
+
+function compactContext(context = {}) {
+  const macro = context.macro ?? {};
+  const panel = context.deterministicAgents ?? {};
+  return {
+    market: context.market,
+    timeframes: Object.fromEntries(["M5", "M15", "H1", "H4"].map(key => [key, compactFrame(context.frames?.[key])])),
+    macro: {
+      eventRisk: macro.eventRisk ?? "UNKNOWN",
+      goldMacroBias: macro.goldMacroBias ?? null,
+      eventCount: Array.isArray(macro.calendar?.events) ? macro.calendar.events.length : null,
+      headlines: (macro.headlines ?? []).slice(0, 4).map(item =>
+        typeof item === "string" ? item.slice(0, 180) : {
+          title: String(item.title ?? item.headline ?? "").slice(0, 180),
+          publishedAt: item.publishedAt ?? item.published_at ?? null
+        })
+    },
+    deterministicPanel: {
+      agents: (panel.agents ?? []).map(agent => ({
+        name: agent.name, direction: agent.direction, weight: agent.weight,
+        evidence: String(agent.evidence ?? "").slice(0, 160)
+      })),
+      trader: panel.trader,
+      riskManager: panel.riskManager,
+      portfolioManager: panel.portfolioManager
+    },
+    polymarket: context.polymarket ? {
+      status: context.polymarket.status, bias: context.polymarket.bias,
+      summary: String(context.polymarket.summary ?? "").slice(0, 300)
+    } : null
+  };
+}
+
 function extractJson(text) {
   const source = String(text || "").trim();
   try { return JSON.parse(source); } catch {}
@@ -64,7 +121,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
     "You are a panel of six specialist trading agents. Produce six separate assessments, one for each exact role below.",
     roleInstructions,
     "Use only the supplied market data. Do not invent prices, news, indicators or facts.",
-    "Each assessment must independently choose BUY, SELL or HOLD, give confidence 0-100, 1-3 short evidence items, and veto true/false.",
+    "Each assessment must independently choose BUY, SELL or HOLD, give confidence 0-100, 1-2 very short evidence items, and veto true/false.",
     "Return ONLY JSON matching this schema: " + JSON.stringify({ agents: [{ role: "technical", direction: "BUY|SELL|HOLD", confidence: 0, evidence: ["..."], veto: false }] }),
     "Include all six roles exactly once. Be concise."
   ].join("\n\n");
@@ -74,8 +131,8 @@ export async function runIndependentLlmAgents(context, options = {}) {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt + "\n\nMARKET CONTEXT:\n" + JSON.stringify(context) }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1600, responseMimeType: "application/json" }
+        contents: [{ role: "user", parts: [{ text: prompt + "\n\nCOMPACT MARKET CONTEXT (data only):\n" + JSON.stringify(compactContext(context)) }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1200, responseMimeType: "application/json" }
       }),
       signal: AbortSignal.timeout(timeoutMs)
     });
