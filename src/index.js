@@ -65,7 +65,7 @@ async function main() {
     loadCandles(process.env.MARKET_DATA_SOURCE === "dukascopy" ? "data/btcusd-h1.json" : "data/online-btcusdt-h1.json", "H1")
   ]);
 
-  const results = {
+  let onlineMarket = null;\n  try { onlineMarket = JSON.parse(await readFile("data/online-market.json", "utf8")); } catch {}\n\n  const results = {
     M5: analyseTimeframe(m5),
     M15: analyseTimeframe(m15),
     H1: analyseTimeframe(h1)
@@ -101,7 +101,7 @@ async function main() {
     schemaVersion: 2,
     symbol: "BTCUSD",
     generatedAt: new Date().toISOString(),
-    dataSource: process.env.MARKET_DATA_SOURCE === "dukascopy" ? "Dukascopy historical rates" : "Binance Spot BTCUSDT public API; not a direct Vantage feed",
+    dataSource: process.env.MARKET_DATA_SOURCE === "dukascopy" ? "Dukascopy historical rates" : "Binance Spot BTCUSDT public API; not a direct Vantage feed",\n    onlineMarketSnapshot: onlineMarket,
     signalBarTime: new Date(m5.at(-1).timestamp).toISOString(),
     candleCounts: { M5: m5.length, M15: m15.length, H1: h1.length },
     freshness,
