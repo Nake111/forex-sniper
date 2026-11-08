@@ -42,6 +42,36 @@ test("six specialist roles are confirmed in one Gemini request", async () => {
   }
 });
 
+test("local HIGH macro risk blocks a Gemini BUY consensus", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => geminiResponse();
+  try {
+    const result = await runIndependentLlmAgents({
+      market: "EURUSD",
+      macro: { eventRisk: "HIGH" }
+    }, { apiKey: "test-key", timeoutMs: 2000 });
+    assert.equal(result.status, "COMPLETE");
+    assert.equal(result.votes.buy, 4);
+    assert.equal(result.decision, "HOLD");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("XAUUSD fails closed when macro risk is unknown", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => geminiResponse();
+  try {
+    const result = await runIndependentLlmAgents({
+      market: "XAUUSD",
+      macro: { eventRisk: "UNKNOWN" }
+    }, { apiKey: "test-key", timeoutMs: 2000 });
+    assert.equal(result.decision, "HOLD");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("a Gemini timeout is reported without fabricated specialist votes", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new DOMException("timed out", "TimeoutError"); };
