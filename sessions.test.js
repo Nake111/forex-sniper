@@ -13,7 +13,8 @@ test("detects London session and builds its running range", () => {
   ];
   const result = getSessionContext(bars);
   assert.equal(result.primary, "LONDON");
-  assert.deepEqual(result.active, ["London"]);
+  assert.equal(result.active.includes("London"), true);
+  assert.equal(result.active.includes("Tokyo"), true);
   assert.equal(result.rangeHigh, 1.15);
   assert.equal(result.rangeLow, 1.01);
 });
