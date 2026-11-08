@@ -74,6 +74,7 @@ async function loadGoldLiveContext() {
       .sort((a, b) => a.timestamp - b.timestamp);
     if (ticks.length < 2) return { dxyDirection: "UNAVAILABLE", dxyChangePct: null };
     const latest = ticks.at(-1);
+    if (Date.now() - latest.timestamp > 120_000) return { dxyDirection: "UNAVAILABLE", dxyChangePct: null, dxyStale: true };
     const base = [...ticks].reverse().find(tick => latest.timestamp - tick.timestamp >= 15 * 60 * 1000) || ticks[0];
     const changePct = base.price > 0 ? (latest.price / base.price - 1) * 100 : null;
     const direction = Number.isFinite(changePct) && changePct >= 0.05 ? "BEARISH"
