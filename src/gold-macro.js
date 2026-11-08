@@ -10,7 +10,7 @@ async function get(url) {
   return response;
 }
 function xmlValue(block, field) {
-  const match = block.match(new RegExp("<(?:[A-Za-z0-9_]+:)?" + field + ">([^<]*)<"));
+  const match = block.match(new RegExp("<(?:[A-Za-z0-9_]+:)?" + field + "(?:\\s[^>]*)?>([^<]*)<"));
   return match ? match[1].trim() : null;
 }
 export async function getTreasuryRealYields() {
