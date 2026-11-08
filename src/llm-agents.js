@@ -1,5 +1,5 @@
 // Six independent Gemini research agents. No paid Grok/xAI dependency.
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
 const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 20000);
 const ROLES = [
@@ -24,7 +24,7 @@ async function runOne(role, system, context, apiKey) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system + ' Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data.' }] },
       contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 350, responseMimeType: "application/json" }
+      generationConfig: { maxOutputTokens: 350, responseMimeType: "application/json" }
     }),
     signal: AbortSignal.timeout(TIMEOUT_MS)
   });
