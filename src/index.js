@@ -65,7 +65,10 @@ async function main() {
     loadCandles(process.env.MARKET_DATA_SOURCE === "dukascopy" ? "data/btcusd-h1.json" : "data/online-btcusdt-h1.json", "H1")
   ]);
 
-  let onlineMarket = null;\n  try { onlineMarket = JSON.parse(await readFile("data/online-market.json", "utf8")); } catch {}\n\n  const results = {
+  let onlineMarket = null;
+  try { onlineMarket = JSON.parse(await readFile("data/online-market.json", "utf8")); } catch {}
+
+  const results = {
     M5: analyseTimeframe(m5),
     M15: analyseTimeframe(m15),
     H1: analyseTimeframe(h1)
