@@ -230,14 +230,14 @@ async function analyseMarket(market, macroContext) {
   candidate = agentGate.signal;
   const llmReport = await runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
-  // The six local deterministic specialists are the fast primary decision path.
+  // The five local deterministic specialists are the fast primary decision path.
   // Gemini is an additional cloud review with a 2-second budget; only a complete,
   // schema-valid six-role response may veto. Timeout/error falls back to local agents.
   if (llmReport.status === "COMPLETE" && candidate !== "HOLD" && llmReport.decision !== candidate) {
     console.log("GEMINI SIX-ROLE VETO: HOLD — completed Gemini panel did not confirm the local multi-agent candidate.");
     candidate = "HOLD";
   } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
-    console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local six-agent decision; cloud review did not complete inside the 2-second budget.");
+    console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
   }
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
