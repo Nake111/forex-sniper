@@ -1,7 +1,7 @@
-// Optional independent Grok/xAI research agents. No API key is required for the base bot.
-const API_URL = process.env.LLM_API_URL || "https://api.x.ai/v1/chat/completions";
-const MODEL = process.env.LLM_MODEL || "grok-3-mini";
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 12000);
+// Six independent Gemini research agents. No paid Grok/xAI dependency.
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
+const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 20000);
 const ROLES = [
   ["technical", "You are an independent technical analyst. Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "You are an independent market-structure analyst. Assess swings, breakouts, liquidity sweeps and support/resistance."],
@@ -11,35 +11,40 @@ const ROLES = [
   ["contrarian", "You are an independent adversarial reviewer. Challenge the proposed direction and identify missing evidence."]
 ];
 function parseJson(text) {
-  const cleaned = String(text || "").replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
+  const start = String(text || "").indexOf("{");
+  const end = String(text || "").lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("Agent did not return JSON");
-  return JSON.parse(cleaned.slice(start, end + 1));
+  return JSON.parse(String(text).slice(start, end + 1));
 }
 async function runOne(role, system, context, apiKey) {
-  const response = await fetch(API_URL, {
+  const endpoint = API_BASE.replace(/\/$/, "") + "/models/" + encodeURIComponent(MODEL) + ":generateContent";
+  const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+    headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
-      model: MODEL, temperature: 0.1, max_tokens: 350,
-      messages: [
-        { role: "system", content: system + ' Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data.' },
-        { role: "user", content: JSON.stringify(context) }
-      ]
+      systemInstruction: { parts: [{ text: system + ' Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data.' }] },
+      contents: [{ role: "user", parts: [{ text: JSON.stringify(context) }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 350, responseMimeType: "application/json" }
     }),
     signal: AbortSignal.timeout(TIMEOUT_MS)
   });
-  if (!response.ok) throw new Error(`LLM HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error("Gemini HTTP " + response.status + (detail ? ": " + detail.slice(0, 240) : ""));
+  }
   const payload = await response.json();
-  const parsed = parseJson(payload.choices?.[0]?.message?.content);
+  const responseText = payload.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
+  const parsed = parseJson(responseText);
   if (!["BUY", "SELL", "HOLD"].includes(parsed.direction) ||
       !Number.isFinite(parsed.confidence) || parsed.confidence < 0 || parsed.confidence > 100 ||
-      !Array.isArray(parsed.evidence)) throw new Error("Invalid agent response schema");
-  return { role, ...parsed, model: MODEL };
+      !Array.isArray(parsed.evidence) || typeof parsed.veto !== "boolean") {
+    throw new Error("Invalid Gemini agent response schema");
+  }
+  return { role, ...parsed, provider: "Google Gemini", model: MODEL };
 }
 export async function runIndependentLlmAgents(context, options = {}) {
-  const apiKey = options.apiKey ?? process.env.GROK_API_KEY ?? process.env.LLM_API_KEY;
-  if (!apiKey) return { enabled: false, status: "NOT_CONFIGURED", agents: [], decision: "HOLD", reason: "Set GROK_API_KEY (or LLM_API_KEY) to enable independent LLM agents." };
+  const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
+  if (!apiKey) return { enabled: false, status: "NOT_CONFIGURED", agents: [], decision: "HOLD", reason: "Set GEMINI_API_KEY in GitHub Actions secrets to enable Gemini agents." };
   const results = await Promise.allSettled(ROLES.map(([role, prompt]) => runOne(role, prompt, context, apiKey)));
   const agents = results.map((result, index) => result.status === "fulfilled"
     ? result.value
@@ -50,5 +55,5 @@ export async function runIndependentLlmAgents(context, options = {}) {
   const veto = agents.some(agent => agent.veto || agent.error);
   const decision = !veto && valid.length === 6 && buy >= 4 ? "BUY"
     : !veto && valid.length === 6 && sell >= 4 ? "SELL" : "HOLD";
-  return { enabled: true, status: valid.length === 6 ? "COMPLETE" : "PARTIAL", model: MODEL, agents, votes: { buy, sell, hold: valid.length - buy - sell }, decision, reason: veto ? "At least one agent failed or raised a risk veto." : "Six-agent consensus required; otherwise HOLD." };
+  return { enabled: true, status: valid.length === 6 ? "COMPLETE" : "PARTIAL", provider: "Google Gemini", model: MODEL, agents, votes: { buy, sell, hold: valid.length - buy - sell }, decision, reason: veto ? "At least one agent failed or raised a risk veto." : "Six-agent consensus required; otherwise HOLD." };
 }
