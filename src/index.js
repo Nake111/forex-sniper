@@ -66,6 +66,33 @@ async function loadCandles(path, timeframe, interval) {
   return unique.slice(-WINDOW);
 }
 
+async function loadGoldLiveContext() {
+  try {
+    const raw = await readFile("data/gold-live-ticks.jsonl", "utf8");
+    const ticks = raw.trim().split("\n").slice(-500).map(line => JSON.parse(line))
+      .filter(tick => tick.symbol === "DXY" && Number.isFinite(tick.timestamp) && Number.isFinite(tick.price))
+      .sort((a, b) => a.timestamp - b.timestamp);
+    if (ticks.length < 2) return { dxyDirection: "UNAVAILABLE", dxyChangePct: null };
+    const latest = ticks.at(-1);
+    const base = [...ticks].reverse().find(tick => latest.timestamp - tick.timestamp >= 15 * 60 * 1000) || ticks[0];
+    const changePct = base.price > 0 ? (latest.price / base.price - 1) * 100 : null;
+    const direction = Number.isFinite(changePct) && changePct >= 0.05 ? "BEARISH"
+      : Number.isFinite(changePct) && changePct <= -0.05 ? "BULLISH" : "NEUTRAL";
+    return { dxyDirection: direction, dxyChangePct: changePct, dxyTimestamp: latest.timestamp, dxyPrice: latest.price };
+  } catch {
+    return { dxyDirection: "UNAVAILABLE", dxyChangePct: null };
+  }
+}
+
+function combineGoldMacroBias(yieldChange, dxyDirection) {
+  const yieldDirection = Number.isFinite(yieldChange) && yieldChange >= 0.02 ? "BEARISH"
+    : Number.isFinite(yieldChange) && yieldChange <= -0.02 ? "BULLISH" : "NEUTRAL";
+  const known = [yieldDirection, dxyDirection].filter(direction => ["BULLISH", "BEARISH"].includes(direction));
+  if (!known.length) return "UNAVAILABLE";
+  if (known.length === 2 && known[0] !== known[1]) return "NEUTRAL";
+  return known[0];
+}
+
 function printTimeframe(name, result) {
   console.log(`
 ${name} ANALYSIS`);
@@ -205,12 +232,15 @@ async function main() {
     let context = marketNews ? buildMacroContext(marketNews) : macroContext;
     if (market.symbol === "XAUUSD") {
       const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
+      const liveGoldContext = await loadGoldLiveContext();
+      const goldMacroBias = combineGoldMacroBias(goldMacro.yields?.change10Y, liveGoldContext.dxyDirection);
       const headlineRisk = context.eventRisk ?? "UNKNOWN";
       const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
       const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
         : headlineRisk === "UNKNOWN" || calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
-      context = { ...context, ...goldMacro, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
+      context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
       console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
+      console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
     }
     if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
     return analyseMarket(market, context);
