@@ -8,16 +8,18 @@
     "node": ">=20"
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/market.js && node --check src/trade-plan.js && node --check src/backtest.js && node --check src/signal.js && node --check src/donchian-strategy.js && node --check src/donchian-backtest.js && node --check src/donchian-strategy.test.js && node --check src/combined-signal.js && node --check src/combined-signal.test.js && node --check src/trade-plan.test.js && node --check src/online-market-data.js",
+    "check": "node --check src/index.js && node --check src/market.js && node --check src/trade-plan.js && node --check src/backtest.js && node --check src/signal.js && node --check src/donchian-strategy.js && node --check src/donchian-backtest.js && node --check src/donchian-strategy.test.js && node --check src/combined-signal.js && node --check src/combined-signal.test.js && node --check src/trade-plan.test.js && node --check src/online-market-data.js && node --check src/websocket-market-data.js",
     "test": "node --test",
     "start": "node src/online-market-data.js && node src/index.js",
     "analyze": "node src/index.js",
     "download": "node src/download.js",
     "backtest": "node src/backtest.js",
     "backtest:donchian": "node src/donchian-backtest.js",
-    "sync:market": "node src/online-market-data.js"
+    "sync:market": "node src/online-market-data.js",
+    "start:stream": "node src/websocket-market-data.js"
   },
   "dependencies": {
-    "dukascopy-node": "^1.40.0"
+    "dukascopy-node": "^1.40.0",
+    "ws": "^8.18.0"
   }
 }
