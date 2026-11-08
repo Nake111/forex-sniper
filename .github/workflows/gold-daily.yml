@@ -53,12 +53,14 @@ jobs:
           MARKET=XAUUSD SIGNAL_PROFILE=strict npm run backtest | tee -a gold-backtests.txt
           MARKET=XAUUSD SIGNAL_PROFILE=advanced npm run backtest | tee -a gold-backtests.txt
           MARKET=XAUUSD SIGNAL_PROFILE=institutional npm run backtest | tee -a gold-backtests.txt
+          npm run backtest:gold | tee -a gold-backtests.txt
       - name: Chronological holdout validation
         run: |
           set -o pipefail
           BACKTEST_START_RATIO=0.7 MARKET=XAUUSD npm run backtest | tee -a gold-backtests.txt
           BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=advanced npm run backtest | tee -a gold-backtests.txt
           BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=institutional npm run backtest | tee -a gold-backtests.txt
+          npm run backtest:gold:holdout | tee -a gold-backtests.txt
       - name: Upload Gold validation report
         uses: actions/upload-artifact@v4
         with:
