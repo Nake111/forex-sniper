@@ -88,10 +88,10 @@ def load_trade_plan(
 
     generated = _timestamp(record.get("generatedAt"), "generatedAt")
     bar_time = _timestamp(record.get("signalBarTime"), "signalBarTime")
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     if current.tzinfo is None:
         raise ValueError("now must be timezone-aware")
-    current_utc = current.astimezone(timezone.utc)
+    current_utc = current.astimezone(UTC)
 
     age = (current_utc - generated).total_seconds()
     if age < -30 or age > max_age_seconds:
