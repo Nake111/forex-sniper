@@ -1,10 +1,10 @@
 // Six specialist Gemini perspectives in ONE request for low-latency confirmation.
 // These are six role-separated assessments from one model response, not six isolated API calls.
 // Target latency is 2 seconds; cloud-provider/network latency is outside our control.
-// A single request avoids serial pacing/rate-limit delays. Any timeout/schema failure => HOLD.
+// A single request avoids serial pacing/rate-limit delays. Cloud review is advisory;\n// local deterministic agents remain the primary signal path when the API is slow.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 2000);
+const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 8000);
 const ROLES = [
   ["technical", "Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "Assess swing structure, BOS/CHOCH, liquidity sweeps and support/resistance."],
@@ -75,7 +75,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt + "\n\nMARKET CONTEXT:\n" + JSON.stringify(context) }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1100, responseMimeType: "application/json" }
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1600, responseMimeType: "application/json" }
       }),
       signal: AbortSignal.timeout(timeoutMs)
     });
