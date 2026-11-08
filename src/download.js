@@ -28,7 +28,15 @@ async function downloadOne(market, timeframe) {
     timeframe,
     format: "json",
     volumes: true,
-    useCache: true
+    useCache: true,
+    // Dukascopy can time out when many daily candle requests run concurrently.
+    // Pace requests and retry transient network/server failures.
+    batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 3),
+    pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 1500),
+    requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 250),
+    retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
+    pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
+    rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
   });
 
   if (!Array.isArray(candles) || candles.length < 100) {
