@@ -1,11 +1,10 @@
-
 name: BTC Sniper Check
 
 on:
   push:
-    branches: [BTCUSD]
+    branches: [Btcusd]
   pull_request:
-    branches: [BTCUSD]
+    branches: [Btcusd]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -30,14 +30,26 @@ jobs:
       - name: Check JavaScript
         run: npm run check
 
-      - name: Test trade-plan safety
+      - name: Run signal and trade-plan tests
         run: npm test
 
-      - name: Download BTC/USD data
+      - name: Download 180 days of BTC/USD data
         run: npm run download
 
-      - name: Run BTC Sniper analysis
-        run: npm start
+      - name: Run BTC Sniper analysis without replacing full history
+        run: npm run analyze
 
       - name: Run BTC/USD historical backtest
         run: npm run backtest
+
+      - name: Preserve market data and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btcusd-validation-data
+          path: |
+            data/btcusd-m5.json
+            data/btcusd-m15.json
+            data/btcusd-h1.json
+          if-no-files-found: warn
+          retention-days: 30
