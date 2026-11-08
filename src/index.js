@@ -7,6 +7,8 @@ import { buildMacroContext } from "./macro.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.js";
 import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
+import { runIndependentLlmAgents } from "./llm-agents.js";
+import { getPolymarketBtcContext } from "./polymarket-quant.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -203,6 +205,16 @@ async function analyseMarket(market, macroContext) {
 
   const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext });
   console.log("\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
+  let polymarketContext = null;
+  if (market.symbol === "BTCUSD") {
+    try {
+      polymarketContext = await getPolymarketBtcContext();
+      console.log("POLYMARKET BTC EXPIRY CONTEXT:", JSON.stringify(polymarketContext));
+    } catch (error) {
+      polymarketContext = { status: "UNAVAILABLE", error: error.message };
+      console.log("POLYMARKET BTC CONTEXT UNAVAILABLE:", error.message);
+    }
+  }
 
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
@@ -216,6 +228,12 @@ async function analyseMarket(market, macroContext) {
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT GATE:", agentGate.reason);
   candidate = agentGate.signal;
+  const llmReport = await runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
+  console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
+  if (llmReport.enabled && candidate !== "HOLD" && llmReport.decision !== candidate) {
+    console.log("LLM CONSENSUS GATE: HOLD — six independent LLM agents did not confirm the deterministic candidate.");
+    candidate = "HOLD";
+  }
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
   const confirmation = confirmSignal(candidate, results.H1);
