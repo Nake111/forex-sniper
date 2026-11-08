@@ -154,6 +154,81 @@ export function squeezeMomentum(candles, length = 20, bbMult = 2, kcMult = 1.5) 
   return { ...current, previousMomentum: previous.momentum, direction };
 }
 
+
+
+function rollingMean(values) {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
+
+function midpoint(candles, period) {
+  if (candles.length < period) return null;
+  const window = candles.slice(-period);
+  return (Math.max(...window.map(c => Number(c.high))) + Math.min(...window.map(c => Number(c.low)))) / 2;
+}
+
+// Ichimoku current, unshifted cloud values; no future displacement is used in signals.
+export function ichimoku(candles) {
+  if (!Array.isArray(candles) || candles.length < 52) return { direction: "UNAVAILABLE", tenkan: null, kijun: null, cloudA: null, cloudB: null };
+  const tenkan = midpoint(candles, 9);
+  const kijun = midpoint(candles, 26);
+  const cloudA = (tenkan + kijun) / 2;
+  const cloudB = midpoint(candles, 52);
+  const close = Number(candles.at(-1).close);
+  const top = Math.max(cloudA, cloudB);
+  const bottom = Math.min(cloudA, cloudB);
+  const direction = close > top && tenkan > kijun ? "BULLISH" : close < bottom && tenkan < kijun ? "BEARISH" : "NEUTRAL";
+  return { tenkan, kijun, cloudA, cloudB, cloudTop: top, cloudBottom: bottom, direction };
+}
+
+// Wilder-style ATR proxy plus recursively updated final Supertrend band.
+export function supertrend(candles, period = 10, multiplier = 3) {
+  if (!Array.isArray(candles) || candles.length < period + 2) return { value: null, direction: "UNAVAILABLE" };
+  const trs = candles.map((c, i) => i === 0 ? Number(c.high) - Number(c.low) :
+    Math.max(Number(c.high) - Number(c.low), Math.abs(Number(c.high) - Number(candles[i - 1].close)), Math.abs(Number(c.low) - Number(candles[i - 1].close))));
+  let atrValue = rollingMean(trs.slice(1, period + 1));
+  let upper = (Number(candles[period].high) + Number(candles[period].low)) / 2 + multiplier * atrValue;
+  let lower = (Number(candles[period].high) + Number(candles[period].low)) / 2 - multiplier * atrValue;
+  let direction = 1;
+  for (let i = period + 1; i < candles.length; i++) {
+    atrValue = (atrValue * (period - 1) + trs[i]) / period;
+    const hl2 = (Number(candles[i].high) + Number(candles[i].low)) / 2;
+    const basicUpper = hl2 + multiplier * atrValue;
+    const basicLower = hl2 - multiplier * atrValue;
+    const previousClose = Number(candles[i - 1].close);
+    upper = basicUpper < upper || previousClose > upper ? basicUpper : upper;
+    lower = basicLower > lower || previousClose < lower ? basicLower : lower;
+    const close = Number(candles[i].close);
+    if (direction === 1 && close < lower) direction = -1;
+    else if (direction === -1 && close > upper) direction = 1;
+  }
+  return { value: direction === 1 ? lower : upper, direction: direction === 1 ? "BULLISH" : "BEARISH", atr: atrValue };
+}
+
+export function moneyFlowIndex(candles, period = 14) {
+  if (!Array.isArray(candles) || candles.length < period + 1) return null;
+  let positive = 0, negative = 0;
+  for (let i = candles.length - period; i < candles.length; i++) {
+    const current = candles[i], previous = candles[i - 1];
+    const typical = (Number(current.high) + Number(current.low) + Number(current.close)) / 3;
+    const priorTypical = (Number(previous.high) + Number(previous.low) + Number(previous.close)) / 3;
+    const flow = typical * Math.max(0, Number(current.volume) || 0);
+    if (typical > priorTypical) positive += flow;
+    else if (typical < priorTypical) negative += flow;
+  }
+  if (positive === 0 && negative === 0) return 50;
+  if (negative === 0) return 100;
+  if (positive === 0) return 0;
+  return 100 - 100 / (1 + positive / negative);
+}
+
+export function commodityChannelIndex(candles, period = 20) {
+  if (!Array.isArray(candles) || candles.length < period) return null;
+  const window = candles.slice(-period).map(c => (Number(c.high) + Number(c.low) + Number(c.close)) / 3);
+  const mean = rollingMean(window);
+  const deviation = rollingMean(window.map(value => Math.abs(value - mean)));
+  return deviation > 0 ? (window.at(-1) - mean) / (0.015 * deviation) : 0;
+}
+
 export function marketStructure(candles) {
   const structure = analyzeMarketStructure(candles, 3);
   return { ...structure, sweep: structure.sweepConfirmed ? structure.liquiditySweep : "NONE" };
@@ -216,14 +291,19 @@ export function analyseTimeframe(candles) {
   const structure = marketStructure(candles);
   const smartMoney = analyzeSmartMoney(candles);
   const squeeze = squeezeMomentum(candles);
+  const supertrend14 = supertrend(candles, 10, 3);
+  const ichimokuCloud = ichimoku(candles);
+  const mfi14 = moneyFlowIndex(candles, 14);
+  const cci20 = commodityChannelIndex(candles, 20);
   const regime = classifyMarketRegime({ close, ema50, ema200, adx14, atr14, atrBaseline });
-  const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal];
-  const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal];
+  const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal, supertrend14.direction === "BULLISH", ichimokuCloud.direction === "BULLISH", Number.isFinite(mfi14) && mfi14 > 50, Number.isFinite(cci20) && cci20 > 0];
+  const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal, supertrend14.direction === "BEARISH", ichimokuCloud.direction === "BEARISH", Number.isFinite(mfi14) && mfi14 < 50, Number.isFinite(cci20) && cci20 < 0];
   return {
     close, lastCandle: { timestamp: Number(lastCandle.timestamp ?? lastCandle.time), open: Number(lastCandle.open), high: Number(lastCandle.high), low: Number(lastCandle.low), close: Number(lastCandle.close) },
     sessionContext,
     ema20, ema50, ema200, regime, atrBaseline, rsi14, macd: macdData.line, macdSignal: macdData.signal,
     macdHistogram: macdData.histogram, atr14, adx14,
+    supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
     profileVolume: profile.totalVolume, vwap, cvd, squeeze, structure, smartMoney,
     bullishVotes: bullish.filter(Boolean).length, bearishVotes: bearish.filter(Boolean).length,
