@@ -4,6 +4,7 @@ import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
+import { calculatePositionSize } from "./risk.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 
 const WINDOW = 240;
@@ -89,6 +90,7 @@ async function analyseMarket(market, macroContext) {
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
   console.log("Live trading: DISABLED");
+  console.log("DATA MODE: scheduled historical snapshot; not a persistent Vantage stream.");
   if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=btcusdt to use the Binance spot feed (USDT proxy, not Vantage BTCUSD).");
 
   const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
@@ -147,6 +149,15 @@ async function analyseMarket(market, macroContext) {
     console.log("TAKE PROFIT:", plan.takeProfit.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("RISK / REWARD:", plan.riskReward);
     console.log("STOP METHOD:", plan.stopType);
+    const balance = Number(process.env.ACCOUNT_BALANCE_USD);
+    const riskPercent = Number(process.env.RISK_PERCENT ?? 1);
+    const sizing = calculatePositionSize({ balance, riskPercent, entry: plan.entry, stopLoss: plan.stopLoss });
+    if (sizing) {
+      console.log("POSITION SIZE (units; USD-quoted approximation):", sizing.units);
+      console.log("MAX ACCOUNT RISK (USD):", sizing.riskAmountUsd);
+    } else {
+      console.log("POSITION SIZE: not calculated; set ACCOUNT_BALANCE_USD (and optionally RISK_PERCENT).");
+    }
   } else {
     console.log("No confirmed trade. Wait for a valid setup.");
   }

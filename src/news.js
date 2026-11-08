@@ -3,7 +3,7 @@ const GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GOOGLE_NEWS_URL = "https://news.google.com/rss/search";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_ARTICLES = 15;
+const MAX_ARTICLES = 30;
 const MIN_RELEVANCE_SCORE = 2;
 const TIMEOUT_MS = 15000;
 
@@ -61,6 +61,10 @@ const EVENT_RULES = [
       "economic growth",
       "recession"
     ]
+  },
+  {
+    name: "CRYPTO / BITCOIN",
+    words: ["bitcoin", "btc", "crypto", "cryptocurrency", "spot etf", "bitcoin etf", "sec", "binance", "coinbase", "exchange hack", "stablecoin", "digital assets", "institutional adoption", "microstrategy", "crypto regulation"]
   },
   {
     name: "GEOPOLITICS",
@@ -129,6 +133,7 @@ function classifyArticle(article) {
 
   const directPair =
     /\beur\/usd\b|\beurusd\b|euro.*dollar|dollar.*euro/.test(title);
+  const directBitcoin = /\b(bitcoin|btc|crypto|cryptocurrency|spot bitcoin etf|bitcoin etf|sec|binance|coinbase|deribit|microstrategy|crypto exchange|stablecoin)\b/i.test(title);
 
   const hasECB =
     /\becb\b|european central bank/.test(title);
@@ -137,9 +142,8 @@ function classifyArticle(article) {
     /\bfed\b|federal reserve/.test(title);
 
   // Direct EUR/USD coverage receives the strongest relevance bonus.
-  if (directPair) {
-    score += 3;
-  }
+  if (directPair) score += 3;
+  if (directBitcoin) score += 3;
 
   // Central bank references are relevant but not automatically high impact.
   if (hasECB || hasFed) {
@@ -162,7 +166,7 @@ function classifyArticle(article) {
 
   // Specific major economic announcements.
   const highImpactEvent =
-    /\brate decision\b|raises interest rates|cuts interest rates|inflation (?:rises|falls|jumps|drops) to|cpi report|consumer price index|nonfarm payroll|\bnfp\b|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting/.test(title);
+    /\brate decision\b|raises interest rates|cuts interest rates|inflation (?:rises|falls|jumps|drops) to|cpi report|consumer price index|nonfarm payroll|\bnfp\b|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting|spot bitcoin etf|bitcoin etf|sec (?:approves|rejects|sues|charges)|exchange hack|crypto exchange insolvency|stablecoin depeg|major crypto regulation/.test(title);
 
   if (highImpactEvent) {
     score += 2;
@@ -179,6 +183,7 @@ function classifyArticle(article) {
 
   return {
     ...article,
+    asset: directBitcoin ? "BTCUSD" : directPair || hasECB || hasFed ? "EURUSD" : "MACRO",
     score,
     relevance,
     eventType: matchedEvents.length
@@ -258,7 +263,7 @@ function parseRss(xml) {
 
 async function getGoogleNews() {
   const params = new URLSearchParams({
-    q: '(EUR/USD OR EURUSD OR euro OR dollar OR ECB OR "Federal Reserve" OR "European Central Bank") when:1d',
+    q: '(EUR/USD OR EURUSD OR euro OR dollar OR ECB OR "Federal Reserve" OR "European Central Bank" OR bitcoin OR BTC OR crypto OR "spot bitcoin ETF" OR SEC OR Binance OR Coinbase OR "crypto regulation" OR "exchange hack" OR MicroStrategy) when:1d',
     hl: "en-US",
     gl: "US",
     ceid: "US:en"
@@ -284,7 +289,7 @@ async function getGoogleNews() {
 
 async function getGdeltNews() {
   const params = new URLSearchParams({
-    query: '("EUR/USD" OR EURUSD OR euro OR dollar OR "European Central Bank" OR "Federal Reserve")',
+    query: '("EUR/USD" OR EURUSD OR euro OR dollar OR "European Central Bank" OR "Federal Reserve" OR bitcoin OR BTC OR cryptocurrency OR "spot bitcoin ETF" OR SEC OR Binance OR Coinbase OR "crypto regulation" OR "exchange hack" OR MicroStrategy)',
     mode: "artlist",
     format: "json",
     timespan: "24h",
@@ -319,7 +324,7 @@ async function getGdeltNews() {
 
 function printNewsReport(articles, source) {
   console.log("");
-  console.log("EUR/USD NEWS INTELLIGENCE");
+  console.log("FOREX + BITCOIN NEWS INTELLIGENCE");
   console.log("-------------------------");
   console.log(`SOURCE: ${source}`);
   console.log(`RELEVANT ARTICLES: ${articles.length}`);
@@ -348,6 +353,7 @@ function printNewsReport(articles, source) {
       `${index + 1}. [${article.relevance}] [${article.eventType}]`
     );
 
+    console.log(`ASSET: ${article.asset ?? "MACRO"}`);
     console.log(`TITLE: ${article.title}`);
     console.log(`SOURCE: ${article.source}`);
     console.log(`DATE: ${article.date}`);
