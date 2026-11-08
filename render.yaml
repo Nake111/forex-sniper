@@ -1,0 +1,19 @@
+services:
+  - type: worker
+    name: forex-sniper-btc-websocket
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    branch: Btcusd
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    disk:
+      name: btc-market-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_BRANCH
+        value: Btcusd
