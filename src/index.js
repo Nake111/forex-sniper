@@ -139,7 +139,11 @@ QUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
     }
   }
 
-  const candidate = evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
+  const candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  if (market.symbol === "XAUUSD" && goldMacroBlocked) {
+    console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
+  }
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
   const confirmation = confirmSignal(candidate, results.H1);
@@ -184,7 +188,11 @@ async function main() {
     let context = marketNews ? buildMacroContext(marketNews) : macroContext;
     if (market.symbol === "XAUUSD") {
       const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
-      context = { ...context, ...goldMacro, headlines: context.headlines ?? [] };
+      const headlineRisk = context.eventRisk ?? "UNKNOWN";
+      const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
+      const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
+        : headlineRisk === "UNKNOWN" || calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
+      context = { ...context, ...goldMacro, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
       console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
     }
     if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
