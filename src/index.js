@@ -224,7 +224,9 @@ async function analyseMarket(market, macroContext) {
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
-  // Start the cloud panel before the remaining local decision work so both overlap.\n  const llmReviewPromise = runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });\n  const agentGate = gateSignalWithAgents(candidate, agentReport);
+  // Start the cloud panel before the remaining local decision work so both overlap.
+  const llmReviewPromise = runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
+  const agentGate = gateSignalWithAgents(candidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT GATE:", agentGate.reason);
   candidate = agentGate.signal;
@@ -232,7 +234,7 @@ async function analyseMarket(market, macroContext) {
   const llmReport = await llmReviewPromise;
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
   // The five local deterministic specialists are the fast primary decision path.
-  // Gemini is an additional cloud review with a 2-second budget; only a complete,
+  // Gemini is an additional cloud review with an 8-second budget; only a complete,
   // schema-valid six-role response may veto. Timeout/error falls back to local agents.
   if (llmReport.status === "COMPLETE" && candidate !== "HOLD" && llmReport.decision !== candidate) {
     console.log("GEMINI SIX-ROLE VETO: HOLD — completed Gemini panel did not confirm the local multi-agent candidate.");
