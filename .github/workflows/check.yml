@@ -41,6 +41,9 @@ jobs:
       - name: Run BTC/USD historical backtest
         run: npm run backtest
 
+      - name: Run Donchian research backtest
+        run: npm run backtest:donchian
+
       - name: Preserve market data and reports
         if: always()
         uses: actions/upload-artifact@v4
