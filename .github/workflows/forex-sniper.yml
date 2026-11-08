@@ -1,8 +1,6 @@
 name: Forex Sniper Analysis
 
 on:
-  repository_dispatch:
-    types: [tradingview_alert]
   workflow_dispatch:
   push:
     branches: [main]
@@ -49,12 +47,6 @@ jobs:
           DUKASCOPY_RETRY_COUNT: "2"
           DUKASCOPY_RATE_LIMIT_RETRIES: "3"
 
-      - name: Save incoming TradingView chart snapshot
-        if: github.event_name == 'repository_dispatch' && github.event.action == 'tradingview_alert'
-        env:
-          TV_CHART_PAYLOAD: ${{ toJson(github.event.client_payload) }}
-        run: |
-          node -e 'const fs = require("node:fs"); const payload = JSON.parse(process.env.TV_CHART_PAYLOAD); fs.writeFileSync("data/tradingview-chart.json", JSON.stringify(payload));'
       - name: Generate signal report
         run: |
           set -o pipefail
