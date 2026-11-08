@@ -1,4 +1,6 @@
 // Historical Polymarket BTC Up/Down token-price research. Read-only; no order execution.
+import { mkdir, writeFile } from "node:fs/promises";
+import { auditTradeReturns } from "./performance-audit.js";
 import { discoverBtcUpDownMarkets, isBtcUpDownMarket } from "./polymarket-quant.js";
 const CLOB = "https://clob.polymarket.com";
 const FEE_BPS = Number(process.env.POLY_FEE_BPS ?? 100);
@@ -77,5 +79,10 @@ async function main() {
   console.log(`Sum of per-trade returns (not compounded): ${(net * 100).toFixed(3)}%; average: ${(avg * 100).toFixed(4)}%`);
   console.log(`Assumed fee: ${FEE_BPS} bps; slippage: ${SLIPPAGE_BPS} bps per side`);
   console.log("Limitations: CLOB history is sampled token prices, not historical order books/fills; this first-pass test marks the next sample and does not use resolved outcome PnL. Not a profitability claim.");
+  const audit = auditTradeReturns(trades);
+  console.log("PERFORMANCE AUDIT:", JSON.stringify(audit));
+  await mkdir("reports", { recursive: true });
+  await writeFile("reports/polymarket-backtest.json", JSON.stringify({ generatedAt: new Date().toISOString(), assumptions: { feeBps: FEE_BPS, slippageBps: SLIPPAGE_BPS }, audit, trades }, null, 2));
+  console.log("Saved detailed audit to reports/polymarket-backtest.json");
 }
 main().catch(error => { console.error("Polymarket backtest failed:", error); process.exitCode = 1; });
