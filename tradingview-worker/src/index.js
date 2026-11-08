@@ -3,9 +3,10 @@ export default {
     const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-Webhook-Secret" };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
     if (request.method !== "POST") return new Response("POST only", { status: 405, headers: cors });
-    if (!env.TV_WEBHOOK_SECRET || request.headers.get("X-Webhook-Secret") !== env.TV_WEBHOOK_SECRET) return new Response("Unauthorized", { status: 401, headers: cors });
+    if (!env.TV_WEBHOOK_SECRET) return new Response("Unauthorized", { status: 401, headers: cors });
     let alert;
     try { alert = await request.json(); } catch { return new Response("Invalid JSON", { status: 400, headers: cors }); }
+    if (alert.secret !== env.TV_WEBHOOK_SECRET) return new Response("Unauthorized", { status: 401, headers: cors });
     const action = String(alert.action || "").toUpperCase();
     const ticker = String(alert.ticker || "").toUpperCase();
     const timeframe = String(alert.timeframe || "");
