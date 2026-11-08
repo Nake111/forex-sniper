@@ -8,6 +8,9 @@ const MARKETS = [
   { label: "Gold XAU/USD", instrument: "xauusd", prefix: "xauusd" }
 ];
 const TIMEFRAMES = ["m5", "m15", "h1", "h4"];
+const MARKET_FILTER = process.env.MARKET_FILTER?.toUpperCase();
+const SELECTED_MARKETS = MARKET_FILTER ? MARKETS.filter(market => market.prefix.toUpperCase() === MARKET_FILTER) : MARKETS;
+if (MARKET_FILTER && SELECTED_MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
@@ -42,10 +45,10 @@ async function main() {
     throw new Error("DATA_DAYS_BACK must be an integer between 30 and 730");
   }
   await mkdir("data", { recursive: true });
-  for (const market of MARKETS) {
+  for (const market of SELECTED_MARKETS) {
     for (const timeframe of TIMEFRAMES) await downloadOne(market, timeframe);
   }
-  console.log("All EUR/USD, BTC/USD and XAU/USD datasets downloaded.");
+  console.log("Selected market datasets downloaded:", SELECTED_MARKETS.map(market => market.label).join(", "));
 }
 
 main().catch(error => {
