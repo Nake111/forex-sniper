@@ -48,6 +48,8 @@ function compactContext(context = {}) {
     timeframes: Object.fromEntries(["M5", "M15", "H1", "H4"].map(key => [key, compactFrame(context.frames?.[key])])),
     macro: {
       eventRisk: macro.eventRisk ?? "UNKNOWN",
+      dataStale: macro.dataStale === true,
+      staleTimeframes: macro.staleTimeframes ?? [],
       goldMacroBias: macro.goldMacroBias ?? null,
       eventCount: Array.isArray(macro.calendar?.events) ? macro.calendar.events.length : null,
       headlines: (macro.headlines ?? []).slice(0, 4).map(item =>
@@ -149,7 +151,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
     // Local risk controls are authoritative. Gemini cannot waive a known
     // high-impact event block, even if its generated roles disagree.
     const macroRisk = context.macro?.eventRisk ?? "UNKNOWN";
-    const hardRiskBlock = macroRisk === "HIGH" ||
+    const hardRiskBlock = macroRisk === "HIGH" || context.macro?.dataStale === true ||
       (context.market === "XAUUSD" && macroRisk !== "NORMAL");
     const decision = hardRiskBlock || veto ? "HOLD"
       : buy >= 4 ? "BUY" : sell >= 4 ? "SELL" : "HOLD";
