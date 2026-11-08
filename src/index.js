@@ -111,7 +111,7 @@ async function main() {
   };
   await writeFile(
     "data/latest-signal.json",
-    JSON.stringify(signalRecord, null, 2) + "\\n",
+    JSON.stringify(signalRecord, null, 2) + "\n",
     "utf8"
   );
   console.log("Signal contract written: data/latest-signal.json");
