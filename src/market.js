@@ -372,8 +372,8 @@ export function aroon(candles, period = 25) {
     if (Number(window[i].high) >= Number(window[highIndex].high)) highIndex = i;
     if (Number(window[i].low) <= Number(window[lowIndex].low)) lowIndex = i;
   }
-  const up = 100 * (period - 1 - (period - 1 - highIndex)) / (period - 1);
-  const down = 100 * (period - 1 - (period - 1 - lowIndex)) / (period - 1);
+  const up = 100 * highIndex / (period - 1);
+  const down = 100 * lowIndex / (period - 1);
   const oscillator = up - down;
   return { up, down, oscillator, direction: oscillator >= 20 ? "BULLISH" : oscillator <= -20 ? "BEARISH" : "NEUTRAL" };
 }
