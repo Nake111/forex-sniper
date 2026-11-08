@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env) {
-    const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-Webhook-Secret" };
+    const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
     if (request.method !== "POST") return new Response("POST only", { status: 405, headers: cors });
     if (!env.TV_WEBHOOK_SECRET) return new Response("Unauthorized", { status: 401, headers: cors });
