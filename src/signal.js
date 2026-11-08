@@ -6,6 +6,11 @@ export const SIGNAL_PROFILES = {
     minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1,
     minBullishRsi: 55, maxBearishRsi: 45, requireVwapCvd: true,
     minM5Adx: 18, minM15Adx: 18, requireRetest: true, maxRetestBars: 12
+  },
+  gold: {
+    minM5Votes: 4, minM15Votes: 4, minH1Votes: 3, maxOpposingH1Votes: 1,
+    minBullishRsi: 54, maxBearishRsi: 46, requireVwapCvd: true,
+    minM5Adx: 20, minM15Adx: 20, requireRetest: true, maxRetestBars: 12
   }
 };
 
