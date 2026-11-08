@@ -31,6 +31,10 @@ jobs:
         with:
           node-version: "20"
       - name: Install dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
         run: npm install
       - name: Syntax checks
         run: npm run check
@@ -43,7 +47,15 @@ jobs:
       - name: Generate XAUUSD report
         run: |
           set -o pipefail
-          MARKET_FILTER=XAUUSD SIGNAL_PROFILE=gold npm start | tee gold-signals.txt
+          MARKET_FILTER=XAUUSD SIGNAL_PROFILE=gold npm start 2>&1 | tee gold-signals.txt
+      - name: Upload Gold signal report immediately
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xauusd-daily-signals
+          path: gold-signals.txt
+          if-no-files-found: warn
+          retention-days: 30
       - name: Backtest strategy profiles
         run: |
           set -o pipefail
@@ -60,11 +72,12 @@ jobs:
           BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=institutional npm run backtest | tee -a gold-backtests.txt
           npm run backtest:gold:holdout | tee -a gold-backtests.txt
       - name: Upload Gold validation report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xauusd-daily-validation
           path: |
             gold-signals.txt
             gold-backtests.txt
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
