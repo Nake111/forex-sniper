@@ -216,6 +216,9 @@ export function squeezeMomentum(
   return {
     ...current,
     previousMomentum: previous.momentum,
+    releasedNow:
+      previous.state === "SQUEEZE_ON" &&
+      current.state === "SQUEEZE_RELEASED",
     direction
   };
 }
