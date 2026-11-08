@@ -7,6 +7,7 @@ const DATA_DIR = "data";
 const MAX_1M_CANDLES = 10_000;
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
+const STALE_AFTER_MS = 90_000;
 const TIMEFRAMES = [
   { name: "m5", minutes: 5 },
   { name: "m15", minutes: 15 },
@@ -19,6 +20,8 @@ let socket;
 let reconnectAttempt = 0;
 let heartbeatTimer;
 let reconnectTimer;
+let lastMessageAt = 0;
+let watchdogTimer;
 
 function normalizeKline(k) {
   return {
@@ -142,20 +145,28 @@ function connect() {
 
   socket.on("open", () => {
     reconnectAttempt = 0;
+    lastMessageAt = Date.now();
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     console.log("BTCUSDT WebSocket connected. Live feed is read-only; no orders are sent.");
     clearInterval(heartbeatTimer);
+    watchdogTimer = setInterval(() => {
+      if (socket?.readyState === WebSocket.OPEN && lastMessageAt && Date.now() - lastMessageAt > STALE_AFTER_MS) {
+        console.error("STALE FEED: no WebSocket message for 90 seconds; reconnecting.");
+        socket.terminate();
+      }
+    }, 15_000);
     heartbeatTimer = setInterval(() => {
       if (socket?.readyState === WebSocket.OPEN) socket.ping();
     }, 20_000);
   });
 
-  socket.on("message", acceptKline);
+  socket.on("message", message => { lastMessageAt = Date.now(); acceptKline(message); });
   socket.on("pong", () => {});
   socket.on("error", error => console.error("WebSocket error:", error.message));
   socket.on("close", (code, reason) => {
     clearInterval(heartbeatTimer);
+    clearInterval(watchdogTimer);
     if (stopping) return;
     const delay = Math.min(RECONNECT_BASE_MS * (2 ** reconnectAttempt), RECONNECT_MAX_MS);
     reconnectAttempt += 1;
@@ -168,6 +179,7 @@ function connect() {
 async function shutdown() {
   stopping = true;
   clearInterval(heartbeatTimer);
+  clearInterval(watchdogTimer);
   clearTimeout(reconnectTimer);
   reconnectTimer = undefined;
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close(1000, "Service shutdown");
