@@ -70,6 +70,7 @@ async function main() {
       console.error(`Skipped market ${market.id}: ${error.message}`);
     }
   }
+  trades.sort((a, b) => a.entryTime - b.entryTime);
   const wins = trades.filter(t => t.pnl > 0).length;
   const net = trades.reduce((sum, t) => sum + t.pnl, 0);
   const avg = trades.length ? net / trades.length : 0;
