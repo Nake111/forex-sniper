@@ -6,9 +6,13 @@ A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD
 
 - Downloads historical M5, M15 and H1 candles from Dukascopy using `dukascopy-node`.
 - Calculates EMA 20/50, RSI 14, MACD, ATR, volume profile (POC/VAH/VAL), market structure and squeeze momentum.
+- For BTC/USD, reads Deribit public options data and reports nearest-expiry call/put open-interest walls, options-volume concentration, OI-weighted IV concentration, max pain and an unsigned gross-gamma proxy.
+- Keeps options positioning as supplemental context; it does not independently trigger BUY/SELL.
 - Evaluates each market independently and prints `BUY`, `SELL` or `NO TRADE`.
 - Produces an ATR-based entry, stop-loss and take-profit only when the M5/M15 setup and H1 confirmation align.
-- Includes unit tests for signal direction and confirmation logic.
+- Includes unit tests for signal direction, confirmation logic and options-wall calculations.
+
+**Options data limitations:** Deribit public open interest is delayed by 8 hours. Open interest does not reveal dealer long/short positioning, so the gamma figure is an unsigned approximation, not signed dealer GEX. BTC options levels must not be treated as guaranteed support/resistance. The current free data setup does not provide a consolidated listed-options chain for EUR/USD.
 
 **Safety:** this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
@@ -50,7 +54,7 @@ The six datasets are saved under `data/`:
 npm start
 ```
 
-The output contains separate EUR/USD and BTC/USD reports. If one market is missing valid data, the other market is still analysed; the process exits with an error status so the missing dataset is visible.
+The output contains separate EUR/USD and BTC/USD reports. BTC options context is fetched from Deribit public endpoints; if that service is unavailable, spot analysis continues without it. If one market is missing valid candle data, the other market is still analysed; the process exits with an error status so the missing dataset is visible.
 
 ## GitHub Actions
 
