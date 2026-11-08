@@ -282,35 +282,35 @@ async function main() {
     macroContext = buildMacroContext([]);
     console.error("Macro news unavailable:", error.message);
   }
-  const outcomes = await Promise.allSettled(MARKETS.map(async market => {
-    const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;
-    let context = marketNews ? buildMacroContext(marketNews) : macroContext;
-    if (market.symbol === "XAUUSD") {
-      const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
-      const liveGoldContext = await loadGoldLiveContext();
-      const yieldDate = Date.parse(goldMacro.yields?.latest?.date ?? "");
-      const yieldAgeDays = Number.isFinite(yieldDate) ? Math.max(0, (Date.now() - yieldDate) / 86_400_000) : null;
-      const freshYieldChange = yieldAgeDays !== null && yieldAgeDays <= 5 ? goldMacro.yields?.change10Y : null;
-      const goldMacroBias = combineGoldMacroBias(freshYieldChange, liveGoldContext.dxyDirection);
-      const headlineRisk = context.eventRisk ?? "UNKNOWN";
-      const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
-      const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
-        : calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
-      context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
-      console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
-      console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
-    }
-    if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
-    return analyseMarket(market, context);
-  }));
+  // Sequential market execution keeps asynchronous Gemini/news output grouped
+  // under the correct instrument in the saved report.
   let failed = false;
-  outcomes.forEach((outcome, index) => {
-    if (outcome.status === "rejected") {
+  for (const market of MARKETS) {
+    try {
+      const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;
+      let context = marketNews ? buildMacroContext(marketNews) : macroContext;
+      if (market.symbol === "XAUUSD") {
+        const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
+        const liveGoldContext = await loadGoldLiveContext();
+        const yieldDate = Date.parse(goldMacro.yields?.latest?.date ?? "");
+        const yieldAgeDays = Number.isFinite(yieldDate) ? Math.max(0, (Date.now() - yieldDate) / 86_400_000) : null;
+        const freshYieldChange = yieldAgeDays !== null && yieldAgeDays <= 5 ? goldMacro.yields?.change10Y : null;
+        const goldMacroBias = combineGoldMacroBias(freshYieldChange, liveGoldContext.dxyDirection);
+        const headlineRisk = context.eventRisk ?? "UNKNOWN";
+        const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
+        const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
+          : calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
+        context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
+        console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
+        console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
+      }
+      if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
+      await analyseMarket(market, context);
+    } catch (error) {
       failed = true;
-      console.error(`
-${MARKETS[index].label} ANALYSIS ERROR:`, outcome.reason);
+      console.error(`\n${market.label} ANALYSIS ERROR:`, error);
     }
-  });
+  }
   if (failed) process.exitCode = 1;
 }
 
