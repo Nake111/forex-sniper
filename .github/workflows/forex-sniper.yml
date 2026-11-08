@@ -36,10 +36,10 @@ jobs:
         run: npm run check
       - name: Run tests
         run: npm test
-      - name: Download EUR/USD, BTC/USD and XAU/USD candles
+      - name: Download recent candles for prompt signal analysis
         run: npm run download
         env:
-          DATA_DAYS_BACK: "180"
+          DATA_DAYS_BACK: "30"
           DOWNLOAD_CONCURRENCY: "3"
           DUKASCOPY_BATCH_SIZE: "10"
           DUKASCOPY_BATCH_PAUSE_MS: "100"
@@ -62,6 +62,16 @@ jobs:
           path: signals.txt
           if-no-files-found: warn
           retention-days: 14
+      - name: Download 180-day history for strategy validation
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "180"
+          DOWNLOAD_CONCURRENCY: "3"
+          DUKASCOPY_BATCH_SIZE: "10"
+          DUKASCOPY_BATCH_PAUSE_MS: "100"
+          DUKASCOPY_REQUEST_INTERVAL_MS: "100"
+          DUKASCOPY_RETRY_COUNT: "2"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "3"
       - name: Compare baseline, advanced and institutional strategies on a 30% chronological holdout
         run: |
           set -o pipefail
