@@ -6,6 +6,8 @@ on:
 jobs:
   analysis:
     runs-on: ubuntu-latest
+    env:
+      BTC_DATA_PREFIX: btcusdt
 
     steps:
       - name: Checkout repository
