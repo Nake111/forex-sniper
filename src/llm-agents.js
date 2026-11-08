@@ -1,5 +1,6 @@
 // Six specialist Gemini perspectives in ONE request for low-latency confirmation.
 // These are six role-separated assessments from one model response, not six isolated API calls.
+// Target latency is 2 seconds; cloud-provider/network latency is outside our control.
 // A single request avoids serial pacing/rate-limit delays. Any timeout/schema failure => HOLD.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
