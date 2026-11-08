@@ -1,0 +1,36 @@
+//@version=6
+indicator("Forex Sniper Confirmation Alerts", overlay=true, max_labels_count=100)
+
+// Use on TradingView charts for OANDA:EURUSD, BINANCE:BTCUSDT and OANDA:XAUUSD.
+// Alerts are research signals only; they do not place orders.
+fastLen = input.int(20, "Fast EMA", minval=2)
+slowLen = input.int(50, "Slow EMA", minval=3)
+rsiLen = input.int(14, "RSI length", minval=2)
+atrLen = input.int(14, "ATR length", minval=2)
+minRsiLong = input.float(55, "Minimum RSI for BUY")
+maxRsiShort = input.float(45, "Maximum RSI for SELL")
+minAtrPct = input.float(0.02, "Minimum ATR %", step=0.01)
+confirmOnClose = input.bool(true, "Only signal on closed candle")
+
+fast = ta.ema(close, fastLen)
+slow = ta.ema(close, slowLen)
+rsi = ta.rsi(close, rsiLen)
+atr = ta.atr(atrLen)
+atrPct = close != 0 ? atr / close * 100 : 0
+longSetup = ta.crossover(fast, slow) and rsi >= minRsiLong and atrPct >= minAtrPct
+shortSetup = ta.crossunder(fast, slow) and rsi <= maxRsiShort and atrPct >= minAtrPct
+confirmed = not confirmOnClose or barstate.isconfirmed
+buySignal = longSetup and confirmed
+sellSignal = shortSetup and confirmed
+
+plot(fast, "EMA Fast", color=color.teal, linewidth=2)
+plot(slow, "EMA Slow", color=color.orange, linewidth=2)
+plotshape(buySignal, title="BUY", style=shape.labelup, location=location.belowbar, color=color.green, text="BUY", textcolor=color.white)
+plotshape(sellSignal, title="SELL", style=shape.labeldown, location=location.abovebar, color=color.red, text="SELL", textcolor=color.white)
+
+alertcondition(buySignal, "Forex Sniper BUY", "BUY signal")
+alertcondition(sellSignal, "Forex Sniper SELL", "SELL signal")
+if buySignal
+    alert('{"source":"tradingview","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"BUY","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
+if sellSignal
+    alert('{"source":"tradingview","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"SELL","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
