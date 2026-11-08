@@ -36,6 +36,6 @@ export function auditTradeReturns(trades, { holdoutRatio = 0.3 } = {}) {
     inSample: summarize(valid.slice(0, split)),
     holdout: summarize(valid.slice(split)),
     holdoutRatio,
-    methodology: "Chronological split; compounded returns; Wilson 95% interval for win rate. Descriptive only; results depend on sample selection and assumed execution costs."
+    methodology: "Chronological split; compounded returns; Wilson 95% interval for win rate. Descriptive only; assumes sequential compounding and does not net overlapping positions; results depend on sample selection and assumed execution costs."
   };
 }
