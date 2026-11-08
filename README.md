@@ -128,3 +128,10 @@ After the Pages workflow succeeds, enable/open the site from Repository Settings
 - `.github/workflows/quant-swarm-check.yml`: validates the new modules on main-branch changes.
 
 To enable Grok, add `GROK_API_KEY` under GitHub repository Settings → Secrets and variables → Actions. Never put the key in dashboard HTML, source files, logs or committed `.env` files. LLM output is treated as untrusted research and can only veto/confirm an existing candidate; it cannot place orders.
+
+
+### Expiry forecasting and performance audit
+
+The BTC Up/Down context now includes an explicitly labeled expiry-time probability proxy. It estimates P(UP) from a Binance BTCUSDT 1-minute candle at the market start timestamp and recent 1-minute log-return drift/volatility. This is only a spot proxy: Polymarket may settle against a Chainlink/reference feed, and the start timestamp/candle alignment may differ. The system reports the reference price, assumptions and limitations; do not treat the probability as calibrated or executable.
+
+`src/performance-audit.js` computes compounded return, win rate with a Wilson 95% interval, profit factor, maximum drawdown and chronological in-sample/holdout summaries. `npm run backtest:polymarket` saves the raw trades and audit to `reports/polymarket-backtest.json`. The current Polymarket backtest still marks the next observed token-price sample rather than resolved-contract outcomes or executable historical fills, so its results are exploratory only.
