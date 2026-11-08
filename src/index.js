@@ -89,10 +89,11 @@ async function analyseMarket(market, macroContext) {
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
   console.log("Live trading: DISABLED");
+  if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=btcusdt to use the Binance spot feed (USDT proxy, not Vantage BTCUSD).");
 
   const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
     key: tf.key,
-    candles: await loadCandles(`data/${market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
+    candles: await loadCandles(`data/${market.symbol === "BTCUSD" ? (process.env.BTC_DATA_PREFIX ?? market.prefix) : market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
   })));
 
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
