@@ -1,4 +1,4 @@
-# Forex Sniper — EUR/USD + BTC/USD
+# Forex Sniper — EUR/USD + BTC/USD + XAU/USD
 
 A Node.js market-analysis and paper-signal project for **EUR/USD**, **BTC/USD** and **XAU/USD**. It analyses closed M5, M15 and H1 candles and prints a separate signal report for each market.
 
@@ -21,6 +21,19 @@ A Node.js market-analysis and paper-signal project for **EUR/USD**, **BTC/USD** 
 ## Session context and source licensing
 
 The session module is an independent implementation of common market-session timing and range calculations. It does not include LuxAlgo source code. The LuxAlgo Pine Script supplied as a reference by the project owner is marked CC BY-NC-SA 4.0; do not copy or redistribute that source, or use a derivative of it commercially, unless the license terms permit it.
+
+## Multi-agent decision layer
+
+The signal engine includes a TradingAgents-inspired, deterministic multi-agent layer for all three markets. This is an original JavaScript adaptation of the workflow pattern, not a direct port of the Python/LangGraph project, and it does not require paid LLM API keys.
+
+- Specialist agents: technical trend, momentum, SMC/liquidity, macro/news, and volume/auction context.
+- Bull/bear research debate: independent directional scores and supporting evidence are included in each report.
+- Trader: converts the analyst balance into a directional bias and consensus score.
+- Risk manager: can veto high-impact news and abnormal volatility.
+- Portfolio manager: approves BUY/SELL only when the agent decision agrees with the existing technical signal.
+- The agent layer can only confirm or veto a technical candidate; it never turns a technical HOLD into a trade.
+
+This layer is a second opinion and safety gate, not proof of profitability. It is rule-based rather than LLM-powered; news sentiment remains contextual and the macro analyst does not guess a direction from headlines. Backtest the added gate independently before relying on its results.
 
 ## Requirements
 
