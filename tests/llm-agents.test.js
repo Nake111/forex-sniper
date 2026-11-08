@@ -22,7 +22,7 @@ test("six Gemini roles run together and require four matching votes", async () =
     }), { status: 200, headers: { "content-type": "application/json" } });
   };
   try {
-    const result = await runIndependentLlmAgents({ market: "EURUSD" }, { apiKey: "test-key" });
+    const result = await runIndependentLlmAgents({ market: "EURUSD" }, { apiKey: "test-key", requestIntervalMs: 0 });
     assert.equal(calls, 6);
     assert.equal(result.status, "COMPLETE");
     assert.equal(result.agents.length, 6);
