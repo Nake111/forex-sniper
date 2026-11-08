@@ -1,4 +1,4 @@
-name: BTC Scheduled Market Snapshot
+name: Scheduled Multi-Market Snapshot
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
       - ".github/workflows/market-data.yml"
 
 concurrency:
-  group: btc-market-snapshot
+  group: multi-market-snapshot
   cancel-in-progress: true
 
 permissions:
@@ -35,26 +35,26 @@ jobs:
       - name: Validate code and strategy tests
         run: npm run check && npm test
 
-      - name: Download BTC/USD candles
-        run: MARKET_FILTER=BTCUSD npm run download
+      - name: Download EUR/USD, BTC/USD and XAU/USD candles
+        run: npm run download
         env:
           DATA_DAYS_BACK: "30"
           DOWNLOAD_CONCURRENCY: "3"
 
-      - name: Generate BTC/USD snapshot report
-        run: MARKET_FILTER=BTCUSD npm start 2>&1 | tee btc-snapshot.txt
+      - name: Generate multi-market signal report
+        run: npm start 2>&1 | tee market-snapshot.txt
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           LLM_TIMEOUT_MS: "8000"
 
-      - name: Upload BTC snapshot and candles
+      - name: Upload multi-market snapshot and candles
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: btc-market-snapshot
+          name: multi-market-snapshot
           path: |
-            btc-snapshot.txt
-            data/btcusd-*.json
+            market-snapshot.txt
+            data/*.json
           if-no-files-found: warn
           retention-days: 14
