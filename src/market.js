@@ -2,6 +2,7 @@ import { analyzeMarketStructure } from "./market-structure.js";
 import { analyzeSmartMoney } from "./smart-money.js";
 import { calculateVolumeProfile } from "./volume-profile.js";
 import { classifyMarketRegime } from "./market-regime.js";
+import { getSessionContext } from "./sessions.js";
 
 export function ema(values, period) {
   if (values.length < period) return null;
@@ -198,6 +199,7 @@ export function cumulativeVolumeDeltaProxy(candles, slopeBars = 5) {
 export function analyseTimeframe(candles) {
   if (!Array.isArray(candles) || candles.length < 60) throw new Error("Not enough candles for analysis.");
   const lastCandle = candles.at(-1);
+  const sessionContext = getSessionContext(candles, { utcOffset: Number(process.env.SESSION_UTC_OFFSET ?? 0) });
   const closes = candles.map(c => Number(c.close));
   const close = closes.at(-1);
   const ema20 = ema(closes, 20);
@@ -218,7 +220,8 @@ export function analyseTimeframe(candles) {
   const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal];
   const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal];
   return {
-    close, lastCandle: { open: Number(lastCandle.open), high: Number(lastCandle.high), low: Number(lastCandle.low), close: Number(lastCandle.close) },
+    close, lastCandle: { timestamp: Number(lastCandle.timestamp ?? lastCandle.time), open: Number(lastCandle.open), high: Number(lastCandle.high), low: Number(lastCandle.low), close: Number(lastCandle.close) },
+    sessionContext,
     ema20, ema50, ema200, regime, atrBaseline, rsi14, macd: macdData.line, macdSignal: macdData.signal,
     macdHistogram: macdData.histogram, atr14, adx14,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
