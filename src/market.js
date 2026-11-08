@@ -252,6 +252,7 @@ export function analyseTimeframe(candles) {
 
   const ema20 = ema(closes, 20);
   const ema50 = ema(closes, 50);
+  const ema200 = ema(closes, 200);
   const rsi14 = rsi(closes, 14);
   const macdData = macd(closes);
   const atr14 = atr(candles, 14);
@@ -281,6 +282,7 @@ export function analyseTimeframe(candles) {
     close,
     ema20,
     ema50,
+    ema200,
     rsi14,
     macd: macdData.line,
     macdSignal: macdData.signal,
