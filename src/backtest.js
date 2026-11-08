@@ -9,7 +9,7 @@ if (!["BTCUSD", "EURUSD", "XAUUSD"].includes(MARKET)) throw new Error("MARKET mu
 const DATA_PREFIX = MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced or institutional");
+if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 const START_RATIO = Number(process.env.BACKTEST_START_RATIO ?? 0);
 if (!Number.isFinite(START_RATIO) || START_RATIO < 0 || START_RATIO >= 1) throw new Error("BACKTEST_START_RATIO must be in [0, 1)");
 
