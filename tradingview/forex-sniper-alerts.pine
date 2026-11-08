@@ -11,6 +11,7 @@ minRsiLong = input.float(55, "Minimum RSI for BUY")
 maxRsiShort = input.float(45, "Maximum RSI for SELL")
 minAtrPct = input.float(0.02, "Minimum ATR %", step=0.01)
 confirmOnClose = input.bool(true, "Only signal on closed candle")
+webhookSecret = input.string("", "Webhook shared secret")
 
 fast = ta.ema(close, fastLen)
 slow = ta.ema(close, slowLen)
@@ -31,6 +32,6 @@ plotshape(sellSignal, title="SELL", style=shape.labeldown, location=location.abo
 alertcondition(buySignal, "Forex Sniper BUY", "BUY signal")
 alertcondition(sellSignal, "Forex Sniper SELL", "SELL signal")
 if buySignal
-    alert('{"source":"tradingview","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"BUY","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
+    alert('{"source":"tradingview","secret":"' + webhookSecret + '","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"BUY","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
 if sellSignal
     alert('{"source":"tradingview","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"SELL","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
