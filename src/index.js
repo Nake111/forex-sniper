@@ -237,7 +237,7 @@ async function main() {
       const headlineRisk = context.eventRisk ?? "UNKNOWN";
       const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
       const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
-        : headlineRisk === "UNKNOWN" || calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
+        : calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
       context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
       console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
       console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
