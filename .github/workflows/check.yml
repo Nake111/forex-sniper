@@ -35,8 +35,13 @@ jobs:
       - name: Download 180 days of BTC/USD data
         run: npm run download
 
-      - name: Run BTC Sniper analysis without replacing full history
+      - name: Sync online BTC spot candles
+        run: npm run sync:market
+
+      - name: Run BTC Sniper analysis using online market data
         run: npm run analyze
+        env:
+          MARKET_DATA_SOURCE: binance
 
       - name: Run BTC/USD historical backtest
         run: npm run backtest
