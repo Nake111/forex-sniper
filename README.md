@@ -117,3 +117,14 @@ A separate browser dashboard is available in [dashboard/](dashboard/). It connec
 - No live orders, wallet connection, deposits, or withdrawals are supported.
 
 After the Pages workflow succeeds, enable/open the site from Repository Settings → Pages. The expected project URL is https://nake111.github.io/forex-sniper/ if GitHub Pages is available for this repository.
+
+
+## Polymarket + Grok Quant Swarm additions
+
+- `src/llm-agents.js`: six independent role prompts (technical, structure, quant, macro, risk, contrarian) using an optional xAI/OpenAI-compatible chat-completions endpoint. Configure the GitHub Actions secret `GROK_API_KEY`; optionally set `LLM_API_URL` and `LLM_MODEL`. The six-agent group fails closed to HOLD if any agent fails or vetoes. Without a key, it stays disabled and the existing deterministic research agents remain active.
+- `src/polymarket-quant.js`: read-only BTC Up/Down market discovery, outcome-token mapping by labels, current bid/ask context and seconds-to-expiry. The exact settlement reference/strike is not inferred from the question title; expiry direction is not promoted to an executable signal.
+- `src/polymarket-backtest.js`: run `npm run backtest:polymarket`. This first-pass test uses public CLOB token-price history, transparent fee/slippage assumptions and next-sample mark-to-market. It is not resolution-based PnL, does not reconstruct historical order books or actual fills, and must not be presented as verified profitability.
+- `tests/polymarket-quant.test.js` and `tests/llm-agents.test.js`: safety tests for expiry handling, outcome mapping and no-key behavior.
+- `.github/workflows/quant-swarm-check.yml`: validates the new modules on main-branch changes.
+
+To enable Grok, add `GROK_API_KEY` under GitHub repository Settings → Secrets and variables → Actions. Never put the key in dashboard HTML, source files, logs or committed `.env` files. LLM output is treated as untrusted research and can only veto/confirm an existing candidate; it cannot place orders.
