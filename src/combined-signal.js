@@ -40,6 +40,22 @@ export function evaluateCombinedSignal({ results, donchian, legacySignal = "HOLD
   add(bosRecent && bosDirection === "BULLISH" ? "BULLISH" : bosRecent && bosDirection === "BEARISH" ? "BEARISH" : "NONE", 2, "M15 market-structure BOS");
   const smc = m15.smartMoney?.swing;
   if (smc && finite(smc.barsAgo) && smc.barsAgo <= 4 && smc.type === "BOS") add(smc.direction, 1, "M15 SMC swing BOS");
+  if (smc && finite(smc.barsAgo) && smc.barsAgo <= 4 && smc.type === "CHoCH") add(smc.direction, 1, "M15 SMC change of character");
+
+  const zoneBuffer = finite(m15.atr14) ? m15.atr14 * 0.25 : 0;
+  const nearZone = (price, low, high) => finite(price) && finite(low) && finite(high) &&
+    price >= Math.min(low, high) - zoneBuffer && price <= Math.max(low, high) + zoneBuffer;
+  const activeBlock = (m15.smartMoney?.orderBlocks ?? []).find(block =>
+    !block.invalidated && ["FRESH", "TOUCHED"].includes(block.status) &&
+    nearZone(m15.close, block.low, block.high)
+  );
+  if (activeBlock) add(activeBlock.direction, 1, "M15 SMC active order-block confluence");
+  const activeGap = (m15.smartMoney?.fairValueGaps ?? []).find(gap =>
+    !gap.filled && nearZone(m15.close, gap.bottom, gap.top)
+  );
+  if (activeGap) add(activeGap.direction, 1, "M15 unfilled fair-value-gap confluence");
+  add(m15.close > m15.valueAreaHigh ? "BULLISH" :
+      m15.close < m15.valueAreaLow ? "BEARISH" : "NONE", 1, "M15 Volume Profile value-area position");
 
   const sweep = m5.structure;
   add(sweep?.sweepConfirmed && sweep.liquiditySweep === "BULLISH" ? "BULLISH" :
