@@ -23,7 +23,7 @@ async function runOne(role, system, context, apiKey) {
     body: JSON.stringify({
       model: MODEL, temperature: 0.1, max_tokens: 350,
       messages: [
-        { role: "system", content: system + " Return JSON only: {direction: BUY|SELL|HOLD, confidence: integer 0..100, evidence: string[], veto: boolean}. Do not give guarantees or invent data." },
+        { role: "system", content: system + " Return exactly one valid JSON object: {"direction":"BUY|SELL|HOLD","confidence":75,"evidence":["short evidence"],"veto":false}. Do not give guarantees or invent data." },
         { role: "user", content: JSON.stringify(context) }
       ]
     }),
