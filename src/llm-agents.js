@@ -1,7 +1,9 @@
 // Six independent Gemini research agents. No paid Grok/xAI dependency.
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
 const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 20000);
+const REQUEST_INTERVAL_MS = Number(process.env.GEMINI_REQUEST_INTERVAL_MS || 6500);
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const ROLES = [
   ["technical", "You are an independent technical analyst. Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "You are an independent market-structure analyst. Assess swings, breakouts, liquidity sweeps and support/resistance."],
@@ -45,7 +47,16 @@ async function runOne(role, system, context, apiKey) {
 export async function runIndependentLlmAgents(context, options = {}) {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey) return { enabled: false, status: "NOT_CONFIGURED", agents: [], decision: "HOLD", reason: "Set GEMINI_API_KEY in GitHub Actions secrets to enable Gemini agents." };
-  const results = await Promise.allSettled(ROLES.map(([role, prompt]) => runOne(role, prompt, context, apiKey)));
+  const requestIntervalMs = Number.isFinite(options.requestIntervalMs) ? options.requestIntervalMs : REQUEST_INTERVAL_MS;
+  const results = [];
+  for (let index = 0; index < ROLES.length; index += 1) {
+    if (index > 0 && requestIntervalMs > 0) await wait(requestIntervalMs);
+    try {
+      results.push({ status: "fulfilled", value: await runOne(ROLES[index][0], ROLES[index][1], context, apiKey) });
+    } catch (reason) {
+      results.push({ status: "rejected", reason });
+    }
+  }
   const agents = results.map((result, index) => result.status === "fulfilled"
     ? result.value
     : { role: ROLES[index][0], direction: "HOLD", confidence: 0, evidence: [], veto: true, error: result.reason?.message || "Agent failed" });
