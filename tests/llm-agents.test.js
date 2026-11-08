@@ -58,6 +58,20 @@ test("local HIGH macro risk blocks a Gemini BUY consensus", async () => {
   }
 });
 
+test("stale data forces Gemini review to HOLD", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => geminiResponse();
+  try {
+    const result = await runIndependentLlmAgents({
+      market: "BTCUSD",
+      macro: { eventRisk: "NORMAL", dataStale: true, staleTimeframes: ["M5"] }
+    }, { apiKey: "test-key", timeoutMs: 2000 });
+    assert.equal(result.decision, "HOLD");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("XAUUSD fails closed when macro risk is unknown", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => geminiResponse();
