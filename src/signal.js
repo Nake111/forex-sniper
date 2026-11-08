@@ -56,8 +56,6 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
     : M5?.structure?.bos === "BEARISH" || M5?.structure?.sweep === "BEARISH" ? "BEARISH" : null, 2, "Structure or liquidity sweep");
   add(hasDirectionalRetest(M5, "BULLISH", 12) ? "BULLISH"
     : hasDirectionalRetest(M5, "BEARISH", 12) ? "BEARISH" : null, 2, "OB/FVG directional retest");
-  const sessionBonus = M5?.sessionContext?.isMajorSession ? 1 : 0;
-  if (sessionBonus) { bullish.push({ points: 1, label: "Active London/New York liquidity session" }); bearish.push({ points: 1, label: "Active London/New York liquidity session" }); }
   const bullScore = bullish.reduce((sum, item) => sum + item.points, 0);
   const bearScore = bearish.reduce((sum, item) => sum + item.points, 0);
   const blocked = macro?.eventRisk === "HIGH";
