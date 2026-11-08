@@ -64,7 +64,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
     roleInstructions,
     "Use only the supplied market data. Do not invent prices, news, indicators or facts.",
     "Each assessment must independently choose BUY, SELL or HOLD, give confidence 0-100, 1-3 short evidence items, and veto true/false.",
-    "Return ONLY JSON in this exact shape: {\\"agents\\":[{\\"role\\":\\"technical\\",\\"direction\\":\\"BUY|SELL|HOLD\\",\\"confidence\\":0,\\"evidence\\":[\\"...\\"],\\"veto\\":false}]}",
+    "Return ONLY JSON matching this schema: " + JSON.stringify({ agents: [{ role: "technical", direction: "BUY|SELL|HOLD", confidence: 0, evidence: ["..."], veto: false }] }),
     "Include all six roles exactly once. Be concise."
   ].join("\n\n");
 
