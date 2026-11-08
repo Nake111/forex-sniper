@@ -1,0 +1,70 @@
+name: Gold XAUUSD Daily Validation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 18 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "market-indicators.test.js"
+      - ".github/workflows/gold-daily.yml"
+
+concurrency:
+  group: gold-daily-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gold-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Syntax checks
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+      - name: Download Gold candles
+        run: MARKET_FILTER=XAUUSD npm run download
+        env:
+          DATA_DAYS_BACK: "180"
+      - name: Generate XAUUSD report
+        run: |
+          set -o pipefail
+          MARKET_FILTER=XAUUSD npm start | tee gold-signals.txt
+      - name: Backtest strategy profiles
+        run: |
+          set -o pipefail
+          MARKET=XAUUSD npm run backtest | tee gold-backtests.txt
+          MARKET=XAUUSD SIGNAL_PROFILE=strict npm run backtest | tee -a gold-backtests.txt
+          MARKET=XAUUSD SIGNAL_PROFILE=advanced npm run backtest | tee -a gold-backtests.txt
+          MARKET=XAUUSD SIGNAL_PROFILE=institutional npm run backtest | tee -a gold-backtests.txt
+      - name: Chronological holdout validation
+        run: |
+          set -o pipefail
+          BACKTEST_START_RATIO=0.7 MARKET=XAUUSD npm run backtest | tee -a gold-backtests.txt
+          BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=advanced npm run backtest | tee -a gold-backtests.txt
+          BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=institutional npm run backtest | tee -a gold-backtests.txt
+      - name: Upload Gold validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: xauusd-daily-validation
+          path: |
+            gold-signals.txt
+            gold-backtests.txt
+          if-no-files-found: error
+          retention-days: 30
