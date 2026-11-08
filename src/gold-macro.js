@@ -29,13 +29,13 @@ export async function getTreasuryRealYields() {
 }
 export async function getGoldCot() {
   const params = new URLSearchParams({
-    "$where": "contract_market_name like '%GOLD%'",
+    "$where": "cftc_contract_market_code='088691'",
     "$order": "report_date_as_yyyy_mm_dd DESC",
     "$limit": "3"
   });
   const rows = await (await get(COT + "?" + params)).json();
   if (!Array.isArray(rows) || !rows.length) throw new Error("CFTC returned no Gold COT rows");
-  const row = rows.find(item => /gold/i.test(item.contract_market_name || "")) || rows[0];
+  const row = rows.find(item => /gold/i.test(item.contract_market_name || item.market_and_exchange_names || "")) || rows[0];
   const fields = Object.entries(row);
   const pick = pattern => {
     const found = fields.find(([key]) => pattern.test(key));
@@ -43,10 +43,11 @@ export async function getGoldCot() {
   };
   const long = pick(/(?:managed_money|m_money).*positions_long/);
   const short = pick(/(?:managed_money|m_money).*positions_short/);
-  const reportDate = row.report_date_as_yyyy_mm_dd || row.report_date_as_yyyy_mm_dd;
+  const reportDate = row.report_date_as_yyyy_mm_dd || row.report_date;
   if (!Number.isFinite(long) || !Number.isFinite(short)) throw new Error("CFTC Gold row lacks recognized Managed Money long/short fields");
   const net = long - short;
-  return { contract: row.contract_market_name, reportDate, managedMoneyLong: long, managedMoneyShort: short, managedMoneyNet: net, source: "CFTC Disaggregated Futures-and-Options COT", note: "Weekly positioning context, not an intraday entry trigger." };
+  const ageDays = Number.isFinite(Date.parse(reportDate)) ? Math.max(0, (Date.now() - Date.parse(reportDate)) / 86400000) : null;
+  return { contract: row.contract_market_name || row.market_and_exchange_names, reportDate, ageDays, managedMoneyLong: long, managedMoneyShort: short, managedMoneyNet: net, source: "CFTC Disaggregated Futures-and-Options COT", note: "Weekly positioning context, not an intraday entry trigger." };
 }
 function zonedLocalToUtc(year, month, day, hour, minute, timeZone) {
   const target = Date.UTC(year, month - 1, day, hour, minute);
