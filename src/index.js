@@ -228,7 +228,8 @@ async function analyseMarket(market, macroContext) {
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT GATE:", agentGate.reason);
   candidate = agentGate.signal;
-  console.log("LOCAL SIGNAL PREVIEW (before Gemini review):", candidate, "| local portfolio:", agentReport.portfolioManager.decision);\n  const llmReport = await llmReviewPromise;
+  console.log("LOCAL SIGNAL PREVIEW (before Gemini review):", candidate, "| local portfolio:", agentReport.portfolioManager.decision);
+  const llmReport = await llmReviewPromise;
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
   // The five local deterministic specialists are the fast primary decision path.
   // Gemini is an additional cloud review with a 2-second budget; only a complete,
