@@ -17,60 +17,42 @@ function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-const BINANCE_INTERVALS = { m5: "5m", m15: "15m", h1: "1h", h4: "4h" };
-const INTERVAL_MS = { m5: 5 * 60_000, m15: 15 * 60_000, h1: 60 * 60_000, h4: 4 * 60 * 60_000 };
+const KRAKEN_INTERVALS = { m5: 5, m15: 15, h1: 60, h4: 240 };
 
-async function downloadBinanceCandles(timeframe, from, to) {
-  const interval = BINANCE_INTERVALS[timeframe];
-  if (!interval) throw new Error("Unsupported Binance interval: " + timeframe);
-  const step = INTERVAL_MS[timeframe];
-  const candles = [];
-  let startTime = from.getTime();
-  const endTime = to.getTime();
+async function downloadKrakenCandles(timeframe) {
+  const interval = KRAKEN_INTERVALS[timeframe];
+  if (!interval) throw new Error("Unsupported Kraken interval: " + timeframe);
+  const url = new URL("https://api.kraken.com/0/public/OHLC");
+  url.search = new URLSearchParams({ pair: "XBTUSD", interval: String(interval) }).toString();
 
-  while (startTime < endTime) {
-    const url = new URL("https://api.binance.com/api/v3/klines");
-    url.search = new URLSearchParams({
-      symbol: "BTCUSDT", interval, startTime: String(startTime),
-      endTime: String(endTime), limit: "1000"
-    }).toString();
-
-    let rows;
-    let lastError;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-        if (!response.ok) throw new Error("Binance HTTP " + response.status);
-        rows = await response.json();
-        if (!Array.isArray(rows)) throw new Error("Binance returned a non-array candle payload");
-        break;
-      } catch (error) {
-        lastError = error;
-        if (attempt === 3) throw lastError;
-        await new Promise(resolve => setTimeout(resolve, attempt * 500));
-      }
+  let payload;
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+      if (!response.ok) throw new Error("Kraken HTTP " + response.status);
+      payload = await response.json();
+      if (payload.error?.length) throw new Error("Kraken API: " + payload.error.join(", "));
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 3) throw lastError;
+      await new Promise(resolve => setTimeout(resolve, attempt * 500));
     }
-
-    if (!rows.length) break;
-    for (const row of rows) {
-      candles.push({
-        timestamp: Number(row[0]),
-        open: Number(row[1]),
-        high: Number(row[2]),
-        low: Number(row[3]),
-        close: Number(row[4]),
-        volume: Number(row[5])
-      });
-    }
-    const nextStart = Number(rows.at(-1)[0]) + step;
-    if (!Number.isFinite(nextStart) || nextStart <= startTime) {
-      throw new Error("Binance candle pagination did not advance");
-    }
-    startTime = nextStart;
-    if (rows.length < 1000) break;
-    await new Promise(resolve => setTimeout(resolve, 150));
   }
-  return candles;
+
+  const result = payload?.result ?? {};
+  const pairKey = Object.keys(result).find(key => key !== "last");
+  const rows = pairKey ? result[pairKey] : null;
+  if (!Array.isArray(rows)) throw new Error("Kraken returned no XBT/USD OHLC rows");
+  return rows.map(row => ({
+    timestamp: Number(row[0]) * 1000,
+    open: Number(row[1]),
+    high: Number(row[2]),
+    low: Number(row[3]),
+    close: Number(row[4]),
+    volume: Number(row[6])
+  }));
 }
 
 async function downloadOne(market, timeframe) {
@@ -79,9 +61,9 @@ async function downloadOne(market, timeframe) {
   from.setUTCDate(from.getUTCDate() - DAYS_BACK);
 
   console.log(`Downloading ${market.label} ${timeframe.toUpperCase()} candles...`);
-  const useBinance = market.prefix === "btcusd" &&
-    (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase() === "btcusdt";
-  const candles = useBinance ? await downloadBinanceCandles(timeframe, from, to)
+  const useKraken = market.prefix === "btcusd" &&
+    (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase() === "kraken-btcusd";
+  const candles = useKraken ? await downloadKrakenCandles(timeframe)
     : await getHistoricalRates({
       instrument: market.instrument,
       dates: { from: formatDate(from), to: formatDate(to) },
@@ -101,10 +83,10 @@ async function downloadOne(market, timeframe) {
     throw new Error(`Not enough ${market.label} ${timeframe.toUpperCase()} candles: ${candles?.length ?? 0}`);
   }
 
-  const prefix = useBinance ? "btcusdt" : market.prefix;
+  const prefix = useKraken ? "kraken-btcusd" : market.prefix;
   const path = `data/${prefix}-${timeframe}.json`;
   await writeFile(path, JSON.stringify(candles));
-  console.log(`${market.label} ${timeframe.toUpperCase()} ${useBinance ? "(Binance BTCUSDT spot proxy)" : "(Dukascopy)"}: ${candles.length} candles saved to ${path}`);
+  console.log(`${market.label} ${timeframe.toUpperCase()} ${useKraken ? "(Kraken XBT/USD; latest up to 720 bars)" : "(Dukascopy)"}: ${candles.length} candles saved to ${path}`);
 }
 
 async function runWithConcurrency(tasks, concurrency) {
