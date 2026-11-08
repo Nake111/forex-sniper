@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
+import { evaluateSignal, confirmSignal } from "./signal.js";
 
 const WINDOW = 120;
 const MIN_HISTORY = 60;
@@ -42,79 +43,6 @@ async function loadCandles(path, timeframe, interval) {
   return candles.slice(-WINDOW);
 }
 
-function evaluateSignal({ M5, M15, H1 }) {
-  const s = M5.structure ?? {};
-
-  const bullishStructure =
-    s.bos === "BULLISH" ||
-    s.sweep === "BULLISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BULLISH");
-
-  const bearishStructure =
-    s.bos === "BEARISH" ||
-    s.sweep === "BEARISH" ||
-    (s.sweepConfirmed && s.liquiditySweep === "BEARISH");
-
-  const bullish =
-    M5.bullishVotes >= 3 &&
-    M15.bullishVotes >= 3 &&
-    H1.bullishVotes >= 2 &&
-    H1.bearishVotes < 3;
-
-  const bearish =
-    M5.bearishVotes >= 3 &&
-    M15.bearishVotes >= 3 &&
-    H1.bearishVotes >= 2 &&
-    H1.bullishVotes < 3;
-
-  if (
-    bullish &&
-    bullishStructure &&
-    Number.isFinite(M5.poc) &&
-    M5.close > M5.poc
-  ) return "BUY";
-
-  if (
-    bearish &&
-    bearishStructure &&
-    Number.isFinite(M5.poc) &&
-    M5.close < M5.poc
-  ) return "SELL";
-
-  return "HOLD";
-}
-
-function confirmSignal(signal, H1) {
-  if (signal === "HOLD") {
-    return { status: "NO TRADE" };
-  }
-
-  const squeeze = H1.squeeze;
-
-  if (
-    !squeeze ||
-    !Number.isFinite(squeeze.momentum) ||
-    squeeze.state !== "SQUEEZE_RELEASED"
-  ) {
-    return { status: "WAIT" };
-  }
-
-  if (
-    signal === "BUY" &&
-    !squeeze.direction?.startsWith("BULLISH")
-  ) {
-    return { status: "WAIT" };
-  }
-
-  if (
-    signal === "SELL" &&
-    !squeeze.direction?.startsWith("BEARISH")
-  ) {
-    return { status: "WAIT" };
-  }
-
-  return { status: "H1 ALIGNED" };
-}
 
 function printTimeframe(name, result) {
   console.log(`\n${name} ANALYSIS`);
