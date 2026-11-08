@@ -99,29 +99,6 @@ function combineGoldMacroBias(yieldChange, dxyDirection) {
 }
 
 
-async function loadTradingViewAlert(market) {
-  try {
-    const alert = JSON.parse(await readFile("data/tradingview-alert.json", "utf8"));
-    const ticker = String(alert.ticker ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const mappedMarket = ticker === "BTCUSDT" ? "BTCUSD" : ticker;
-    const action = String(alert.action ?? "").toUpperCase();
-    const timeframeMinutes = Number(alert.timeframe);
-    const barTime = Number(alert.bar_time);
-    if (mappedMarket !== market.symbol || !["BUY", "SELL"].includes(action) ||
-        !Number.isFinite(timeframeMinutes) || timeframeMinutes <= 0 ||
-        !Number.isFinite(barTime)) return null;
-    const ageMs = Date.now() - barTime;
-    const maxAgeMs = Math.min(4 * 60 * 60 * 1000, Math.max(15 * 60 * 1000, timeframeMinutes * 60 * 1000 * 2));
-    if (ageMs < -60_000 || ageMs > maxAgeMs) {
-      console.log("TRADINGVIEW ALERT IGNORED: stale or future-dated alert | age ms:", ageMs, "| max age ms:", maxAgeMs);
-      return null;
-    }
-    return { ...alert, action, ageMs };
-  } catch {
-    return null;
-  }
-}
-
 function printTimeframe(name, result) {
   console.log(`
 ${name} ANALYSIS`);
@@ -240,8 +217,6 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
-  const tradingViewAlert = await loadTradingViewAlert(market);
-  if (tradingViewAlert) console.log("TRADINGVIEW ALERT RECEIVED:", JSON.stringify({ source: tradingViewAlert.source, ticker: tradingViewAlert.ticker, action: tradingViewAlert.action, timeframe: tradingViewAlert.timeframe, price: tradingViewAlert.price, ageSeconds: Math.round(tradingViewAlert.ageMs / 1000) }));
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
@@ -267,14 +242,6 @@ async function analyseMarket(market, macroContext) {
     candidate = "HOLD";
   } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
     console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
-  }
-  if (tradingViewAlert && candidate !== "HOLD" && tradingViewAlert.action !== candidate) {
-    console.log("TRADINGVIEW CONFLICT GATE: HOLD — TradingView direction disagrees with the local multi-agent candidate.");
-    candidate = "HOLD";
-  } else if (tradingViewAlert && candidate === tradingViewAlert.action) {
-    console.log("TRADINGVIEW CONFIRMATION: agrees with local candidate; treated as one extra confirmation, not proof of edge.");
-  } else if (tradingViewAlert) {
-    console.log("TRADINGVIEW ALERT: does not promote a local HOLD into a trade.");
   }
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
