@@ -102,6 +102,20 @@ async function analyseMarket(market, macroContext) {
   console.log("======================================");
   console.log("Live trading: DISABLED");
   if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=btcusdt to use the Binance spot feed (USDT proxy, not Vantage BTCUSD).");
+  if (market.symbol === "XAUUSD") {
+    try {
+      const quotes = JSON.parse(await readFile("data/gold-live-quotes.json", "utf8"));
+      for (const symbol of ["XAU/USD", "DXY"]) {
+        const quote = quotes[symbol.toUpperCase()];
+        if (!quote) { console.log("GOLD REFERENCE QUOTE", symbol, ": unavailable"); continue; }
+        const ageSeconds = Math.max(0, (Date.now() - Number(quote.receivedAt)) / 1000);
+        console.log("GOLD REFERENCE QUOTE", symbol, ":", quote.price, "| bid/ask:", quote.bid, "/", quote.ask, "| age seconds:", ageSeconds.toFixed(0), "| source:", quote.source);
+        if (ageSeconds > 120) console.log("STALE REFERENCE QUOTE:", symbol, "— do not use as a live entry price.");
+      }
+    } catch {
+      console.log("GOLD REFERENCE QUOTES: unavailable — optional Twelve Data WebSocket feed is not running or has not saved a tick.");
+    }
+  }
 
   const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
     key: tf.key,
