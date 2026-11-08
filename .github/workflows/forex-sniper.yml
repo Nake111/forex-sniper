@@ -1,6 +1,8 @@
 name: Forex Sniper Analysis
 
 on:
+  repository_dispatch:
+    types: [tradingview_alert]
   workflow_dispatch:
   push:
     branches: [main]
