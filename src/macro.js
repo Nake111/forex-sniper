@@ -1,4 +1,4 @@
-const HIGH_IMPACT_TERMS = /\b(rate decision|interest rate|fomc|ecb|federal reserve|central bank|cpi|inflation|nonfarm payroll|\bnfp\b|unemployment|emergency meeting|currency intervention)\b/i;
+const HIGH_IMPACT_TERMS = /\b(rate decision|interest rate|fomc|ecb|federal reserve|central bank|cpi|inflation|nonfarm payroll|\bnfp\b|unemployment|emergency meeting|currency intervention|spot bitcoin etf|bitcoin etf|sec (?:approves|rejects|sues|charges)|exchange hack|crypto exchange insolvency|stablecoin depeg|major crypto regulation)\b/i;
 
 function publishedAt(article) {
   const value = Date.parse(article.date ?? "");
