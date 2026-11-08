@@ -9,7 +9,6 @@ on:
     paths:
       - "src/**"
       - "package.json"
-      - "package-lock.json"
       - "market-indicators.test.js"
       - ".github/workflows/gold-daily.yml"
 
@@ -31,9 +30,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Syntax checks
         run: npm run check
       - name: Unit tests
