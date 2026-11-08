@@ -5,7 +5,7 @@ import { tradePlan } from "./trade-plan.js";
 import { summarizeSessionPerformance } from "./session-performance.js";
 
 const MARKET = (process.env.MARKET ?? "BTCUSD").toUpperCase();
-if (!["BTCUSD", "EURUSD"].includes(MARKET)) throw new Error("MARKET must be BTCUSD or EURUSD");
+if (!["BTCUSD", "EURUSD", "XAUUSD"].includes(MARKET)) throw new Error("MARKET must be BTCUSD, EURUSD or XAUUSD");
 const DATA_PREFIX = MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
