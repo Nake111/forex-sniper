@@ -13,11 +13,14 @@ if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE
   throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced or institutional");
 }
 
-const MARKETS = [
+const ALL_MARKETS = [
   { symbol: "EURUSD", label: "EUR/USD", prefix: "eurusd", interval: 0.00001 },
   { symbol: "BTCUSD", label: "BTC/USD", prefix: "btcusd", interval: 0.01 },
   { symbol: "XAUUSD", label: "XAU/USD (Gold)", prefix: "xauusd", interval: 0.01 }
 ];
+const MARKET_FILTER = process.env.MARKET_FILTER?.toUpperCase();
+const MARKETS = MARKET_FILTER ? ALL_MARKETS.filter(market => market.symbol === MARKET_FILTER) : ALL_MARKETS;
+if (MARKET_FILTER && MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
 const TIMEFRAMES = [
   { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000 },
