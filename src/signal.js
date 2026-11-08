@@ -54,6 +54,10 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
   add(M15?.ichimoku?.direction === "BULLISH" ? "BULLISH" : M15?.ichimoku?.direction === "BEARISH" ? "BEARISH" : null, 1, "M15 Ichimoku cloud");
   add(Number.isFinite(M5?.mfi14) && M5.mfi14 > 55 ? "BULLISH" : Number.isFinite(M5?.mfi14) && M5.mfi14 < 45 ? "BEARISH" : null, 1, "MFI money-flow pressure");
   add(Number.isFinite(M5?.cci20) && M5.cci20 > 50 ? "BULLISH" : Number.isFinite(M5?.cci20) && M5.cci20 < -50 ? "BEARISH" : null, 1, "CCI momentum");
+  add(M5?.stochRsi?.direction === "BULLISH" ? "BULLISH" : M5?.stochRsi?.direction === "BEARISH" ? "BEARISH" : null, 1, "Stochastic RSI momentum");
+  add(M5?.psar?.direction === "BULLISH" ? "BULLISH" : M5?.psar?.direction === "BEARISH" ? "BEARISH" : null, 1, "Parabolic SAR trend");
+  add(M5?.donchian?.breakout === "BULLISH" ? "BULLISH" : M5?.donchian?.breakout === "BEARISH" ? "BEARISH" : null, 1, "Donchian 20 breakout");
+  add(M5?.obv?.direction === "BUYING" ? "BULLISH" : M5?.obv?.direction === "SELLING" ? "BEARISH" : null, 1, "OBV volume pressure (tick-volume proxy)");
   add(Number.isFinite(M5?.poc) && M5.close > M5.poc ? "BULLISH"
     : Number.isFinite(M5?.poc) && M5.close < M5.poc ? "BEARISH" : null, 1, "Volume profile POC");
   add(M5?.structure?.bos === "BULLISH" || M5?.structure?.sweep === "BULLISH" ? "BULLISH"
@@ -67,7 +71,7 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
     : !blocked && bearScore >= 9 && bearScore - bullScore >= 3 ? "SELL" : "HOLD";
   return {
     signal, bullishScore: bullScore, bearishScore: bearScore,
-    scoreScale: 18, eventRisk: macro?.eventRisk ?? "UNKNOWN",
+    scoreScale: 22, eventRisk: macro?.eventRisk ?? "UNKNOWN",
     reasons: signal === "BUY" ? bullish.map(x => x.label) : signal === "SELL" ? bearish.map(x => x.label) : [],
     blockedReason: blocked ? "Recent high-impact macro headline: wait for volatility to settle" : null
   };
