@@ -45,7 +45,7 @@ jobs:
       - name: Generate XAUUSD report
         run: |
           set -o pipefail
-          MARKET_FILTER=XAUUSD npm start | tee gold-signals.txt
+          MARKET_FILTER=XAUUSD SIGNAL_PROFILE=gold npm start | tee gold-signals.txt
       - name: Backtest strategy profiles
         run: |
           set -o pipefail
