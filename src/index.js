@@ -89,6 +89,7 @@ async function analyseMarket(market, macroContext) {
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
   console.log("Live trading: DISABLED");
+  console.log("DATA MODE: scheduled historical snapshot; not a persistent Vantage stream.");
   if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=btcusdt to use the Binance spot feed (USDT proxy, not Vantage BTCUSD).");
 
   const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
