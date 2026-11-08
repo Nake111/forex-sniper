@@ -1,14 +1,14 @@
 export const SIGNAL_PROFILES = {
-  baseline: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 2, maxOpposingH1Votes: 2, minBullishRsi: 50, maxBearishRsi: 50 },
-  strict: { minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45 },
+  baseline: { minM5Votes: 4, minM15Votes: 4, minH1Votes: 3, maxOpposingH1Votes: 2, minBullishRsi: 50, maxBearishRsi: 50 },
+  strict: { minM5Votes: 4, minM15Votes: 4, minH1Votes: 4, maxOpposingH1Votes: 1, minBullishRsi: 55, maxBearishRsi: 45 },
   institutional: { minScore: 9, minScoreGap: 3, minM5Adx: 18, minM15Adx: 18, maxRetestBars: 12 },
   advanced: {
-    minM5Votes: 3, minM15Votes: 3, minH1Votes: 3, maxOpposingH1Votes: 1,
+    minM5Votes: 4, minM15Votes: 4, minH1Votes: 4, maxOpposingH1Votes: 1,
     minBullishRsi: 55, maxBearishRsi: 45, requireVwapCvd: true,
     minM5Adx: 18, minM15Adx: 18, requireRetest: true, maxRetestBars: 12
   },
   gold: {
-    minM5Votes: 4, minM15Votes: 4, minH1Votes: 3, maxOpposingH1Votes: 1,
+    minM5Votes: 5, minM15Votes: 5, minH1Votes: 4, maxOpposingH1Votes: 1,
     minBullishRsi: 54, maxBearishRsi: 46, requireVwapCvd: true,
     minM5Adx: 20, minM15Adx: 20, requireRetest: true, maxRetestBars: 12, requireGoldMacroAlignment: true
   }
@@ -63,6 +63,10 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
   add(M5?.psar?.direction === "BULLISH" ? "BULLISH" : M5?.psar?.direction === "BEARISH" ? "BEARISH" : null, 1, "Parabolic SAR trend");
   add(M5?.donchian?.breakout === "BULLISH" ? "BULLISH" : M5?.donchian?.breakout === "BEARISH" ? "BEARISH" : null, 1, "Donchian 20 breakout");
   add(M5?.obv?.direction === "BUYING" ? "BULLISH" : M5?.obv?.direction === "SELLING" ? "BEARISH" : null, 1, "OBV volume pressure (tick-volume proxy)");
+  add(M5?.williamsR?.direction === "BULLISH" ? "BULLISH" : M5?.williamsR?.direction === "BEARISH" ? "BEARISH" : null, 1, "Williams %R momentum");
+  add(M5?.keltner?.breakout === "BULLISH" ? "BULLISH" : M5?.keltner?.breakout === "BEARISH" ? "BEARISH" : null, 1, "Keltner channel breakout");
+  add(M5?.aroon?.direction === "BULLISH" ? "BULLISH" : M5?.aroon?.direction === "BEARISH" ? "BEARISH" : null, 1, "Aroon trend timing");
+  add(M5?.roc?.direction === "BULLISH" ? "BULLISH" : M5?.roc?.direction === "BEARISH" ? "BEARISH" : null, 1, "12-period rate of change");
   add(Number.isFinite(M5?.poc) && M5.close > M5.poc ? "BULLISH"
     : Number.isFinite(M5?.poc) && M5.close < M5.poc ? "BEARISH" : null, 1, "Volume profile POC");
   add(M5?.structure?.bos === "BULLISH" || M5?.structure?.sweep === "BULLISH" ? "BULLISH"
@@ -76,7 +80,7 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
     : !blocked && bearScore >= 9 && bearScore - bullScore >= 3 ? "SELL" : "HOLD";
   return {
     signal, bullishScore: bullScore, bearishScore: bearScore,
-    scoreScale: 22, eventRisk: macro?.eventRisk ?? "UNKNOWN",
+    scoreScale: 26, eventRisk: macro?.eventRisk ?? "UNKNOWN",
     reasons: signal === "BUY" ? bullish.map(x => x.label) : signal === "SELL" ? bearish.map(x => x.label) : [],
     blockedReason: blocked ? "Recent high-impact macro headline: wait for volatility to settle" : null
   };
