@@ -66,7 +66,8 @@ function printTimeframe(name, result) {
   console.log("-----------------------");
   console.log("Close:", result.close);
   console.log("Trading session:", result.sessionContext?.primary, "| Active:", (result.sessionContext?.active ?? []).join(", ") || "None");
-  console.log("Session range high / low:", result.sessionContext?.rangeHigh, "/", result.sessionContext?.rangeLow);\n  console.log("Session range breakout:", result.sessionContext?.breakout ?? "NONE");
+  console.log("Session range high / low:", result.sessionContext?.rangeHigh, "/", result.sessionContext?.rangeLow);
+  console.log("Session range breakout:", result.sessionContext?.breakout ?? "NONE");
   console.log("EMA 20 / 50:", result.ema20, "/", result.ema50);
   console.log("RSI 14:", result.rsi14);
   console.log("MACD / Signal:", result.macd, "/", result.macdSignal);
