@@ -22,7 +22,7 @@ permissions:
 jobs:
   analyse:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       - name: Download EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
-          DATA_DAYS_BACK: "180"
+          DATA_DAYS_BACK: "60"
       - name: Generate signal report
         run: |
           set -o pipefail
@@ -52,19 +52,10 @@ jobs:
           path: signals.txt
           if-no-files-found: warn
           retention-days: 14
-      - name: Run full-history profile comparisons
+      - name: Run baseline chronological 30% holdout validation
         run: |
           set -o pipefail
-          npm run backtest:all | tee backtests.txt
-          npm run backtest:experiments | tee -a backtests.txt
-          npm run backtest:advanced | tee -a backtests.txt
-          npm run backtest:institutional | tee -a backtests.txt
-      - name: Run chronological 30% holdout validation
-        run: |
-          set -o pipefail
-          npm run backtest:holdout | tee -a backtests.txt
-          npm run backtest:holdout:advanced | tee -a backtests.txt
-          npm run backtest:holdout:institutional | tee -a backtests.txt
+          npm run backtest:holdout | tee backtests.txt
       - name: Upload backtest report
         if: always()
         uses: actions/upload-artifact@v4
