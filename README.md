@@ -103,3 +103,17 @@ npm run check
 ```
 
 A HOLD / NO TRADE result is intentional when the timeframes disagree or confirmation is missing. Do not loosen filters just to force more trades; judge changes by out-of-sample backtests and risk-adjusted results.
+
+
+## Quant Swarm dashboard
+
+A separate browser dashboard is available in [dashboard/](dashboard/). It connects directly to public Binance BTC/USDT ticker, 1-minute candle and depth WebSocket streams, then calculates six transparent rule-based votes (trend, momentum, Aroon, order flow, quant candle and Bayesian ensemble). It also discovers an active BTC Up/Down market from Polymarket's public Gamma API and reads the two outcome token books from the public CLOB API when available.
+
+- Dashboard source: [dashboard/index.html](dashboard/index.html)
+- GitHub Pages deployment: [Deploy Quant Swarm Dashboard](.github/workflows/deploy-dashboard.yml)
+- Paper trading only: the local ledger is stored in the browser; it is not a verified exchange account balance or audited backtest.
+- Polymarket outcome token ordering and market availability can change; unavailable quotes are shown as unavailable rather than inferred.
+- The six dashboard votes are deterministic indicators, not six independent LLMs. Grok is not connected and no API key is required.
+- No live orders, wallet connection, deposits, or withdrawals are supported.
+
+After the Pages workflow succeeds, enable/open the site from Repository Settings → Pages. The expected project URL is https://nake111.github.io/forex-sniper/ if GitHub Pages is available for this repository.
