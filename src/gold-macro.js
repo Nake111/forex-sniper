@@ -117,6 +117,7 @@ export async function getUSCalendar(now = Date.now()) {
     sourceStatus: { bls: blsResult.status, federalReserve: fedResult.status },
     nextReleaseAt: next ? new Date(next.timestamp).toISOString() : null,
     nextEvent: next ? { name: next.name, scheduledAt: new Date(next.timestamp).toISOString(), source: next.source, url: next.url } : null,
+    events: events.map(event => ({ name: event.name, timestamp: event.timestamp, scheduledAt: new Date(event.timestamp).toISOString(), source: event.source, url: event.url })),
     imminentEvents: imminent.map(event => ({ name: event.name, scheduledAt: new Date(event.timestamp).toISOString(), source: event.source, url: event.url }))
   };
 }
