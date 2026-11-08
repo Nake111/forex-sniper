@@ -60,9 +60,9 @@ async function main() {
   console.log("======================================");
 
   const [m5, m15, h1] = await Promise.all([
-    loadCandles("data/btcusd-m5.json", "M5"),
-    loadCandles("data/btcusd-m15.json", "M15"),
-    loadCandles("data/btcusd-h1.json", "H1")
+    loadCandles(process.env.MARKET_DATA_SOURCE === "dukascopy" ? "data/btcusd-m5.json" : "data/online-btcusdt-m5.json", "M5"),
+    loadCandles(process.env.MARKET_DATA_SOURCE === "dukascopy" ? "data/btcusd-m15.json" : "data/online-btcusdt-m15.json", "M15"),
+    loadCandles(process.env.MARKET_DATA_SOURCE === "dukascopy" ? "data/btcusd-h1.json" : "data/online-btcusdt-h1.json", "H1")
   ]);
 
   const results = {
@@ -101,7 +101,7 @@ async function main() {
     schemaVersion: 2,
     symbol: "BTCUSD",
     generatedAt: new Date().toISOString(),
-    dataSource: "Dukascopy historical rates; not a direct Vantage feed",
+    dataSource: process.env.MARKET_DATA_SOURCE === "dukascopy" ? "Dukascopy historical rates" : "Binance Spot BTCUSDT public API; not a direct Vantage feed",
     signalBarTime: new Date(m5.at(-1).timestamp).toISOString(),
     candleCounts: { M5: m5.length, M15: m15.length, H1: h1.length },
     freshness,
