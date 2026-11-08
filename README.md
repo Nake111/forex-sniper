@@ -6,6 +6,8 @@ A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD
 
 - Downloads historical M5, M15 and H1 candles from Dukascopy using `dukascopy-node`.
 - Calculates EMA 20/50, RSI 14, MACD, ATR, volume profile (POC/VAH/VAL), market structure and squeeze momentum.
+- Tracks London, New York, Tokyo and Sydney sessions, active-session high/low ranges, and the London/New York overlap as market context for both instruments. Session data is informational and does not force trades; BTC/USD remains tradable around the clock.
+- Session hours use a fixed UTC offset by default. Set `SESSION_UTC_OFFSET` to an integer UTC offset if you want to shift the session clock; daylight-saving changes are not automatic.
 - For BTC/USD, reads Deribit public options data and reports nearest-expiry call/put open-interest walls, options-volume concentration, OI-weighted IV concentration, max pain and an unsigned gross-gamma proxy.
 - Keeps options positioning as supplemental context; it does not independently trigger BUY/SELL.
 - Evaluates each market independently and prints `BUY`, `SELL` or `NO TRADE`.
@@ -16,7 +18,7 @@ A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD
 
 **Safety:** this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
-## Requirements
+## Session context and source licensing\n\nThe session module is an independent implementation of common market-session timing and range calculations. It does not include LuxAlgo source code. The LuxAlgo Pine Script supplied as a reference by the project owner is marked CC BY-NC-SA 4.0; do not copy or redistribute that source, or use a derivative of it commercially, unless the license terms permit it.\n\n## Requirements
 
 - Node.js 20+
 - npm
