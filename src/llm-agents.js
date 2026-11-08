@@ -4,6 +4,14 @@ const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.goog
 const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 20000);
 const REQUEST_INTERVAL_MS = Number(process.env.GEMINI_REQUEST_INTERVAL_MS || 6500);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+let nextRequestAt = 0;
+async function paceRequest(intervalMs) {
+  if (intervalMs <= 0) return;
+  const now = Date.now();
+  const delayMs = Math.max(0, nextRequestAt - now);
+  nextRequestAt = Math.max(now, nextRequestAt) + intervalMs;
+  if (delayMs > 0) await wait(delayMs);
+}
 const ROLES = [
   ["technical", "You are an independent technical analyst. Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "You are an independent market-structure analyst. Assess swings, breakouts, liquidity sweeps and support/resistance."],
@@ -50,7 +58,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
   const requestIntervalMs = Number.isFinite(options.requestIntervalMs) ? options.requestIntervalMs : REQUEST_INTERVAL_MS;
   const results = [];
   for (let index = 0; index < ROLES.length; index += 1) {
-    if (index > 0 && requestIntervalMs > 0) await wait(requestIntervalMs);
+    await paceRequest(requestIntervalMs);
     try {
       results.push({ status: "fulfilled", value: await runOne(ROLES[index][0], ROLES[index][1], context, apiKey) });
     } catch (reason) {
