@@ -27,10 +27,10 @@ const MARKETS = MARKET_FILTER ? ALL_MARKETS.filter(market => market.symbol === M
 if (MARKET_FILTER && MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
 const TIMEFRAMES = [
-  { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000 },
-  { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000 },
-  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000 },
-  { key: "H4", file: "h4", milliseconds: 4 * 60 * 60 * 1000 }
+  { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 },
+  { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000, maxAgeMs: 60 * 60 * 1000 },
+  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000, maxAgeMs: 3 * 60 * 60 * 1000 },
+  { key: "H4", file: "h4", milliseconds: 4 * 60 * 60 * 1000, maxAgeMs: 12 * 60 * 60 * 1000 }
 ];
 
 function getTime(candle) {
@@ -161,6 +161,23 @@ async function analyseMarket(market, macroContext) {
     candles: await loadCandles(`data/${market.symbol === "BTCUSD" ? (process.env.BTC_DATA_PREFIX ?? market.prefix) : market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
   })));
 
+  const staleTimeframes = TIMEFRAMES.filter(tf => {
+    const candles = frames.find(frame => frame.key === tf.key).candles;
+    const closedAt = candles.at(-1).timestamp + tf.milliseconds;
+    return Date.now() - closedAt > tf.maxAgeMs;
+  });
+  for (const tf of TIMEFRAMES) {
+    const candles = frames.find(frame => frame.key === tf.key).candles;
+    const closedAt = candles.at(-1).timestamp + tf.milliseconds;
+    const ageMinutes = Math.max(0, (Date.now() - closedAt) / 60_000);
+    console.log(`DATA FRESHNESS ${tf.key}:`, new Date(closedAt).toISOString(),
+      `| age minutes: ${ageMinutes.toFixed(1)} | status: ${staleTimeframes.includes(tf) ? "STALE" : "FRESH"}`);
+  }
+  if (staleTimeframes.length) {
+    macroContext = { ...macroContext, dataStale: true, staleTimeframes: staleTimeframes.map(tf => tf.key) };
+    console.log("DATA SAFETY GATE: HOLD — stale candle data on", staleTimeframes.map(tf => tf.key).join(", "));
+  }
+
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
     [key, analyseTimeframe(candles)]
   ));
@@ -218,7 +235,7 @@ async function analyseMarket(market, macroContext) {
   }
 
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
-  let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  let candidate = goldMacroBlocked || macroContext.dataStale ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
