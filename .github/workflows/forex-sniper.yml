@@ -43,7 +43,15 @@ jobs:
       - name: Generate signal report
         run: |
           set -o pipefail
-          npm start | tee signals.txt
+          npm start 2>&1 | tee signals.txt
+      - name: Upload signal report immediately
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-signals
+          path: signals.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run full-history profile comparisons
         run: |
           set -o pipefail
@@ -57,17 +65,11 @@ jobs:
           npm run backtest:holdout | tee -a backtests.txt
           npm run backtest:holdout:advanced | tee -a backtests.txt
           npm run backtest:holdout:institutional | tee -a backtests.txt
-      - name: Upload signal report
-        uses: actions/upload-artifact@v4
-        with:
-          name: forex-sniper-signals
-          path: signals.txt
-          if-no-files-found: error
-          retention-days: 14
       - name: Upload backtest report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: forex-sniper-backtests
           path: backtests.txt
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
