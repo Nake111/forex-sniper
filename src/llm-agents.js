@@ -146,9 +146,16 @@ export async function runIndependentLlmAgents(context, options = {}) {
     const buy = agents.filter(agent => agent.direction === "BUY").length;
     const sell = agents.filter(agent => agent.direction === "SELL").length;
     const veto = agents.some(agent => agent.veto);
-    const decision = !veto && buy >= 4 ? "BUY" : !veto && sell >= 4 ? "SELL" : "HOLD";
+    // Local risk controls are authoritative. Gemini cannot waive a known
+    // high-impact event block, even if its generated roles disagree.
+    const macroRisk = context.macro?.eventRisk ?? "UNKNOWN";
+    const hardRiskBlock = macroRisk === "HIGH" ||
+      (context.market === "XAUUSD" && macroRisk !== "NORMAL");
+    const decision = hardRiskBlock || veto ? "HOLD"
+      : buy >= 4 ? "BUY" : sell >= 4 ? "SELL" : "HOLD";
     const elapsedMs = Date.now() - startedAt;
-    console.log("Gemini six-agent panel:", "6/6 valid in", elapsedMs, "ms; BUY/SELL/HOLD", buy + "/" + sell + "/" + (6 - buy - sell), "decision", decision);
+    console.log(context.market + " Gemini six-agent panel:", "6/6 valid in", elapsedMs, "ms; BUY/SELL/HOLD", buy + "/" + sell + "/" + (6 - buy - sell), "decision", decision,
+      hardRiskBlock ? "| LOCAL MACRO RISK VETO" : veto ? "| SPECIALIST VETO" : "");
     if (elapsedMs > TIMEOUT_MS) console.warn("Gemini confirmation exceeded its configured timeout:", elapsedMs, "ms");
     return {
       enabled: true, status: "COMPLETE", provider: "Google Gemini", model: MODEL,
