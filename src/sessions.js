@@ -33,12 +33,12 @@ export function getSessionContext(candles, options = {}) {
 
   const last = candles.at(-1);
   const timestamp = candleTime(last);
-  if (!Number.isFinite(timestamp)) return emptyContext(offset);
+  if (!Number.isFinite(timestamp)) return emptyContext(offsetHours);
 
   const local = new Date(timestamp + offsetMs);
   const minute = local.getUTCHours() * 60 + local.getUTCMinutes();
   const active = SESSION_DEFS.filter(session => isActive(minute, session.start, session.end));
-  if (!active.length) return emptyContext(offset);
+  if (!active.length) return emptyContext(offsetHours);
 
   const ranges = active.map(session => {
     const localStart = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
