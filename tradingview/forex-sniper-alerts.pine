@@ -34,4 +34,4 @@ alertcondition(sellSignal, "Forex Sniper SELL", "SELL signal")
 if buySignal
     alert('{"source":"tradingview","secret":"' + webhookSecret + '","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"BUY","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
 if sellSignal
-    alert('{"source":"tradingview","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"SELL","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
+    alert('{"source":"tradingview","secret":"' + webhookSecret + '","ticker":"' + syminfo.ticker + '","exchange":"' + syminfo.prefix + '","timeframe":"' + timeframe.period + '","action":"SELL","price":' + str.tostring(close) + ',"rsi":' + str.tostring(rsi) + ',"atr":' + str.tostring(atr) + ',"bar_time":' + str.tostring(time) + '}', alert.freq_once_per_bar_close)
