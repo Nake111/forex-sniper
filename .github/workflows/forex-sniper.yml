@@ -36,7 +36,7 @@ jobs:
         run: npm run check
       - name: Run tests
         run: npm test
-      - name: Download EUR/USD and BTC/USD candles
+      - name: Download EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
           DATA_DAYS_BACK: "180"
