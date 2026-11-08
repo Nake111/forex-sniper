@@ -17,11 +17,18 @@ function parseRss(xml) {
     return { title: get("title"), source: get("source") || "Google News", date: get("pubDate"), url: get("link") };
   });
 }
+function parseDate(value) {
+  const parsed = Date.parse(value ?? "");
+  if (Number.isFinite(parsed)) return parsed;
+  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/.exec(String(value ?? ""));
+  return match ? Date.UTC(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +match[6]) : NaN;
+}
 function normalize(items) {
   const seen = new Set();
   return items.filter(article => {
-    const age = Date.now() - Date.parse(article.date);
-    if (!article.title || !article.url || !Number.isFinite(age) || age < 0 || age > 86400000 || !TERMS.test(article.title)) return false;
+    const published = parseDate(article.date);
+    const age = Date.now() - published;
+    if (!article.title || !article.url || !Number.isFinite(published) || !Number.isFinite(age) || age < 0 || age > 86400000 || !TERMS.test(article.title)) return false;
     const key = article.title.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (seen.has(key)) return false;
     seen.add(key);
@@ -35,6 +42,7 @@ export async function getGoldNews() {
     const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT) });
     if (!response.ok) throw new Error("Google News HTTP " + response.status);
     const articles = normalize(parseRss(await response.text()));
+    if (!articles.length) throw new Error("Google News returned no recent relevant headlines; trying GDELT fallback");
     console.log("XAUUSD NEWS INTELLIGENCE — Google News RSS —", articles.length, "articles");
     for (const article of articles) console.log("[" + article.relevance + "]", article.title, "|", article.source, "|", article.date, "|", article.url);
     return articles;
