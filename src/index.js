@@ -64,7 +64,8 @@ async function loadCandles(path, timeframe, interval) {
 }
 
 function printTimeframe(name, result) {
-  console.log(`\n${name} ANALYSIS`);
+  console.log(`
+${name} ANALYSIS`);
   console.log("-----------------------");
   console.log("Close:", result.close);
   console.log("Trading session:", result.sessionContext?.primary, "| Active:", (result.sessionContext?.active ?? []).join(", ") || "None");
@@ -86,7 +87,8 @@ function printTimeframe(name, result) {
 }
 
 async function analyseMarket(market, macroContext) {
-  console.log("\n======================================");
+  console.log("
+======================================");
   console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
@@ -110,7 +112,8 @@ async function analyseMarket(market, macroContext) {
     try {
       const options = await fetchBtcOptionsWalls();
       const context = summarizeOptionsContext(options, results.M5.close);
-      console.log("\nQUANT OPTIONS WALLS (BTC — nearest expiry)");
+      console.log("
+QUANT OPTIONS WALLS (BTC — nearest expiry)");
       console.log("Expiry / days:", options.expiry, "/", options.daysToExpiry.toFixed(2));
       console.log("Spot reference:", options.spot);
       console.log("Call wall (OI):", options.callWall);
@@ -122,7 +125,8 @@ async function analyseMarket(market, macroContext) {
       console.log("Price vs walls:", context.bias);
       for (const note of options.dataNotes) console.log("OPTIONS DATA NOTE:", note);
     } catch (error) {
-      console.log("\nQUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
+      console.log("
+QUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
       console.log("Options data unavailable; normal spot analysis continues.");
     }
   }
@@ -134,7 +138,8 @@ async function analyseMarket(market, macroContext) {
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
 
-  console.log("\n======================================");
+  console.log("
+======================================");
   console.log(`          FINAL ${market.symbol} SIGNAL`);
   console.log("======================================");
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
@@ -166,12 +171,18 @@ async function main() {
     macroContext = buildMacroContext([]);
     console.error("Macro news unavailable:", error.message);
   }
-  const outcomes = await Promise.allSettled(MARKETS.map(async market => {\n    const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;\n    const context = marketNews ? buildMacroContext(marketNews) : macroContext;\n    if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));\n    return analyseMarket(market, context);\n  }));
+  const outcomes = await Promise.allSettled(MARKETS.map(async market => {
+    const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;
+    const context = marketNews ? buildMacroContext(marketNews) : macroContext;
+    if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
+    return analyseMarket(market, context);
+  }));
   let failed = false;
   outcomes.forEach((outcome, index) => {
     if (outcome.status === "rejected") {
       failed = true;
-      console.error(`\n${MARKETS[index].label} ANALYSIS ERROR:`, outcome.reason);
+      console.error(`
+${MARKETS[index].label} ANALYSIS ERROR:`, outcome.reason);
     }
   });
   if (failed) process.exitCode = 1;
