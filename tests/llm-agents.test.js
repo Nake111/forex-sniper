@@ -48,9 +48,9 @@ test("a Gemini timeout is reported without fabricated specialist votes", async (
   try {
     const result = await runIndependentLlmAgents({ market: "BTCUSD" }, { apiKey: "test-key", timeoutMs: 10 });
     assert.equal(result.status, "TIMEOUT");
-    assert.equal(result.decision, "HOLD");
-    assert.equal(result.agents.length, 6);
-    assert.equal(result.agents.every(agent => agent.veto && agent.direction === "HOLD"), true);
+    assert.equal(result.decision, null);
+    assert.equal(result.agents.length, 0);
+    assert.equal(result.votes, null);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -64,8 +64,9 @@ test("incomplete six-role response is reported as unavailable", async () => {
   try {
     const result = await runIndependentLlmAgents({ market: "XAUUSD" }, { apiKey: "test-key" });
     assert.equal(result.status, "ERROR");
-    assert.equal(result.decision, "HOLD");
-    assert.equal(result.agents.length, 6);
+    assert.equal(result.decision, null);
+    assert.equal(result.agents.length, 0);
+    assert.equal(result.votes, null);
   } finally {
     globalThis.fetch = originalFetch;
   }
