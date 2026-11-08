@@ -92,10 +92,10 @@ export async function runIndependentLlmAgents(context, options = {}) {
     const decision = !veto && buy >= 4 ? "BUY" : !veto && sell >= 4 ? "SELL" : "HOLD";
     const elapsedMs = Date.now() - startedAt;
     console.log("Gemini six-agent panel:", "6/6 valid in", elapsedMs, "ms; BUY/SELL/HOLD", buy + "/" + sell + "/" + (6 - buy - sell), "decision", decision);
-    if (elapsedMs > 2000) console.warn("Gemini confirmation exceeded the 2-second target:", elapsedMs, "ms");
+    if (elapsedMs > TIMEOUT_MS) console.warn("Gemini confirmation exceeded its configured timeout:", elapsedMs, "ms");
     return {
       enabled: true, status: "COMPLETE", provider: "Google Gemini", model: MODEL,
-      mode: "single-request-six-role-panel", elapsedMs, targetMs: 2000,
+      mode: "single-request-six-role-panel", elapsedMs, targetMs: TIMEOUT_MS,
       agents, votes: { buy, sell, hold: 6 - buy - sell }, decision,
       reason: veto ? "At least one specialist raised a risk veto." : "Six-role consensus required; otherwise HOLD."
     };
