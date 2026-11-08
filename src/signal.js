@@ -70,6 +70,8 @@ export function scoreInstitutionalSetup({ M5, M15, H1 }, macro = {}) {
 }
 
 export function evaluateSignal({ M5, M15, H1 }, profile = "baseline", macro = {}) {
+  // High-impact news protection applies to every strategy profile.
+  if (macro?.eventRisk === "HIGH") return "HOLD";
   const rules = typeof profile === "string" ? SIGNAL_PROFILES[profile] : profile;
   if (!rules) throw new Error(`Unknown signal profile: ${profile}`);
   const structure = M5?.structure ?? {};
