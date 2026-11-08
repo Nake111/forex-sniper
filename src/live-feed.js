@@ -18,6 +18,7 @@ let stopping = false;
 let socket;
 let reconnectAttempt = 0;
 let heartbeatTimer;
+let reconnectTimer;
 
 function normalizeKline(k) {
   return {
@@ -141,6 +142,8 @@ function connect() {
 
   socket.on("open", () => {
     reconnectAttempt = 0;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
     console.log("BTCUSDT WebSocket connected. Live feed is read-only; no orders are sent.");
     clearInterval(heartbeatTimer);
     heartbeatTimer = setInterval(() => {
@@ -157,13 +160,16 @@ function connect() {
     const delay = Math.min(RECONNECT_BASE_MS * (2 ** reconnectAttempt), RECONNECT_MAX_MS);
     reconnectAttempt += 1;
     console.error(`WebSocket closed (${code}: ${reason.toString()}). Reconnecting in ${delay}ms.`);
-    setTimeout(connect, delay).unref();
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connect, delay);
   });
 }
 
 async function shutdown() {
   stopping = true;
   clearInterval(heartbeatTimer);
+  clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close(1000, "Service shutdown");
   await persistTimeframes().catch(error => console.error("Final persistence error:", error.message));
   process.exit(0);
