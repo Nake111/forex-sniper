@@ -33,7 +33,7 @@ async function main() {
     load("data/btcusd-m5.json"), load("data/btcusd-m15.json"), load("data/btcusd-h1.json")
   ]);
   const trades = [];
-  let i15 = -1, i1 = -1, a15 = null, a1 = null, last15 = -1, last1 = -1;
+  let i15 = -1, i1 = -1, a15 = null, a1 = null, last15 = -1, last1 = -1, lastEvaluated15 = -1;
   let checked = 0, openAtEnd = 0;
   for (let i = MIN_HISTORY - 1; i < m5.length - 1; i++) {
     const closeTime = m5[i].time + 5 * 60_000;
