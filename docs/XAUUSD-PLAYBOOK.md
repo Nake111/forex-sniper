@@ -4,7 +4,7 @@ This module adds XAUUSD to Forex Sniper's existing multi-timeframe signal pipeli
 
 ## Included
 - Dukascopy historical candle download for XAUUSD: M5, M15, H1 and H4.
-- Existing indicator engine: EMA20/50/200, RSI14, MACD, ATR14, ADX14, squeeze momentum, rolling VWAP, volume-profile POC/value area, candle-volume pressure proxy, market structure, liquidity sweeps, order blocks and fair-value gaps.
+- Indicator engine: EMA20/50/200, RSI14, MACD, ATR14, ADX14, squeeze momentum, rolling VWAP, volume-profile POC/value area, Ichimoku Cloud, MFI, CCI, Stochastic RSI, Parabolic SAR, Donchian Channels, OBV, Williams %R, Keltner Channels, Aroon and ROC, plus market structure, liquidity sweeps, order blocks and fair-value gaps.
 - Gold-specific Google News RSS feed with GDELT fallback. It filters recent headlines around gold, USD, Federal Reserve/FOMC, Treasury/real yields, DXY, CPI/PCE, NFP, central banks and geopolitical risk.
 - Existing macro event-risk gate and paper-only trade-plan generation.
 - XAUUSD historical backtest support via MARKET=XAUUSD.
@@ -63,3 +63,11 @@ The optional `gold` profile is deliberately stricter than baseline: 4 M5 votes, 
 
 
 The Gold profile also uses macro alignment when available: rising 10-year real yields and a rising DXY are treated as gold headwinds; falling values are treated as tailwinds. If the two sources disagree, the bias is neutral. The DXY component requires the optional streaming feed. Macro alignment is a soft veto only when it clearly opposes a candidate; unavailable data is not treated as bullish or bearish.
+
+## Four additional indicators (new)
+- Williams %R (14): range-position momentum, with -20/-80 overbought/oversold context.
+- Keltner Channels (EMA 20, ATR 20 x 2): volatility-adjusted channel; only closes outside the channel count as breakout votes.
+- Aroon (25): time since recent highs/lows; oscillator thresholds of +20/-20 determine directional bias.
+- Rate of Change (12): percentage change versus 12 bars earlier; positive/negative values are directional momentum context.
+
+The four additions are included in timeframe vote counts, signal score diagnostics and automated tests. Vote thresholds were raised to compensate for the larger indicator set; they still require full holdout validation and realistic transaction costs. Indicator agreement is not independent evidence when measures share price inputs.
