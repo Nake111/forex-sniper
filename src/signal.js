@@ -10,7 +10,7 @@ export const SIGNAL_PROFILES = {
   gold: {
     minM5Votes: 4, minM15Votes: 4, minH1Votes: 3, maxOpposingH1Votes: 1,
     minBullishRsi: 54, maxBearishRsi: 46, requireVwapCvd: true,
-    minM5Adx: 20, minM15Adx: 20, requireRetest: true, maxRetestBars: 12
+    minM5Adx: 20, minM15Adx: 20, requireRetest: true, maxRetestBars: 12, requireGoldMacroAlignment: true
   }
 };
 
@@ -95,12 +95,14 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline", macro = {}
     Number.isFinite(frame.ema50) && Number.isFinite(frame.rsi14) &&
     Number.isFinite(frame.macd) && Number.isFinite(frame.macdSignal));
   if (!valid) return "HOLD";
+  const macroOpposesBullish = Boolean(rules.requireGoldMacroAlignment && macro?.goldMacroBias === "BEARISH");
+  const macroOpposesBearish = Boolean(rules.requireGoldMacroAlignment && macro?.goldMacroBias === "BULLISH");
   if (profile === "institutional") return scoreInstitutionalSetup({ M5, M15, H1 }, macro).signal;
 
   const bullish = M5.bullishVotes >= rules.minM5Votes &&
     M15.bullishVotes >= rules.minM15Votes && H1.bullishVotes >= rules.minH1Votes &&
     H1.bearishVotes <= rules.maxOpposingH1Votes && M5.rsi14 >= rules.minBullishRsi &&
-    bullishStructure && (!Number.isFinite(M5.poc) || M5.close > M5.poc) &&
+    !macroOpposesBullish && bullishStructure && (!Number.isFinite(M5.poc) || M5.close > M5.poc) &&
     (!Number.isFinite(rules.minM5Adx) || (Number.isFinite(M5.adx14) && M5.adx14 >= rules.minM5Adx)) &&
     (!Number.isFinite(rules.minM15Adx) || (Number.isFinite(M15.adx14) && M15.adx14 >= rules.minM15Adx)) &&
     (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close > M5.vwap && M5.cvd?.direction === "BUYING" && M5.cvd?.slope > 0)) &&
@@ -109,7 +111,7 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline", macro = {}
   const bearish = M5.bearishVotes >= rules.minM5Votes &&
     M15.bearishVotes >= rules.minM15Votes && H1.bearishVotes >= rules.minH1Votes &&
     H1.bullishVotes <= rules.maxOpposingH1Votes && M5.rsi14 <= rules.maxBearishRsi &&
-    bearishStructure && (!Number.isFinite(M5.poc) || M5.close < M5.poc) &&
+    !macroOpposesBearish && bearishStructure && (!Number.isFinite(M5.poc) || M5.close < M5.poc) &&
     (!Number.isFinite(rules.minM5Adx) || (Number.isFinite(M5.adx14) && M5.adx14 >= rules.minM5Adx)) &&
     (!Number.isFinite(rules.minM15Adx) || (Number.isFinite(M15.adx14) && M15.adx14 >= rules.minM15Adx)) &&
     (!rules.requireVwapCvd || (Number.isFinite(M5.vwap) && M5.close < M5.vwap && M5.cvd?.direction === "SELLING" && M5.cvd?.slope < 0)) &&
