@@ -1,57 +1,61 @@
-name: BTC 24-7 Online Market Data
+name: BTC Scheduled Market Snapshot
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
   push:
     branches: [main]
     paths:
       - ".github/workflows/market-data.yml"
-  workflow_dispatch:
-
-permissions:
-  contents: write
 
 concurrency:
-  group: btc-online-market-data
-  cancel-in-progress: false
+  group: btc-market-snapshot
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 17
+    timeout-minutes: 15
     steps:
-      - name: Checkout BTC signal branch
+      - name: Checkout main
         uses: actions/checkout@v4
-        with:
-          ref: Btcusd
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Validate code and strategy tests
         run: npm run check && npm test
 
-      - name: Fetch public exchange market data
-        run: npm run sync:market
-
-      - name: Run BTC signal analysis using online candles
-        run: npm run analyze
+      - name: Download BTC/USD candles
+        run: MARKET_FILTER=BTCUSD npm run download
         env:
-          MARKET_DATA_SOURCE: binance
+          DATA_DAYS_BACK: "30"
+          DOWNLOAD_CONCURRENCY: "3"
 
-      - name: Commit rolling market data and latest signal to Btcusd
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/online-btcusdt-m5.json data/online-btcusdt-m15.json data/online-btcusdt-h1.json data/online-market.json data/latest-signal.json
-          if git diff --cached --quiet; then
-            echo "No market-data changes to commit."
-          else
-            git commit -m "Update 24-7 BTC online market data"
-            git push origin HEAD:Btcusd
-          fi
+      - name: Generate BTC/USD snapshot report
+        run: MARKET_FILTER=BTCUSD npm start 2>&1 | tee btc-snapshot.txt
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash-lite
+          LLM_TIMEOUT_MS: "8000"
+
+      - name: Upload BTC snapshot and candles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btc-market-snapshot
+          path: |
+            btc-snapshot.txt
+            data/btcusd-*.json
+          if-no-files-found: warn
+          retention-days: 14
