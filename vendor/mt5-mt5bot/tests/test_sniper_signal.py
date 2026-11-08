@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -32,7 +32,7 @@ def write_signal(path, **overrides):
 def test_loads_valid_buy_plan(tmp_path):
     path = tmp_path / "signal.json"
     write_signal(path)
-    now = datetime(2026, 11, 8, 6, 1, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 8, 6, 1, tzinfo=UTC)
 
     plan = load_trade_plan(path, expected_symbol="BTCUSD", now=now)
 
