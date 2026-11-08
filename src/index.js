@@ -4,6 +4,7 @@ import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
+import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -96,6 +97,29 @@ async function analyseMarket(market, macroContext) {
   ));
 
   for (const tf of TIMEFRAMES) printTimeframe(tf.key, results[tf.key]);
+
+  // BTC options positioning is supplemental context only; spot FX has no equivalent
+  // consolidated listed-options feed in this free data setup.
+  if (market.symbol === "BTCUSD") {
+    try {
+      const options = await fetchBtcOptionsWalls();
+      const context = summarizeOptionsContext(options, results.M5.close);
+      console.log("\nQUANT OPTIONS WALLS (BTC — nearest expiry)");
+      console.log("Expiry / days:", options.expiry, "/", options.daysToExpiry.toFixed(2));
+      console.log("Spot reference:", options.spot);
+      console.log("Call wall (OI):", options.callWall);
+      console.log("Put wall (OI):", options.putWall);
+      console.log("Highest options volume strike:", options.volumeWall);
+      console.log("OI-weighted IV concentration:", options.ivConcentration);
+      console.log("Max pain:", options.maxPain);
+      console.log("Gross gamma exposure proxy (unsigned):", options.grossGammaExposureProxy);
+      console.log("Price vs walls:", context.bias);
+      for (const note of options.dataNotes) console.log("OPTIONS DATA NOTE:", note);
+    } catch (error) {
+      console.log("\nQUANT OPTIONS WALLS: UNAVAILABLE —", error.message);
+      console.log("Options data unavailable; normal spot analysis continues.");
+    }
+  }
 
   const candidate = evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
