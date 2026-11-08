@@ -15,13 +15,15 @@ if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE
 
 const MARKETS = [
   { symbol: "EURUSD", label: "EUR/USD", prefix: "eurusd", interval: 0.00001 },
-  { symbol: "BTCUSD", label: "BTC/USD", prefix: "btcusd", interval: 0.01 }
+  { symbol: "BTCUSD", label: "BTC/USD", prefix: "btcusd", interval: 0.01 },
+  { symbol: "XAUUSD", label: "XAU/USD (Gold)", prefix: "xauusd", interval: 0.01 }
 ];
 
 const TIMEFRAMES = [
   { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000 },
   { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000 },
-  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000 }
+  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000 },
+  { key: "H4", file: "h4", milliseconds: 4 * 60 * 60 * 1000 }
 ];
 
 function getTime(candle) {
@@ -164,7 +166,7 @@ async function main() {
     macroContext = buildMacroContext([]);
     console.error("Macro news unavailable:", error.message);
   }
-  const outcomes = await Promise.allSettled(MARKETS.map(market => analyseMarket(market, macroContext)));
+  const outcomes = await Promise.allSettled(MARKETS.map(async market => {\n    const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;\n    const context = marketNews ? buildMacroContext(marketNews) : macroContext;\n    if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));\n    return analyseMarket(market, context);\n  }));
   let failed = false;
   outcomes.forEach((outcome, index) => {
     if (outcome.status === "rejected") {
