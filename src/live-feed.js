@@ -40,26 +40,38 @@ function validCandle(c) {
 }
 
 async function bootstrap() {
-  // Seed recent history so the service can build useful M5/M15/H1 context immediately.
-  const url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000";
-  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`Binance history request failed: HTTP ${response.status}`);
-  const rows = await response.json();
+  // Fetch enough closed 1m history to satisfy the bot's 60-candle H1 minimum.
   const now = Date.now();
-  candles = rows.map(row => ({
-    timestamp: Number(row[0]),
-    open: Number(row[1]),
-    high: Number(row[2]),
-    low: Number(row[3]),
-    close: Number(row[4]),
-    volume: Number(row[5]),
-    trades: Number(row[8]),
-    source: "Binance spot BTCUSDT"
-  })).filter(c => validCandle(c) && c.timestamp + 60_000 <= now).slice(-MAX_1M_CANDLES);
+  let cursor = now - 5_000 * 60_000;
+  const seeded = [];
+  for (let page = 0; page < 5; page++) {
+    const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000&startTime=${cursor}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) throw new Error(`Binance history request failed: HTTP ${response.status}`);
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    for (const row of rows) {
+      seeded.push({
+        timestamp: Number(row[0]),
+        open: Number(row[1]),
+        high: Number(row[2]),
+        low: Number(row[3]),
+        close: Number(row[4]),
+        volume: Number(row[5]),
+        trades: Number(row[8]),
+        source: "Binance spot BTCUSDT"
+      });
+    }
+    cursor = Number(rows.at(-1)[0]) + 60_000;
+    if (rows.length < 1000 || cursor >= now) break;
+  }
+  candles = seeded.filter(c => validCandle(c) && c.timestamp + 60_000 <= now)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .filter((c, i, all) => i === 0 || c.timestamp !== all[i - 1].timestamp)
+    .slice(-MAX_1M_CANDLES);
   await persistTimeframes();
   console.log(`Bootstrapped ${candles.length} closed 1-minute BTCUSDT candles from Binance.`);
 }
-
 function aggregate(minutes) {
   const buckets = new Map();
   for (const candle of candles) {
