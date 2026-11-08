@@ -9,7 +9,7 @@ import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js
 const WINDOW = 240;
 const MIN_HISTORY = 60;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced", "institutional"].includes(SIGNAL_PROFILE)) {
+if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) {
   throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced or institutional");
 }
 
