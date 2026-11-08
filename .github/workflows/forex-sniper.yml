@@ -2,15 +2,6 @@ name: Forex Sniper Analysis
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "data/**"
-      - "package.json"
-      - "package-lock.json"
-      - "*.test.js"
-      - ".github/workflows/forex-sniper.yml"
 
 concurrency:
   group: forex-sniper-${{ github.ref }}
