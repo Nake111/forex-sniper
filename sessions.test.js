@@ -57,6 +57,7 @@ test("normalizes second-based timestamps and applies a UTC offset", () => {
     high: 1.1, low: 1.0, close: 1.05
   }], { utcOffset: 1 });
   assert.equal(result.active.includes("London"), true);
+  assert.equal(result.utcOffset, 1);
 });
 
 test("returns a safe empty context for missing or invalid candles", () => {
