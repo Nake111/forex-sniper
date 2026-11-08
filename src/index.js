@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal } from "./signal.js";
+import { analyseDonchian, evaluateDonchianSignal, donchianTradePlan } from "./donchian-strategy.js";
 
 const WINDOW = 120;
 const MIN_HISTORY = 60;
@@ -40,7 +41,7 @@ async function loadCandles(path, timeframe, interval) {
     throw new Error(`${timeframe}: not enough closed candles`);
   }
 
-  return candles.slice(-WINDOW);
+  return candles.slice(-300);
 }
 
 
@@ -135,6 +136,24 @@ async function main() {
   console.log("\nM5 candles:", m5.length);
   console.log("M15 candles:", m15.length);
   console.log("H1 candles:", h1.length);
+  const donchian = {
+    M5: analyseDonchian(m5),
+    M15: analyseDonchian(m15),
+    H1: analyseDonchian(h1)
+  };
+  const donchianSignal = evaluateDonchianSignal(donchian);
+  const donchianPlan = donchianTradePlan(donchianSignal, donchian.M5);
+  console.log("\\n========== RESEARCH STRATEGY: DONCHIAN BREAKOUT ==========");
+  console.log("M15 20-bar breakout + H1 EMA50/200 trend + ADX14 + relative volume + M5 EMA20/RSI14");
+  for (const tf of ["M5", "M15", "H1"]) {
+    const d = donchian[tf];
+    console.log(tf, "EMA50", d.ema50, "EMA200", d.ema200, "ADX14", d.adx14,
+      "RSI14", d.rsi14, "RelVolume", d.volumeRatio,
+      "DonchianHigh20", d.channelHigh20, "DonchianLow20", d.channelLow20);
+  }
+  console.log("DONCHIAN CANDIDATE:", donchianSignal);
+  console.log("DONCHIAN PLAN:", donchianPlan ?? "NO TRADE");
+  console.log("This is a separate research candidate; it does not replace the existing signal until backtested.");
   console.log("Paper analysis only — no orders sent.");
 }
 
