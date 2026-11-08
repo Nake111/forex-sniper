@@ -40,7 +40,8 @@ async function loadCandles(path, timeframe) {
 }
 
 function printTimeframe(name, result) {
-  console.log("\\n" + name + " ANALYSIS");
+  console.log("
+" + name + " ANALYSIS");
   console.log("-----------------------");
   for (const key of ["close", "ema20", "ema50", "ema200", "rsi14", "macd", "macdSignal", "atr14", "poc", "valueAreaHigh", "valueAreaLow"]) {
     console.log(key + ":", result[key]);
@@ -132,9 +133,11 @@ async function main() {
       riskReward: plan.riskReward
     } : null
   };
-  await writeFile("data/latest-signal.json", JSON.stringify(record, null, 2) + "\\n", "utf8");
+  await writeFile("data/latest-signal.json", JSON.stringify(record, null, 2) + "
+", "utf8");
 
-  console.log("\\n========== FINAL BTCUSD SIGNAL ==========");
+  console.log("
+========== FINAL BTCUSD SIGNAL ==========");
   console.log("LEGACY SMC SIGNAL:", legacySignal);
   console.log("DONCHIAN SIGNAL:", donchianSignal);
   console.log("COMBINED SIGNAL:", signal);
