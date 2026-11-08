@@ -56,3 +56,7 @@ This is a third-party reference feed, not a Vantage quote and not an order conne
 - Gold headlines: Google News RSS with GDELT fallback, filtered to the latest 24 hours.
 
 The Gold entry gate requires both macro/news risk to be NORMAL. HIGH or UNKNOWN means HOLD. This is deliberately conservative: an unavailable calendar is not silently treated as a safe trading window. The COT and Treasury series can be unavailable without turning their absence into directional information.
+
+
+## Gold-specific signal profile
+The optional `gold` profile is deliberately stricter than baseline: 4 M5 votes, 4 M15 votes, 3 H1 votes, RSI threshold 54/46, ADX at least 20 on M5/M15, VWAP plus volume-pressure confirmation, and a recent OB/FVG retest. It is an unvalidated candidate profile until the scheduled full-history and chronological holdout tests report sufficient trades, positive expectancy after costs, and controlled drawdown. Do not assume it is superior merely because it is stricter.
