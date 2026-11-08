@@ -217,7 +217,6 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
-  if (tradingViewSnapshot) console.log("TRADINGVIEW CHART SNAPSHOT:", JSON.stringify({ ticker: tradingViewSnapshot.ticker, timeframe: tradingViewSnapshot.timeframe, bar_time: tradingViewSnapshot.bar_time, open: tradingViewSnapshot.open, high: tradingViewSnapshot.high, low: tradingViewSnapshot.low, close: tradingViewSnapshot.close, volume: tradingViewSnapshot.volume, ema20: tradingViewSnapshot.ema20, ema50: tradingViewSnapshot.ema50, rsi14: tradingViewSnapshot.rsi14, atr14: tradingViewSnapshot.atr14, action: tradingViewSnapshot.action, ageSeconds: Math.round(tradingViewSnapshot.ageMs / 1000) }));
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   let candidate = goldMacroBlocked ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
