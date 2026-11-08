@@ -140,7 +140,7 @@ async function analyseMarket(market, macroContext) {
   console.log("     Multi-Timeframe Analysis");
   console.log("======================================");
   console.log("Live trading: DISABLED");
-  if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=btcusdt to use the Binance spot feed (USDT proxy, not Vantage BTCUSD).");
+  if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=kraken-btcusd to use Kraken XBT/USD spot candles (venue reference, not Vantage BTCUSD CFD).");
   if (market.symbol === "XAUUSD") {
     try {
       const quotes = JSON.parse(await readFile("data/gold-live-quotes.json", "utf8"));
