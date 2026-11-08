@@ -10,7 +10,7 @@ const WINDOW = 240;
 const MIN_HISTORY = 60;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
 if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) {
-  throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced or institutional");
+  throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 }
 
 const ALL_MARKETS = [
