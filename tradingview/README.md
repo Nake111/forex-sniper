@@ -11,7 +11,7 @@ The Worker source is in `tradingview-worker/src/index.js`; it is not deployed au
 3. Choose **Edit code**. Replace the starter code with the full contents of `tradingview-worker/src/index.js` from this repository, then **Deploy**.
 4. Open the Worker → **Settings** → **Variables and Secrets**.
 5. Add a **Secret** named `TV_WEBHOOK_SECRET`. Use a long random value (at least 32 random characters). Save it privately.
-6. Add a **Secret** named `GITHUB_TOKEN`. This must be a GitHub fine-grained personal access token for only `Nake111/forex-sniper`, with **Contents: Read and write** permission. The repository-dispatch endpoint requires Contents write permission. Never paste this token into TradingView or chat.
+6. Add a **Secret** named `GITHUB_TOKEN`. This must be a GitHub fine-grained personal access token for only `Nake111/forex-sniper`, with **Contents: Read and write** permission. GitHub requires Contents write for repository dispatch. Never paste this token into TradingView or chat.
 7. Add a plain-text **Variable** named `GITHUB_REPOSITORY` with value `Nake111/forex-sniper`.
 8. Deploy the Worker settings. Your webhook URL is `https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/WEBHOOK_SECRET`, where the final path segment is the exact `TV_WEBHOOK_SECRET` value. Keep this URL private; rotate the secret if exposed.
 
