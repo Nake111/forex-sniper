@@ -40,11 +40,12 @@ jobs:
         run: npm run download
         env:
           DATA_DAYS_BACK: "30"
-          DUKASCOPY_BATCH_SIZE: "8"
-          DUKASCOPY_BATCH_PAUSE_MS: "250"
+          DOWNLOAD_CONCURRENCY: "3"
+          DUKASCOPY_BATCH_SIZE: "10"
+          DUKASCOPY_BATCH_PAUSE_MS: "100"
           DUKASCOPY_REQUEST_INTERVAL_MS: "100"
-          DUKASCOPY_RETRY_COUNT: "1"
-          DUKASCOPY_RATE_LIMIT_RETRIES: "2"
+          DUKASCOPY_RETRY_COUNT: "2"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "3"
       - name: Generate signal report
         run: |
           set -o pipefail
