@@ -18,7 +18,11 @@ A Node.js market-analysis and paper-signal project for **EUR/USD** and **BTC/USD
 
 **Safety:** this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
-## Session context and source licensing\n\nThe session module is an independent implementation of common market-session timing and range calculations. It does not include LuxAlgo source code. The LuxAlgo Pine Script supplied as a reference by the project owner is marked CC BY-NC-SA 4.0; do not copy or redistribute that source, or use a derivative of it commercially, unless the license terms permit it.\n\n## Requirements
+## Session context and source licensing
+
+The session module is an independent implementation of common market-session timing and range calculations. It does not include LuxAlgo source code. The LuxAlgo Pine Script supplied as a reference by the project owner is marked CC BY-NC-SA 4.0; do not copy or redistribute that source, or use a derivative of it commercially, unless the license terms permit it.
+
+## Requirements
 
 - Node.js 20+
 - npm
