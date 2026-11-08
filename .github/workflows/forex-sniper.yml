@@ -39,7 +39,12 @@ jobs:
       - name: Download EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
-          DATA_DAYS_BACK: "60"
+          DATA_DAYS_BACK: "30"
+          DUKASCOPY_BATCH_SIZE: "8"
+          DUKASCOPY_BATCH_PAUSE_MS: "250"
+          DUKASCOPY_REQUEST_INTERVAL_MS: "100"
+          DUKASCOPY_RETRY_COUNT: "1"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "2"
       - name: Generate signal report
         run: |
           set -o pipefail
