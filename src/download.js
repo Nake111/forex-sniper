@@ -2,7 +2,7 @@
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, writeFile } from "node:fs/promises";
 
-const DAYS_BACK = 180;
+const DAYS_BACK = process.argv.includes("--live") ? 14 : 180;
 
 function formatDate(date) {
   return date.toISOString().slice(0, 10);
