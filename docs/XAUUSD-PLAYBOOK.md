@@ -60,3 +60,6 @@ The Gold entry gate requires both macro/news risk to be NORMAL. HIGH or UNKNOWN 
 
 ## Gold-specific signal profile
 The optional `gold` profile is deliberately stricter than baseline: 4 M5 votes, 4 M15 votes, 3 H1 votes, RSI threshold 54/46, ADX at least 20 on M5/M15, VWAP plus volume-pressure confirmation, and a recent OB/FVG retest. It is an unvalidated candidate profile until the scheduled full-history and chronological holdout tests report sufficient trades, positive expectancy after costs, and controlled drawdown. Do not assume it is superior merely because it is stricter.
+
+
+The Gold profile also uses macro alignment when available: rising 10-year real yields and a rising DXY are treated as gold headwinds; falling values are treated as tailwinds. If the two sources disagree, the bias is neutral. The DXY component requires the optional streaming feed. Macro alignment is a soft veto only when it clearly opposes a candidate; unavailable data is not treated as bullish or bearish.
