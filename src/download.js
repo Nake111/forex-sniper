@@ -26,7 +26,7 @@ function formatDate(date) {
 
 function candleTimestamp(candle) {
   const raw = candle.timestamp ?? candle.time ?? candle.date;
-  const value = typeof raw === "number" ? raw : typeof raw === "string" && /^\\d+(?:\\.\\d+)?$/.test(raw) ? Number(raw) : Date.parse(raw);
+  const value = typeof raw === "number" ? raw : typeof raw === "string" && /^\d+(?:\\.\d+)?$/.test(raw) ? Number(raw) : Date.parse(raw);
   if (!Number.isFinite(value)) return NaN;
   return value < 1e12 ? value * 1000 : value;
 }
@@ -77,7 +77,7 @@ const TWELVE_DATA_M5_CACHE = new Map();
 function parseTwelveDataDate(value) {
   if (typeof value !== "string") return NaN;
   const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const withZone = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(normalized) ? normalized : normalized + "Z";
+  const withZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized) ? normalized : normalized + "Z";
   return Date.parse(withZone);
 }
 
