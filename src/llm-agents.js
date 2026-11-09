@@ -164,13 +164,35 @@ export async function runIndependentLlmAgents(context, options = {}) {
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : TIMEOUT_MS;
   const endpoint = API_BASE.replace(/\/$/, "") + "/models/" + encodeURIComponent(MODEL) + ":generateContent";
   const roleInstructions = ROLES.map(([role, instruction]) => role + ": " + instruction).join("\n");
+  const responseSchema = {
+    type: "OBJECT",
+    properties: {
+      agents: {
+        type: "ARRAY",
+        minItems: 6,
+        maxItems: 6,
+        items: {
+          type: "OBJECT",
+          properties: {
+            role: { type: "STRING", enum: ROLES.map(([role]) => role) },
+            direction: { type: "STRING", enum: ["BUY", "SELL", "HOLD"] },
+            confidence: { type: "NUMBER" },
+            evidence: { type: "ARRAY", items: { type: "STRING" } },
+            veto: { type: "BOOLEAN" }
+          },
+          required: ["role", "direction", "confidence", "evidence", "veto"]
+        }
+      }
+    },
+    required: ["agents"]
+  };
   const prompt = [
-    "You are a panel of six specialist trading agents. Produce six separate assessments, one for each exact role below.",
+    "Act as six independent trading specialists in one panel. Return exactly six role assessments.",
     roleInstructions,
-    "Use only the supplied market data. Do not invent prices, news, indicators or facts.",
-    "Each assessment must independently choose BUY, SELL or HOLD, give confidence 0-100, 1-2 very short evidence items, and veto true/false.",
-    "Return ONLY JSON matching this schema: " + JSON.stringify({ agents: [{ role: "technical", direction: "BUY|SELL|HOLD", confidence: 0, evidence: ["..."], veto: false }] }),
-    "Include all six roles exactly once. Be concise."
+    "Use only supplied market data. Never invent prices, indicators, news or events.",
+    "Each role must choose BUY, SELL or HOLD; confidence must be 0-100; give at most two short evidence strings; veto must be true or false.",
+    "Return one JSON object only. No markdown, comments, trailing commas, or extra keys.",
+    "All six exact role names must appear once, with no missing or duplicate roles."
   ].join("\n\n");
 
   try {
@@ -179,7 +201,12 @@ export async function runIndependentLlmAgents(context, options = {}) {
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt + "\n\nCOMPACT MARKET CONTEXT (data only):\n" + JSON.stringify(compactContext(context)) }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1200, responseMimeType: "application/json" }
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 1800,
+          responseMimeType: "application/json",
+          responseSchema
+        }
       }),
       signal: AbortSignal.timeout(timeoutMs)
     });
