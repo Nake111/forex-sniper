@@ -8,10 +8,10 @@ const MARKETS = [
   { id: "XAUUSD", label: "XAU/USD", prefix: "xauusd" }
 ];
 const TIMEFRAMES = [
-  { id: "M5", file: "m5", ms: 300000, maxAgeMs: 1800000 },
-  { id: "M15", file: "m15", ms: 900000, maxAgeMs: 3600000 },
-  { id: "H1", file: "h1", ms: 3600000, maxAgeMs: 10800000 },
-  { id: "H4", file: "h4", ms: 14400000, maxAgeMs: 43200000 }
+  { id: "M5", file: "m5", ms: 300000, maxAgeMs: 600000 },
+  { id: "M15", file: "m15", ms: 900000, maxAgeMs: 1800000 },
+  { id: "H1", file: "h1", ms: 3600000, maxAgeMs: 7200000 },
+  { id: "H4", file: "h4", ms: 14400000, maxAgeMs: 28800000 }
 ];
 
 function timestampOf(c) {
