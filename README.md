@@ -75,6 +75,14 @@ npm start
 
 The output contains separate EUR/USD and BTC/USD reports. BTC options context is fetched from Deribit public endpoints; if that service is unavailable, spot analysis continues without it. If one market is missing valid candle data, the other market is still analysed; the process exits with an error status so the missing dataset is visible.
 
+## Scheduled live candle refresh
+
+The separate `.github/workflows/live-candle-refresh.yml` workflow runs on manual dispatch and a five-minute schedule. Each run restores a cached candle history, refreshes the latest overlapping window, validates and deduplicates candles, generates a timestamped EUR/USD, BTC/USD and XAU/USD signal report, then uploads the candle files and report as a seven-day artifact.
+
+**Important live-data limits:** GitHub Actions is a scheduled polling service, not an always-on streaming server. GitHub documents five minutes as the shortest scheduled interval, and scheduled starts can be delayed. BTC/USD candles use Kraken XBT/USD spot OHLC (not a broker CFD quote); EUR/USD and XAU/USD use Dukascopy historical candle downloads unless a Twelve Data key is configured. These are reference feeds, not Vantage bid/ask execution prices. The report's candle-age safety gate must be respected. For true uninterrupted tick streaming, deploy the existing reconnecting WebSocket worker(s) to an always-on host; GitHub-hosted runners stop when each job ends. No live orders are placed.
+
+The latest scheduled output is available under **Actions → Forex Sniper Live Candle Refresh → latest run → Artifacts**. The existing longer validation workflow remains separate so it does not block the five-minute refresh cadence.
+
 ## GitHub Actions
 
 Open **Actions → Forex Sniper Analysis → Run workflow** to install dependencies, run syntax checks and tests, download fresh candles, and create a report artifact.
