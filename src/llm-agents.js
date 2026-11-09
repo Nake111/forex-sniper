@@ -74,13 +74,57 @@ function compactContext(context = {}) {
   };
 }
 
-function extractJson(text) {
-  const source = String(text || "").trim();
-  try { return JSON.parse(source); } catch {}
+function stripTrailingCommas(source) {
+  let output = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    if (inString) {
+      output += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      output += char;
+      continue;
+    }
+    if (char === ",") {
+      let next = i + 1;
+      while (next < source.length && /\s/.test(source[next])) next++;
+      if (source[next] === "}" || source[next] === "]") continue;
+    }
+    output += char;
+  }
+  return output;
+}
+
+export function extractJson(text) {
+  let source = String(text || "").trim();
+  source = source.replace(/^\s*`{3}(?:json)?\s*/i, "").replace(/\s*`{3}\s*$/, "").trim();
   const start = source.indexOf("{");
-  const end = source.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Gemini did not return JSON");
-  return JSON.parse(source.slice(start, end + 1));
+  if (start < 0) throw new Error("Gemini did not return a JSON object");
+  // Find the matching outer brace without being confused by braces in strings.
+  let depth = 0, inString = false, escaped = false, end = -1;
+  for (let i = start; i < source.length; i++) {
+    const char = source[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") depth++;
+    else if (char === "}" && --depth === 0) { end = i; break; }
+  }
+  if (end < 0) throw new Error("Gemini returned incomplete JSON (unclosed object)");
+  const candidate = stripTrailingCommas(source.slice(start, end + 1));
+  try { return JSON.parse(candidate); }
+  catch (error) { throw new Error("Gemini JSON parse failed: " + error.message); }
 }
 
 function validateAgents(payload) {
