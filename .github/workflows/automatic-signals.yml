@@ -2,8 +2,8 @@ name: Forex Sniper Automatic Signals
 
 on:
   schedule:
-    # GitHub scheduled workflows use UTC and may start a few minutes late.
-    - cron: "*/15 * * * *"
+    # GitHub Actions may start a few minutes late; this is a 5-minute refresh target, not a tick feed.
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -24,6 +24,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore candle history cache
+        uses: actions/cache@v4
+        with:
+          path: data/*.json
+          key: forex-sniper-candles-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            forex-sniper-candles-${{ runner.os }}-
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -38,10 +46,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Download fresh market candles
+      - name: Incrementally refresh market candles
         run: npm run download
         env:
           DATA_DAYS_BACK: "30"
+          DATA_OVERLAP_DAYS: "3"
           DOWNLOAD_CONCURRENCY: "3"
           DUKASCOPY_BATCH_SIZE: "10"
           DUKASCOPY_BATCH_PAUSE_MS: "100"
@@ -55,7 +64,7 @@ jobs:
           {
             echo "FOREX SNIPER AUTOMATIC SIGNAL REPORT"
             echo "Generated UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
-            echo "Schedule: every 15 minutes (GitHub Actions; start time may vary)"
+            echo "Schedule target: every 5 minutes (GitHub Actions; actual start can be delayed)"
             npm start
           } 2>&1 | tee signals.txt
         env:
