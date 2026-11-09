@@ -69,6 +69,75 @@ async function atomicWrite(path, data) {
   await rename(temporary, path);
 }
 
+
+const TWELVE_DATA_INTERVALS = { m5: 5, m15: 15, h1: 60, h4: 240 };
+const TWELVE_DATA_SYMBOLS = { eurusd: "EUR/USD", xauusd: "XAU/USD" };
+
+function parseTwelveDataDate(value) {
+  if (typeof value !== "string") return NaN;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const withZone = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(normalized) ? normalized : normalized + "Z";
+  return Date.parse(withZone);
+}
+
+async function downloadTwelveDataM5(market) {
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  const symbol = TWELVE_DATA_SYMBOLS[market.prefix];
+  if (!apiKey || !symbol) return null;
+  const url = new URL("https://api.twelvedata.com/time_series");
+  url.search = new URLSearchParams({
+    symbol,
+    interval: "5min",
+    outputsize: "1000",
+    order: "ASC",
+    timezone: "UTC",
+    format: "JSON",
+    apikey: apiKey
+  }).toString();
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error("Twelve Data HTTP " + response.status);
+  const payload = await response.json();
+  if (payload.status === "error" || payload.code || !Array.isArray(payload.values)) {
+    throw new Error("Twelve Data response: " + (payload.message ?? payload.code ?? "no candle values"));
+  }
+  const candles = payload.values.map(row => ({
+    timestamp: parseTwelveDataDate(row.datetime),
+    open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
+    volume: Number(row.volume ?? 0), source: "Twelve Data " + symbol
+  })).filter(validCandle).sort((a, b) => a.timestamp - b.timestamp);
+  if (candles.length < 100) throw new Error("Twelve Data returned only " + candles.length + " valid M5 candles for " + symbol);
+  return candles;
+}
+
+function resampleFiveMinuteCandles(candles, timeframe) {
+  const minutes = TWELVE_DATA_INTERVALS[timeframe];
+  if (!minutes || minutes === 5) return candles;
+  const expected = minutes / 5;
+  const duration = minutes * 60_000;
+  const groups = new Map();
+  for (const candle of candles) {
+    const bucket = Math.floor(candle.timestamp / duration) * duration;
+    if (!groups.has(bucket)) groups.set(bucket, []);
+    groups.get(bucket).push(candle);
+  }
+  const output = [];
+  for (const [timestamp, rows] of groups) {
+    rows.sort((a, b) => a.timestamp - b.timestamp);
+    if (rows.length !== expected) continue;
+    if (rows.some((row, index) => row.timestamp !== timestamp + index * 5 * 60_000)) continue;
+    output.push({
+      timestamp,
+      open: rows[0].open,
+      high: Math.max(...rows.map(row => row.high)),
+      low: Math.min(...rows.map(row => row.low)),
+      close: rows.at(-1).close,
+      volume: rows.reduce((sum, row) => sum + (Number(row.volume) || 0), 0),
+      source: "Twelve Data resampled from M5"
+    });
+  }
+  return output;
+}
+
 const KRAKEN_INTERVALS = { m5: 5, m15: 15, h1: 60, h4: 240 };
 
 async function downloadKrakenCandles(timeframe) {
@@ -118,8 +187,36 @@ async function downloadOne(market, timeframe) {
   const to = formatDate(now);
 
   console.log(`Downloading ${market.label} ${timeframe.toUpperCase()} candles from ${from} (cache: ${previous.length} rows; overlap: ${latestCached ? OVERLAP_DAYS + " days" : "cold start"})...`);
-  const incoming = useKraken ? await downloadKrakenCandles(timeframe)
-    : await getHistoricalRates({
+  let incoming;
+  let provider = useKraken ? "Kraken" : "Dukascopy";
+  if (useKraken) {
+    incoming = await downloadKrakenCandles(timeframe);
+  } else if (process.env.TWELVE_DATA_API_KEY && TWELVE_DATA_SYMBOLS[market.prefix]) {
+    try {
+      const freshM5 = await downloadTwelveDataM5(market);
+      incoming = timeframe === "m5" ? freshM5 : resampleFiveMinuteCandles(freshM5, timeframe);
+      provider = "Twelve Data";
+      if (!incoming.length) throw new Error("No complete " + timeframe.toUpperCase() + " bars could be resampled from Twelve Data M5");
+    } catch (error) {
+      console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data unavailable; using Dukascopy fallback. Reason: " + error.message);
+      provider = "Dukascopy fallback";
+      incoming = await getHistoricalRates({
+        instrument: market.instrument,
+        dates: { from, to },
+        timeframe,
+        format: "json",
+        volumes: true,
+        useCache: true,
+        batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
+        pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
+        requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
+        retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
+        pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
+        rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
+      });
+    }
+  } else {
+    incoming = await getHistoricalRates({
       instrument: market.instrument,
       dates: { from, to },
       timeframe,
@@ -133,6 +230,7 @@ async function downloadOne(market, timeframe) {
       pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
       rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
     });
+  }
 
   if (!Array.isArray(incoming) || incoming.length < 1) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
