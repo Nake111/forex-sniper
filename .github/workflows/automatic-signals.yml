@@ -1,0 +1,71 @@
+name: Forex Sniper Automatic Signals
+
+on:
+  schedule:
+    # GitHub scheduled workflows use UTC and may start a few minutes late.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: forex-sniper-auto-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BTC_DATA_PREFIX: kraken-btcusd
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check syntax
+        run: npm run check
+
+      - name: Download fresh market candles
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "30"
+          DOWNLOAD_CONCURRENCY: "3"
+          DUKASCOPY_BATCH_SIZE: "10"
+          DUKASCOPY_BATCH_PAUSE_MS: "100"
+          DUKASCOPY_REQUEST_INTERVAL_MS: "100"
+          DUKASCOPY_RETRY_COUNT: "2"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "3"
+
+      - name: Generate EUR/USD, BTC/USD and XAU/USD signals
+        run: |
+          set -o pipefail
+          {
+            echo "FOREX SNIPER AUTOMATIC SIGNAL REPORT"
+            echo "Generated UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
+            echo "Schedule: every 15 minutes (GitHub Actions; start time may vary)"
+            npm start
+          } 2>&1 | tee signals.txt
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash-lite
+          LLM_TIMEOUT_MS: "8000"
+
+      - name: Upload latest signal report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-auto-signals
+          path: signals.txt
+          if-no-files-found: warn
+          retention-days: 14
