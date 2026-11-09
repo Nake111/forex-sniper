@@ -91,7 +91,7 @@ async function downloadTwelveDataM5(market) {
     url.search = new URLSearchParams({
       symbol,
       interval: "5min",
-      outputsize: "1000",
+      outputsize: "5000",
       order: "ASC",
       timezone: "UTC",
       format: "JSON",
@@ -246,7 +246,26 @@ async function downloadOne(market, timeframe) {
   if (!Array.isArray(incoming) || incoming.length < 1) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
-  const merged = mergeCandles(previous, incoming, cutoff);
+  let merged = mergeCandles(previous, incoming, cutoff);
+  if (merged.length < 100 && provider === "Twelve Data") {
+    console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is too short for a cold start; supplementing from Dukascopy.");
+    const fallback = await getHistoricalRates({
+      instrument: market.instrument,
+      dates: { from, to },
+      timeframe,
+      format: "json",
+      volumes: true,
+      useCache: true,
+      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
+      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
+      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
+      retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
+      pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
+      rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
+    });
+    merged = mergeCandles(merged, fallback, cutoff);
+    provider = "Twelve Data + Dukascopy history";
+  }
   if (merged.length < 100) {
     throw new Error(`Not enough merged ${market.label} ${timeframe.toUpperCase()} candles: ${merged.length}`);
   }
