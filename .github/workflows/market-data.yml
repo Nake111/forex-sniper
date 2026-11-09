@@ -57,6 +57,7 @@ jobs:
           DATA_DAYS_BACK: "30"
           DATA_OVERLAP_DAYS: "3"
           DOWNLOAD_CONCURRENCY: "3"
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
 
       - name: Generate multi-market signal report
         run: npm start 2>&1 | tee market-snapshot.txt
