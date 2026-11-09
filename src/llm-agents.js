@@ -4,7 +4,7 @@
 // A single request avoids serial pacing/rate-limit delays. Cloud review is advisory;\n// local deterministic agents remain the primary signal path when the API is slow.
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 8000);
+// Keep optional cloud review off the critical path; local deterministic agents decide on timeout.\nconst TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 2000);
 const ROLES = [
   ["technical", "Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "Assess swing structure, BOS/CHOCH, liquidity sweeps and support/resistance."],
