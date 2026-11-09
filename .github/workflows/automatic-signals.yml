@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: forex-sniper-auto-${{ github.ref }}
-  cancel-in-progress: true
+  group: forex-sniper-candle-refresh
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare candle cache directory
+        run: mkdir -p data
 
       - name: Restore candle history cache
         uses: actions/cache@v4
