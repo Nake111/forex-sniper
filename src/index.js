@@ -248,23 +248,17 @@ async function analyseMarket(market, macroContext) {
   candidate = agentGate.signal;
   console.log("LOCAL SIGNAL PREVIEW (before Gemini review):", candidate, "| local portfolio:", agentReport.portfolioManager.decision);
 
-  // Gemini is veto-only: it cannot promote HOLD to BUY/SELL. Skip the network
-  // request entirely when the deterministic engine has no trade candidate.
-  const llmReviewPromise = candidate === "HOLD"
-    ? Promise.resolve({
-      enabled: Boolean(process.env.GEMINI_API_KEY),
-      status: "SKIPPED",
-      provider: "Google Gemini",
-      model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
-      mode: "single-request-six-role-panel",
-      elapsedMs: 0,
-      targetMs: Number(process.env.LLM_TIMEOUT_MS || 2000),
-      agents: [],
-      votes: null,
-      decision: null,
-      reason: "Local decision is HOLD; Gemini is veto-only and cannot promote HOLD to a trade."
-    })
-    : runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
+  // Always request the six-role Gemini review, including when the local engine
+  // says HOLD. This makes the six specialist assessments visible on every market
+  // snapshot. Gemini remains confirmation/veto-only: it can never promote HOLD
+  // into a trade or override local data-quality and risk gates.
+  const llmReviewPromise = runIndependentLlmAgents({
+    market: market.symbol,
+    frames: results,
+    macro: macroContext,
+    polymarket: polymarketContext,
+    deterministicAgents: agentReport
+  });
   const llmReport = await llmReviewPromise;
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
   // The five local deterministic specialists are the fast primary decision path.
