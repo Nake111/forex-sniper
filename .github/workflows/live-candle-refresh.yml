@@ -1,0 +1,91 @@
+name: Forex Sniper Live Candle Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+concurrency:
+  group: forex-sniper-live-data
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh-and-signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATA_DAYS_BACK: "30"
+      DATA_OVERLAP_DAYS: "1"
+      DOWNLOAD_CONCURRENCY: "4"
+      BTC_DATA_PREFIX: "kraken-btcusd"
+      LLM_TIMEOUT_MS: "8000"
+      GEMINI_MODEL: "gemini-3.5-flash-lite"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Restore candle history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            forex-sniper-candles-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate code
+        run: |
+          npm run check
+          npm test
+
+      - name: Refresh latest candles (incremental + overlap + deduplication)
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "30"
+          DATA_OVERLAP_DAYS: "1"
+          DOWNLOAD_CONCURRENCY: "4"
+          BTC_DATA_PREFIX: "kraken-btcusd"
+          DUKASCOPY_BATCH_SIZE: "8"
+          DUKASCOPY_BATCH_PAUSE_MS: "150"
+          DUKASCOPY_REQUEST_INTERVAL_MS: "120"
+          DUKASCOPY_RETRY_COUNT: "3"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "4"
+
+      - name: Generate timestamped multi-market signal report
+        run: |
+          mkdir -p reports
+          set -o pipefail
+          npm start 2>&1 | tee "reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
+          BTC_DATA_PREFIX: "kraken-btcusd"
+
+      - name: Save candle history cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload latest candles and signal report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-live-${{ github.run_number }}
+          path: |
+            data/*.json
+            reports/*.txt
+          if-no-files-found: warn
+          retention-days: 7
