@@ -2,6 +2,13 @@ name: Forex Sniper Live Candle Refresh
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/live-candle-refresh.yml"
+      - "src/publish-dashboard-data.js"
+      - "dashboard/market-data.js"
+      - "package.json"
   schedule:
     - cron: "*/5 * * * *"
 
