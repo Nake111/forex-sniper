@@ -9,7 +9,11 @@ const MARKETS = [
 ];
 const TIMEFRAMES = ["m5", "m15", "h1", "h4"];
 const MARKET_FILTER = process.env.MARKET_FILTER?.toUpperCase();
-const DOWNLOAD_CONCURRENCY = Math.max(1, Math.min(6, Number(process.env.DOWNLOAD_CONCURRENCY ?? 3)));
+// Four workers overlap independent markets/timeframes without hammering Dukascopy.
+const DOWNLOAD_CONCURRENCY = Number(process.env.DOWNLOAD_CONCURRENCY ?? 4);
+if (!Number.isInteger(DOWNLOAD_CONCURRENCY) || DOWNLOAD_CONCURRENCY < 1 || DOWNLOAD_CONCURRENCY > 6) {
+  throw new Error("DOWNLOAD_CONCURRENCY must be an integer between 1 and 6");
+}
 const SELECTED_MARKETS = MARKET_FILTER ? MARKETS.filter(market => market.prefix.toUpperCase() === MARKET_FILTER) : MARKETS;
 if (MARKET_FILTER && SELECTED_MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
@@ -71,9 +75,11 @@ async function downloadOne(market, timeframe) {
       format: "json",
       volumes: true,
       useCache: true,
-      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 3),
-      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 1500),
-      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 250),
+      // Larger batches and shorter pauses reduce wall-clock time; retry/rate-limit
+      // handling remains enabled below to recover from transient provider throttling.
+      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
+      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
+      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
       retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
       pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
       rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
