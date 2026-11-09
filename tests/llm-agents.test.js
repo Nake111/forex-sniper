@@ -37,6 +37,9 @@ test("six specialist roles are confirmed in one Gemini request", async () => {
     const result = await runIndependentLlmAgents({ market: "EURUSD" }, { apiKey: "test-key", timeoutMs: 2000 });
     assert.equal(calls, 1);
     assert.equal(requestBody.generationConfig.responseMimeType, "application/json");
+    assert.equal(requestBody.generationConfig.thinkingConfig.thinkingLevel, "MINIMAL");
+    assert.equal(requestBody.generationConfig.maxOutputTokens, 1000);
+    assert.equal(requestBody.generationConfig.responseSchema.properties.agents.items.properties.evidence.maxItems, 2);
     assert.equal(requestBody.generationConfig.responseSchema.properties.agents.minItems, 6);
     assert.equal(requestBody.generationConfig.responseSchema.properties.agents.maxItems, 6);
     assert.deepEqual(requestBody.generationConfig.responseSchema.properties.agents.items.properties.role.enum, roles);
