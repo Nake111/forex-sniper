@@ -26,7 +26,7 @@ function formatDate(date) {
 
 function candleTimestamp(candle) {
   const raw = candle.timestamp ?? candle.time ?? candle.date;
-  const value = typeof raw === "number" ? raw : Date.parse(raw);
+  const value = typeof raw === "number" ? raw : typeof raw === "string" && /^\\d+(?:\\.\\d+)?$/.test(raw) ? Number(raw) : Date.parse(raw);
   if (!Number.isFinite(value)) return NaN;
   return value < 1e12 ? value * 1000 : value;
 }
