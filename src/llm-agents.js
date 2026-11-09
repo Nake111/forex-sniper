@@ -94,7 +94,7 @@ function stripTrailingCommas(source) {
     }
     if (char === ",") {
       let next = i + 1;
-      while (next < source.length && /\\s/.test(source[next])) next++;
+      while (next < source.length && /\s/.test(source[next])) next++;
       if (source[next] === "}" || source[next] === "]") continue;
     }
     output += char;
@@ -104,7 +104,7 @@ function stripTrailingCommas(source) {
 
 export function extractJson(text) {
   let source = String(text || "").trim();
-  source = source.replace(/^\\s*`{3}(?:json)?\\s*/i, "").replace(/\\s*`{3}\\s*$/, "").trim();
+  source = source.replace(/^\s*`{3}(?:json)?\s*/i, "").replace(/\s*`{3}\s*$/, "").trim();
   const start = source.indexOf("{");
   if (start < 0) throw new Error("Gemini did not return a JSON object");
   // Find the matching outer brace without being confused by braces in strings.
