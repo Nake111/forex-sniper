@@ -29,18 +29,21 @@
         const row=document.createElement("tr");
         cell(row,market.label,true); cell(row,tf,true);
         cell(row,new Date(item.latestClosedAt).toLocaleString());
-        cell(row,Math.round(item.ageSeconds/60)+" min");
+        const candleAgeSeconds=Math.max(0,Math.floor((Date.now()-Date.parse(item.latestClosedAt))/1000));
+        const stale=!Number.isFinite(candleAgeSeconds)||candleAgeSeconds>Number(item.maxAgeSeconds??0);
+        cell(row,Math.round(candleAgeSeconds/60)+" min"+(stale?" · STALE":""));
         for(const key of ["open","high","low","close"]) cell(row,Number(item.latest[key]).toLocaleString(undefined,{maximumFractionDigits:5}));
         cell(row,item.source||"unknown");
         cell(row,item.status+(item.gapCount?" · gaps "+item.gapCount:""));
-        if(item.status!=="PASS") warn=true;
+        if(item.status!=="PASS"||stale) warn=true;
         tbl.appendChild(row);
       }
     }
     table.appendChild(tbl);
     badge.textContent=warn||data.validation?.status!=="PASS"?"CHECK DATA":"VALIDATED";
     badge.className="pill "+(warn?"":"live");
-    status.textContent="Published "+new Date(data.generatedAt).toLocaleString()+" · 5-minute workflow target · closed candles only";
+    const snapshotAge=Math.max(0,Math.floor((Date.now()-Date.parse(data.generatedAt))/1000));
+    status.textContent="Snapshot "+Math.round(snapshotAge/60)+" min old · "+new Date(data.generatedAt).toLocaleString()+" · 5-minute workflow target · candle ages update live";
   }
   async function refresh() {
     try {
