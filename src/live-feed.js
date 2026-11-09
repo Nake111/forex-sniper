@@ -4,13 +4,14 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 const SYMBOL = "BTCUSDT";
 const STREAM_URL = "wss://stream.binance.com:9443/ws/btcusdt@kline_1m";
 const DATA_DIR = "data";
-const MAX_1M_CANDLES = 10_000;
+const MAX_1M_CANDLES = 20_000;
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 const TIMEFRAMES = [
   { name: "m5", minutes: 5 },
   { name: "m15", minutes: 15 },
-  { name: "h1", minutes: 60 }
+  { name: "h1", minutes: 60 },
+  { name: "h4", minutes: 240 }
 ];
 
 let candles = [];
@@ -41,11 +42,11 @@ function validCandle(c) {
 }
 
 async function bootstrap() {
-  // Fetch enough closed 1m history to satisfy the bot's 60-candle H1 minimum.
+  // Seed 15,000 closed 1m bars so the 60-bar H4 minimum is met too.
   const now = Date.now();
-  let cursor = now - 5_000 * 60_000;
+  let cursor = now - 15_000 * 60_000;
   const seeded = [];
-  for (let page = 0; page < 5; page++) {
+  for (let page = 0; page < 15; page++) {
     const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000&startTime=${cursor}`;
     const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw new Error(`Binance history request failed: HTTP ${response.status}`);
@@ -114,7 +115,7 @@ async function persistTimeframes() {
   await mkdir(DATA_DIR, { recursive: true });
   for (const timeframe of TIMEFRAMES) {
     const result = aggregate(timeframe.minutes);
-    await atomicWrite(`${DATA_DIR}/btcusdt-${timeframe.name}.json`, result);
+    await atomicWrite(`${DATA_DIR}/btcusd-${timeframe.name}.json`, result);
   }
 }
 
