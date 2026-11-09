@@ -84,18 +84,46 @@ jobs:
           BTC_DATA_PREFIX: "kraken-btcusd"
 
       - name: Validate and publish closed candles for the dashboard
+        shell: bash
         run: |
+          set -euo pipefail
           npm run publish:data
+          snapshot="$(mktemp)"
+          cp dashboard/data/latest.json "$snapshot"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dashboard/data/latest.json
-          if git diff --cached --quiet; then
-            echo "Dashboard candle snapshot has no changes."
-          else
+
+          # Rebuild the dashboard commit on top of the newest main branch.
+          # This avoids JSON merge conflicts when another workflow publishes
+          # the same snapshot file at nearly the same time.
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            echo "Dashboard publish attempt $attempt/5"
+            git fetch origin "$GITHUB_REF_NAME"
+            git reset --hard "origin/$GITHUB_REF_NAME"
+            cp "$snapshot" dashboard/data/latest.json
+            git add dashboard/data/latest.json
+
+            if git diff --cached --quiet; then
+              echo "Dashboard candle snapshot is already current."
+              pushed=true
+              break
+            fi
+
             git commit -m "Publish validated latest market candles"
-            git fetch origin "${GITHUB_REF_NAME}"
-            git rebase "origin/${GITHUB_REF_NAME}"
-            git push origin HEAD:${GITHUB_REF_NAME}
+            if git push origin "HEAD:$GITHUB_REF_NAME"; then
+              pushed=true
+              echo "Dashboard candle snapshot published."
+              break
+            fi
+            echo "Branch advanced during publish; retrying on the latest branch."
+          done
+
+          rm -f "$snapshot"
+          if [ "$pushed" != true ]; then
+            echo "Could not publish dashboard snapshot after five attempts." >&2
+            exit 1
           fi
         env:
           BTC_DATA_PREFIX: "kraken-btcusd"
