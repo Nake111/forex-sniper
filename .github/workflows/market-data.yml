@@ -13,8 +13,8 @@ on:
       - "package.json"
 
 concurrency:
-  group: multi-market-snapshot
-  cancel-in-progress: true
+  group: forex-sniper-candle-refresh
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -28,6 +28,9 @@ jobs:
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
+
+      - name: Prepare candle cache directory
+        run: mkdir -p data
 
       - name: Restore candle history cache
         uses: actions/cache@v4
