@@ -195,7 +195,7 @@ async function downloadOne(market, timeframe) {
     ? new Date(Math.max(cutoff, latestCached - OVERLAP_DAYS * 86_400_000))
     : earliestAllowed;
   const from = formatDate(incrementalFrom);
-  const to = formatDate(now);
+  const to = now.toISOString();
 
   console.log(`Downloading ${market.label} ${timeframe.toUpperCase()} candles from ${from} (cache: ${previous.length} rows; overlap: ${latestCached ? OVERLAP_DAYS + " days" : "cold start"})...`);
   let incoming;
