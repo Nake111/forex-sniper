@@ -44,7 +44,7 @@ function quality(candles, tf, now) {
   for (let i=1;i<candles.length;i++) if (candles[i].timestamp-candles[i-1].timestamp > tf.ms*1.5) gaps++;
   const issues = [];
   if (ageMs > tf.maxAgeMs) issues.push("STALE_CLOSED_CANDLE");
-  if (gaps) issues.push("MISSING_INTERVALS_IN_RECENT_WINDOW");
+  if (gaps >= 10) issues.push("EXCESSIVE_MISSING_INTERVALS_IN_RECENT_WINDOW");
   return { status: issues.length ? "WARN" : "PASS", latestClosedAt: new Date(closedAt).toISOString(),
     ageSeconds: Math.round(ageMs/1000), maxAgeSeconds: Math.round(tf.maxAgeMs/1000),
     candleCount: candles.length, gapCount: gaps, issues };
