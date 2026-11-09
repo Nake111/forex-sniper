@@ -27,10 +27,10 @@ const MARKETS = MARKET_FILTER ? ALL_MARKETS.filter(market => market.symbol === M
 if (MARKET_FILTER && MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
 const TIMEFRAMES = [
-  { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 },
-  { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000, maxAgeMs: 60 * 60 * 1000 },
-  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000, maxAgeMs: 3 * 60 * 60 * 1000 },
-  { key: "H4", file: "h4", milliseconds: 4 * 60 * 60 * 1000, maxAgeMs: 12 * 60 * 60 * 1000 }
+  { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000, maxAgeMs: 10 * 60 * 1000 },
+  { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 },
+  { key: "H1", file: "h1", milliseconds: 60 * 60 * 1000, maxAgeMs: 2 * 60 * 60 * 1000 },
+  { key: "H4", file: "h4", milliseconds: 4 * 60 * 60 * 1000, maxAgeMs: 8 * 60 * 60 * 1000 }
 ];
 
 function getTime(candle) {
@@ -270,6 +270,11 @@ async function analyseMarket(market, macroContext) {
   // The five local deterministic specialists are the fast primary decision path.
   // Gemini is an additional cloud review with an 8-second budget; only a complete,
   // schema-valid six-role response may veto. Timeout/error falls back to local agents.
+  if (staleTimeframes.length) {
+    candidate = "HOLD";
+    console.log("HARD DATA SAFETY GATE: HOLD — stale candle data cannot be overridden by local agents or cloud review.");
+  }
+
   if (llmReport.status === "COMPLETE" && candidate !== "HOLD" && llmReport.decision !== candidate) {
     console.log("GEMINI SIX-ROLE VETO: HOLD — completed Gemini panel did not confirm the local multi-agent candidate.");
     candidate = "HOLD";
