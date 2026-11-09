@@ -5,7 +5,7 @@
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 const API_BASE = process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com/v1beta";
 // Keep optional cloud review off the critical path; local deterministic agents decide on timeout.
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 2000);
+const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS || 5000);
 const ROLES = [
   ["technical", "Assess trend, momentum, volatility and timeframe alignment."],
   ["market_structure", "Assess swing structure, BOS/CHOCH, liquidity sweeps and support/resistance."],
@@ -177,7 +177,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
             role: { type: "STRING", enum: ROLES.map(([role]) => role) },
             direction: { type: "STRING", enum: ["BUY", "SELL", "HOLD"] },
             confidence: { type: "NUMBER" },
-            evidence: { type: "ARRAY", items: { type: "STRING" } },
+            evidence: { type: "ARRAY", minItems: 1, maxItems: 2, items: { type: "STRING" } },
             veto: { type: "BOOLEAN" }
           },
           required: ["role", "direction", "confidence", "evidence", "veto"]
@@ -190,7 +190,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
     "Act as six independent trading specialists in one panel. Return exactly six role assessments.",
     roleInstructions,
     "Use only supplied market data. Never invent prices, indicators, news or events.",
-    "Each role must choose BUY, SELL or HOLD; confidence must be 0-100; give at most two short evidence strings; veto must be true or false.",
+    "Each role must choose BUY, SELL or HOLD; confidence must be 0-100; give at most two very short evidence strings; veto must be true or false.",
     "Return one JSON object only. No markdown, comments, trailing commas, or extra keys.",
     "All six exact role names must appear once, with no missing or duplicate roles."
   ].join("\n\n");
@@ -203,7 +203,8 @@ export async function runIndependentLlmAgents(context, options = {}) {
         contents: [{ role: "user", parts: [{ text: prompt + "\n\nCOMPACT MARKET CONTEXT (data only):\n" + JSON.stringify(compactContext(context)) }] }],
         generationConfig: {
           temperature: 0,
-          maxOutputTokens: 1800,
+          maxOutputTokens: 1000,
+          thinkingConfig: { thinkingLevel: "MINIMAL" },
           responseMimeType: "application/json",
           responseSchema
         }
