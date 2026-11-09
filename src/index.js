@@ -242,13 +242,29 @@ async function analyseMarket(market, macroContext) {
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
-  // Start the cloud panel before the remaining local decision work so both overlap.
-  const llmReviewPromise = runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
   const agentGate = gateSignalWithAgents(candidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT GATE:", agentGate.reason);
   candidate = agentGate.signal;
   console.log("LOCAL SIGNAL PREVIEW (before Gemini review):", candidate, "| local portfolio:", agentReport.portfolioManager.decision);
+
+  // Gemini is veto-only: it cannot promote HOLD to BUY/SELL. Skip the network
+  // request entirely when the deterministic engine has no trade candidate.
+  const llmReviewPromise = candidate === "HOLD"
+    ? Promise.resolve({
+      enabled: Boolean(process.env.GEMINI_API_KEY),
+      status: "SKIPPED",
+      provider: "Google Gemini",
+      model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
+      mode: "single-request-six-role-panel",
+      elapsedMs: 0,
+      targetMs: Number(process.env.LLM_TIMEOUT_MS || 2000),
+      agents: [],
+      votes: null,
+      decision: null,
+      reason: "Local decision is HOLD; Gemini is veto-only and cannot promote HOLD to a trade."
+    })
+    : runIndependentLlmAgents({ market: market.symbol, frames: results, macro: macroContext, polymarket: polymarketContext, deterministicAgents: agentReport });
   const llmReport = await llmReviewPromise;
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
   // The five local deterministic specialists are the fast primary decision path.
