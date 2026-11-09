@@ -115,3 +115,20 @@ test("incomplete six-role response is reported as unavailable", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("Gemini JSON parser repairs trailing commas without altering quoted text", async () => {
+  const { extractJson } = await import("../src/llm-agents.js");
+  const parsed = extractJson('{"agents":[{"role":"technical","evidence":["literal ,} text"],}],}');
+  assert.equal(parsed.agents[0].evidence[0], "literal ,} text");
+});
+
+test("Gemini JSON parser accepts fenced JSON and nested objects", async () => {
+  const { extractJson } = await import("../src/llm-agents.js");
+  const parsed = extractJson('```json\\n{"agents":[{"role":"technical","meta":{"note":"brace } inside string"}}]}\\n```');
+  assert.equal(parsed.agents[0].meta.note, "brace } inside string");
+});
+
+test("Gemini JSON parser rejects truncated responses with a clear error", async () => {
+  const { extractJson } = await import("../src/llm-agents.js");
+  assert.throws(() => extractJson('{"agents":[{"role":"technical"}]'), /incomplete JSON/);
+});
