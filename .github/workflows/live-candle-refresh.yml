@@ -90,6 +90,8 @@ jobs:
             echo "Dashboard candle snapshot has no changes."
           else
             git commit -m "Publish validated latest market candles"
+            git fetch origin "${GITHUB_REF_NAME}"
+            git rebase "origin/${GITHUB_REF_NAME}"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi
         env:
