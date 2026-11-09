@@ -124,7 +124,7 @@ test("Gemini JSON parser repairs trailing commas without altering quoted text", 
 
 test("Gemini JSON parser accepts fenced JSON and nested objects", async () => {
   const { extractJson } = await import("../src/llm-agents.js");
-  const parsed = extractJson('```json\\n{"agents":[{"role":"technical","meta":{"note":"brace } inside string"}}]}\\n```');
+  const parsed = extractJson('```json\n{"agents":[{"role":"technical","meta":{"note":"brace } inside string"}}]}\n```');
   assert.equal(parsed.agents[0].meta.note, "brace } inside string");
 });
 
