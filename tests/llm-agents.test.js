@@ -27,10 +27,19 @@ test("LLM panel safely stays disabled when no key is configured", async () => {
 test("six specialist roles are confirmed in one Gemini request", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = async () => { calls += 1; return geminiResponse(); };
+  let requestBody;
+  globalThis.fetch = async (_url, options) => {
+    calls += 1;
+    requestBody = JSON.parse(options.body);
+    return geminiResponse();
+  };
   try {
     const result = await runIndependentLlmAgents({ market: "EURUSD" }, { apiKey: "test-key", timeoutMs: 2000 });
     assert.equal(calls, 1);
+    assert.equal(requestBody.generationConfig.responseMimeType, "application/json");
+    assert.equal(requestBody.generationConfig.responseSchema.properties.agents.minItems, 6);
+    assert.equal(requestBody.generationConfig.responseSchema.properties.agents.maxItems, 6);
+    assert.deepEqual(requestBody.generationConfig.responseSchema.properties.agents.items.properties.role.enum, roles);
     assert.equal(result.status, "COMPLETE");
     assert.equal(result.mode, "single-request-six-role-panel");
     assert.equal(result.agents.length, 6);
