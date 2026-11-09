@@ -51,7 +51,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
-          LLM_TIMEOUT_MS: "8000"
+          LLM_TIMEOUT_MS: "2000"
 
       - name: Upload multi-market snapshot and candles
         if: always()
