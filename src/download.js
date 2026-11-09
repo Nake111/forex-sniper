@@ -58,7 +58,7 @@ function mergeCandles(previous, incoming, cutoff) {
     if (!validCandle(candle)) continue;
     const timestamp = candleTimestamp(candle);
     if (timestamp < cutoff) continue;
-    byTimestamp.set(timestamp, { ...candle, timestamp });
+    byTimestamp.set(timestamp, { ...candle, timestamp, source: candle.source ?? "Dukascopy" });
   }
   return [...byTimestamp.values()].sort((a, b) => a.timestamp - b.timestamp);
 }
