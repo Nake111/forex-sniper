@@ -83,7 +83,7 @@ function stripTrailingCommas(source) {
     if (inString) {
       output += char;
       if (escaped) escaped = false;
-      else if (char === "\\\\") escaped = true;
+      else if (char === "\\") escaped = true;
       else if (char === '"') inString = false;
       continue;
     }
@@ -113,7 +113,7 @@ export function extractJson(text) {
     const char = source[i];
     if (inString) {
       if (escaped) escaped = false;
-      else if (char === "\\\\") escaped = true;
+      else if (char === "\\") escaped = true;
       else if (char === '"') inString = false;
       continue;
     }
