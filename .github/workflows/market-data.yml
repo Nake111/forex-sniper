@@ -29,6 +29,14 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
+      - name: Restore candle history cache
+        uses: actions/cache@v4
+        with:
+          path: data/*.json
+          key: forex-sniper-candles-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            forex-sniper-candles-${{ runner.os }}-
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,10 +48,11 @@ jobs:
       - name: Validate code and strategy tests
         run: npm run check && npm test
 
-      - name: Download EUR/USD, BTC/USD and XAU/USD candles
+      - name: Incrementally refresh EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
           DATA_DAYS_BACK: "30"
+          DATA_OVERLAP_DAYS: "3"
           DOWNLOAD_CONCURRENCY: "3"
 
       - name: Generate multi-market signal report
