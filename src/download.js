@@ -72,6 +72,7 @@ async function atomicWrite(path, data) {
 
 const TWELVE_DATA_INTERVALS = { m5: 5, m15: 15, h1: 60, h4: 240 };
 const TWELVE_DATA_SYMBOLS = { eurusd: "EUR/USD", xauusd: "XAU/USD" };
+const TWELVE_DATA_M5_CACHE = new Map();
 
 function parseTwelveDataDate(value) {
   if (typeof value !== "string") return NaN;
@@ -84,29 +85,39 @@ async function downloadTwelveDataM5(market) {
   const apiKey = process.env.TWELVE_DATA_API_KEY;
   const symbol = TWELVE_DATA_SYMBOLS[market.prefix];
   if (!apiKey || !symbol) return null;
-  const url = new URL("https://api.twelvedata.com/time_series");
-  url.search = new URLSearchParams({
-    symbol,
-    interval: "5min",
-    outputsize: "1000",
-    order: "ASC",
-    timezone: "UTC",
-    format: "JSON",
-    apikey: apiKey
-  }).toString();
-  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
-  if (!response.ok) throw new Error("Twelve Data HTTP " + response.status);
-  const payload = await response.json();
-  if (payload.status === "error" || payload.code || !Array.isArray(payload.values)) {
-    throw new Error("Twelve Data response: " + (payload.message ?? payload.code ?? "no candle values"));
+  if (TWELVE_DATA_M5_CACHE.has(market.prefix)) return TWELVE_DATA_M5_CACHE.get(market.prefix);
+  const request = (async () => {
+    const url = new URL("https://api.twelvedata.com/time_series");
+    url.search = new URLSearchParams({
+      symbol,
+      interval: "5min",
+      outputsize: "1000",
+      order: "ASC",
+      timezone: "UTC",
+      format: "JSON",
+      apikey: apiKey
+    }).toString();
+    const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+    if (!response.ok) throw new Error("Twelve Data HTTP " + response.status);
+    const payload = await response.json();
+    if (payload.status === "error" || payload.code || !Array.isArray(payload.values)) {
+      throw new Error("Twelve Data response: " + (payload.message ?? payload.code ?? "no candle values"));
+    }
+    const candles = payload.values.map(row => ({
+      timestamp: parseTwelveDataDate(row.datetime),
+      open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
+      volume: Number(row.volume ?? 0), source: "Twelve Data " + symbol
+    })).filter(validCandle).sort((a, b) => a.timestamp - b.timestamp);
+    if (candles.length < 100) throw new Error("Twelve Data returned only " + candles.length + " valid M5 candles for " + symbol);
+    return candles;
+  })();
+  TWELVE_DATA_M5_CACHE.set(market.prefix, request);
+  try {
+    return await request;
+  } catch (error) {
+    TWELVE_DATA_M5_CACHE.delete(market.prefix);
+    throw error;
   }
-  const candles = payload.values.map(row => ({
-    timestamp: parseTwelveDataDate(row.datetime),
-    open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
-    volume: Number(row.volume ?? 0), source: "Twelve Data " + symbol
-  })).filter(validCandle).sort((a, b) => a.timestamp - b.timestamp);
-  if (candles.length < 100) throw new Error("Twelve Data returned only " + candles.length + " valid M5 candles for " + symbol);
-  return candles;
 }
 
 function resampleFiveMinuteCandles(candles, timeframe) {
