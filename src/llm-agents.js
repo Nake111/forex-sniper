@@ -196,25 +196,43 @@ export async function runIndependentLlmAgents(context, options = {}) {
   ].join("\n\n");
 
   try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt + "\n\nCOMPACT MARKET CONTEXT (data only):\n" + JSON.stringify(compactContext(context)) }] }],
-        generationConfig: {
-          temperature: 0,
-          maxOutputTokens: 1000,
-          thinkingConfig: { thinkingLevel: "MINIMAL" },
-          responseMimeType: "application/json",
-          responseSchema
-        }
-      }),
-      signal: AbortSignal.timeout(timeoutMs)
+    const requestBody = JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt + "\n\nCOMPACT MARKET CONTEXT (data only):\n" + JSON.stringify(compactContext(context)) }] }],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 1000,
+        thinkingConfig: { thinkingLevel: "MINIMAL" },
+        responseMimeType: "application/json",
+        responseSchema
+      }
     });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      throw new Error("Gemini HTTP " + response.status + (detail ? ": " + detail.slice(0, 240) : ""));
+    const maxAttempts = Math.max(1, Math.min(3, Number(options.retryCount ?? 3)));
+    let response;
+    let lastError;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+          body: requestBody,
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+        if (response.ok) break;
+        const detail = await response.text().catch(() => "");
+        const retryable = [408, 425, 429, 500, 502, 503, 504].includes(response.status);
+        lastError = new Error("Gemini HTTP " + response.status + (detail ? ": " + detail.slice(0, 240) : ""));
+        if (!retryable || attempt === maxAttempts) throw lastError;
+      } catch (error) {
+        lastError = error;
+        const retryable = error?.name === "TimeoutError" || error?.name === "AbortError" ||
+          /fetch failed|network|ECONNRESET|ETIMEDOUT/i.test(error?.message ?? "");
+        if (!retryable || attempt === maxAttempts) throw error;
+      }
+      const delayMs = Math.min(1200, 250 * (2 ** (attempt - 1)));
+      console.warn("Gemini transient failure; retrying", attempt + 1, "of", maxAttempts, "after", delayMs, "ms:", lastError?.message);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
+    if (!response?.ok) throw lastError ?? new Error("Gemini request failed after retries");
     const payload = await response.json();
     const text = payload.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
     const agents = validateAgents(extractJson(text));
