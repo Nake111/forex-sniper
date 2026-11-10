@@ -169,11 +169,53 @@ export function runTradingAgents({ market, frames, macro = {} }) {
   };
 }
 
+export function evaluateConfirmationQuality(signal, agentReport) {
+  const agents = Array.isArray(agentReport?.agents) ? agentReport.agents : [];
+  const directional = agents.filter(agent => agent.direction === "BUY" || agent.direction === "SELL");
+  const supporting = directional.filter(agent => agent.direction === signal).length;
+  const opposing = directional.filter(agent => agent.direction !== signal).length;
+  const agreement = directional.length ? supporting / directional.length : 0;
+  const coreAgents = agents.slice(0, 5);
+  const coreSupport = coreAgents.filter(agent => agent.direction === signal).length;
+  const higherTimeframe = agents.find(agent => agent.name === "Higher-timeframe confluence analyst")?.direction;
+  const volatility = agents.find(agent => agent.name === "Volatility and regime analyst")?.direction;
+  const riskClear = agentReport?.riskManager?.approved === true;
+  const portfolioAgrees = agentReport?.portfolioManager?.decision === signal;
+  const structureComplete = agents.length >= 11;
+  const good = structureComplete && supporting >= 6 && agreement >= 0.75 &&
+    opposing <= 2 && coreSupport >= 3 && higherTimeframe === signal &&
+    volatility === signal && riskClear && portfolioAgrees;
+  const strong = good && supporting >= 8 && agreement >= 0.85 && opposing <= 1;
+  const tier = strong ? "STRONG" : good ? "GOOD"
+    : supporting >= 5 && agreement >= 0.60 ? "MODERATE" : "WEAK";
+  const reasons = [];
+  if (!structureComplete) reasons.push("Incomplete specialist panel");
+  if (supporting < 6) reasons.push(`Only ${supporting}/11 specialists support the direction; 6 required`);
+  if (agreement < 0.75) reasons.push("Directional agreement below 75%");
+  if (opposing > 2) reasons.push("Too many opposing specialist votes");
+  if (coreSupport < 3) reasons.push("Fewer than 3 of the 5 core analysts agree");
+  if (higherTimeframe !== signal) reasons.push("Higher-timeframe confluence does not confirm");
+  if (volatility !== signal) reasons.push("Volatility/regime analyst does not confirm");
+  if (!riskClear) reasons.push("Risk manager veto: " + (agentReport?.riskManager?.blocks ?? []).join(", "));
+  if (!portfolioAgrees) reasons.push("Portfolio manager does not approve this direction");
+  return {
+    tier, approved: good, strong,
+    supporting, opposing, directionalVotes: directional.length,
+    agreementPct: Math.round(agreement * 100), coreSupport,
+    higherTimeframe, volatility, reasons
+  };
+}
+
 export function gateSignalWithAgents(signal, agentReport) {
-  if (!["BUY", "SELL"].includes(signal)) return { signal: "HOLD", reason: "Technical engine did not produce a trade candidate" };
-  if (!agentReport?.riskManager?.approved) return { signal: "HOLD", reason: "Risk manager veto: " + (agentReport?.riskManager?.blocks ?? []).join(", ") };
-  if (agentReport.portfolioManager?.decision !== signal) {
-    return { signal: "HOLD", reason: `Multi-agent decision ${agentReport.portfolioManager?.decision ?? "HOLD"} does not confirm technical candidate ${signal}` };
+  if (!["BUY", "SELL"].includes(signal)) {
+    return { signal: "HOLD", quality: "WEAK", approved: false, reason: "Technical engine did not produce a trade candidate" };
   }
-  return { signal, reason: "Technical setup and multi-agent decision agree" };
+  const quality = evaluateConfirmationQuality(signal, agentReport);
+  if (!quality.approved) {
+    return { signal: "HOLD", ...quality, reason: quality.reasons.join("; ") || "Confirmation quality below GOOD" };
+  }
+  return {
+    signal, ...quality,
+    reason: `${quality.tier} confirmation: ${quality.supporting}/11 agents agree (${quality.agreementPct}% of directional votes), ${quality.coreSupport}/5 core analysts, higher-timeframe and volatility filters aligned`
+  };
 }
