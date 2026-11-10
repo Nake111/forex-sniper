@@ -223,7 +223,10 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
-  const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext });
+  const candleHistory = Object.fromEntries(frames.map(({ key, candles }) => [key, candles]));
+  const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext, candleHistory });
+  console.log("\nQUANTITATIVE CANDLE FORECAST PANEL:", JSON.stringify(agentReport.forecastingAgents));
+  console.log("QUANTITATIVE FORECAST SUMMARY:", JSON.stringify(agentReport.forecastingSummary));
   console.log("\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
   let polymarketContext = null;
   if (market.symbol === "BTCUSD") {
