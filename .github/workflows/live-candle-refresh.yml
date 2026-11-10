@@ -45,12 +45,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Restore candle history cache
         uses: actions/cache/restore@v4
         with:
@@ -60,23 +58,19 @@ jobs:
           key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             forex-sniper-candles-
-
       - name: Install dependencies
         run: npm install
-
       - name: Validate code (diagnostic; do not block market analysis)
         id: validation
         continue-on-error: true
         run: |
           npm run check
           npm test
-
       - name: Report validation status
         if: steps.validation.outcome == 'failure'
         run: |
           echo "::warning::Code validation or tests failed. Continuing candle refresh and analysis for diagnostics; trade safety gates in the signal engine remain mandatory."
           echo "Validation failed; candle refresh and analysis will still run. Any BUY/SELL remains subject to data freshness, calendar, multi-agent, confirmation and risk gates." >> "$GITHUB_STEP_SUMMARY"
-
       - name: Refresh latest candles (incremental + overlap + deduplication)
         run: npm run download
         env:
@@ -90,7 +84,6 @@ jobs:
           DUKASCOPY_REQUEST_INTERVAL_MS: "120"
           DUKASCOPY_RETRY_COUNT: "3"
           DUKASCOPY_RATE_LIMIT_RETRIES: "4"
-
       - name: Generate timestamped multi-market signal report
         run: |
           mkdir -p reports
@@ -98,10 +91,8 @@ jobs:
           npm start 2>&1 | tee "reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FINANCE_CALENDAR_API_KEY: ${{ secrets.FINANCE_CALENDAR_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
-
       - name: Validate and publish closed candles for the dashboard
         shell: bash
         run: |
@@ -109,13 +100,8 @@ jobs:
           npm run publish:data
           snapshot="$(mktemp)"
           cp dashboard/data/latest.json "$snapshot"
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Rebuild the dashboard commit on top of the newest main branch.
-          # This avoids JSON merge conflicts when another workflow publishes
-          # the same snapshot file at nearly the same time.
           pushed=false
           for attempt in 1 2 3 4 5; do
             echo "Dashboard publish attempt $attempt/5"
@@ -123,13 +109,11 @@ jobs:
             git reset --hard "origin/$GITHUB_REF_NAME"
             cp "$snapshot" dashboard/data/latest.json
             git add dashboard/data/latest.json
-
             if git diff --cached --quiet; then
               echo "Dashboard candle snapshot is already current."
               pushed=true
               break
             fi
-
             git commit -m "Publish validated latest market candles"
             if git push origin "HEAD:$GITHUB_REF_NAME"; then
               pushed=true
@@ -138,7 +122,6 @@ jobs:
             fi
             echo "Branch advanced during publish; retrying on the latest branch."
           done
-
           rm -f "$snapshot"
           if [ "$pushed" != true ]; then
             echo "Could not publish dashboard snapshot after five attempts." >&2
@@ -146,7 +129,6 @@ jobs:
           fi
         env:
           BTC_DATA_PREFIX: "kraken-btcusd"
-
       - name: Save candle history cache
         if: always()
         uses: actions/cache/save@v4
@@ -155,7 +137,6 @@ jobs:
             data
             .cache
           key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
-
       - name: Upload latest candles and signal report
         if: always()
         uses: actions/upload-artifact@v4
