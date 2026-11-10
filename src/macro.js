@@ -5,22 +5,40 @@ function publishedAt(article) {
   return Number.isFinite(value) ? value : NaN;
 }
 
-export function buildMacroContext(articles = [], now = Date.now()) {
+export function buildMacroContext(articles = [], now = Date.now(), calendar = { status: "UNAVAILABLE" }, market = "EURUSD") {
   const recentHighImpact = articles.filter(article => {
     const time = publishedAt(article);
     const age = now - time;
     return article.relevance === "HIGH" && HIGH_IMPACT_TERMS.test(article.title ?? "") &&
       Number.isFinite(time) && age >= 0 && age <= 90 * 60 * 1000;
   });
+  const currencyRisk = calendar?.marketRisk?.[market] ?? null;
+  const calendarStatus = calendar?.status === "AVAILABLE" ? "AVAILABLE" : (calendar?.status ?? "UNAVAILABLE");
+  const eventRisk = currencyRisk?.status ?? "UNKNOWN";
   return {
     status: articles.length ? "NEWS_AVAILABLE" : "NEWS_UNAVAILABLE",
-    calendarReference: { name: "Forex Factory", url: "https://www.forexfactory.com/calendar", integration: "EXTERNAL_REFERENCE_ONLY", note: "Open the live calendar at Forex Factory. Its schedule is not copied into this application; no official public API is documented and redistribution requires permission." },
-    eventRisk: recentHighImpact.length ? "HIGH" : articles.length ? "NORMAL" : "UNKNOWN",
+    calendar: {
+      status: calendarStatus,
+      provider: calendar?.provider ?? "Finance Calendar",
+      sourceUrl: calendar?.sourceUrl ?? "https://www.financecalendar.com",
+      fetchedAt: calendar?.fetchedAt ?? null,
+      count: calendar?.count ?? 0,
+      risk: currencyRisk,
+      events: calendar?.events ?? [],
+      error: calendar?.error ?? null
+    },
+    calendarReference: {
+      name: "Forex Factory",
+      url: "https://www.forexfactory.com/calendar",
+      integration: "EXTERNAL_REFERENCE_ONLY",
+      note: "Forex Factory remains a manual reference. The engine uses a separately sourced structured economic calendar; it does not scrape or redistribute Forex Factory data."
+    },
+    eventRisk,
     recentHighImpactCount: recentHighImpact.length,
     headlines: recentHighImpact.slice(0, 3).map(article => ({
       title: article.title, source: article.source, date: article.date, url: article.url
     })),
     directionalBias: "UNCONFIRMED",
-    note: "News headlines are context, not a verified economic calendar or directional trading signal."
+    note: "Economic calendar events control timing risk only. Actual-versus-consensus is shown as a numerical surprise; no currency direction is inferred without market confirmation."
   };
 }
