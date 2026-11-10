@@ -14,6 +14,7 @@ export function buildMacroContext(articles = [], now = Date.now()) {
   });
   return {
     status: articles.length ? "NEWS_AVAILABLE" : "NEWS_UNAVAILABLE",
+    calendarReference: { name: "Forex Factory", url: "https://www.forexfactory.com/calendar", integration: "EXTERNAL_REFERENCE_ONLY", note: "Open the live calendar at Forex Factory. Its schedule is not copied into this application; no official public API is documented and redistribution requires permission." },
     eventRisk: recentHighImpact.length ? "HIGH" : articles.length ? "NORMAL" : "UNKNOWN",
     recentHighImpactCount: recentHighImpact.length,
     headlines: recentHighImpact.slice(0, 3).map(article => ({
