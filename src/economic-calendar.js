@@ -230,6 +230,15 @@ export function evaluateEconomicRisk(calendar, market, now = Date.now()) {
   const relevant = (calendar.events ?? []).filter(event =>
     currencies.has(event.country) && event.status !== "cancelled"
   );
+  if (relevant.some(event => event.dataStale)) {
+    return {
+      status: "STALE_SOURCE_DATA",
+      blocked: true,
+      reason: "A relevant event record is flagged stale by its source; refusing to clear event risk.",
+      activeEvents: [],
+      nextEvents: []
+    };
+  }
 
   const activeEvents = [];
   const nextEvents = [];
@@ -237,10 +246,7 @@ export function evaluateEconomicRisk(calendar, market, now = Date.now()) {
 
   for (const event of relevant) {
     const eventIsToday = event.date === dateInTimezone(now, event.releaseTimezone);
-    if (event.dataStale) {
-      if (event.impact === "HIGH" && eventIsToday) unknownTimeBlock = true;
-      continue;
-    }
+    if (event.dataStale) continue;
     if (event.timestamp === null) {
       if (event.impact === "HIGH" && eventIsToday) unknownTimeBlock = true;
       continue;
