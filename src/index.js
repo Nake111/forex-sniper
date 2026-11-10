@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
+import { evaluateTieredSignal } from "./tiered-signal.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
@@ -12,8 +13,8 @@ import { getPolymarketBtcContext } from "./polymarket-quant.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
-const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) {
+const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
+if (!["baseline", "strict", "advanced", "institutional", "gold", "balanced"].includes(SIGNAL_PROFILE)) {
   throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 }
 
@@ -235,7 +236,8 @@ async function analyseMarket(market, macroContext) {
   }
 
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
-  let candidate = goldMacroBlocked || macroContext.dataStale ? "HOLD" : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  const tieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, macroContext) : null;
+  let candidate = goldMacroBlocked || macroContext.dataStale ? "HOLD" : tieredReport ? tieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
@@ -276,6 +278,7 @@ async function analyseMarket(market, macroContext) {
     console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
   }
 
+  if (tieredReport) console.log("TIERED SETUP:", JSON.stringify(tieredReport));
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
   const confirmation = confirmSignal(candidate, results.H1);
@@ -286,6 +289,7 @@ async function analyseMarket(market, macroContext) {
   console.log(`          FINAL ${market.symbol} SIGNAL`);
   console.log("======================================");
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
+  if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
   console.log("CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
   if (confirmation.reason) console.log("REASON:", confirmation.reason);
