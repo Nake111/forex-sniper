@@ -1,5 +1,7 @@
 import { runForecastAgents } from "./forecast-agents.js";
 
+import { runForecastAgents } from "./forecast-agents.js";
+
 // TradingAgents-inspired deterministic multi-agent decision layer.
 // Six additional specialist agents independently inspect higher-timeframe alignment,
 // volatility regime, M5 candle quality, momentum exhaustion, confirmed liquidity
@@ -215,7 +217,7 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   if (!portfolioAgrees) reasons.push("Portfolio manager does not approve this direction");
   return {
     tier, approved: good, strong,
-    supporting, opposing, directionalVotes: directional.length, predictiveSupport, forecastAgentCount: forecastAgents.length,
+    supporting, opposing, directionalVotes: directional.length, predictiveSupport, forecastAgentCount: forecastAgents.length, predictiveSupport, forecastAgentCount: forecastAgents.length,
     agreementPct: Math.round(agreement * 100), coreSupport,
     higherTimeframe, volatility, reasons
   };
