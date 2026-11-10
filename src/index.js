@@ -5,6 +5,7 @@ import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal
 import { evaluateTieredSignal } from "./tiered-signal.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
+import { getEconomicCalendar, evaluateEconomicRisk } from "./economic-calendar.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.js";
 import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
@@ -235,9 +236,11 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
+  const calendarBlocked = macroContext.eventRisk !== "NORMAL";
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
   const tieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, macroContext) : null;
-  let candidate = goldMacroBlocked || macroContext.dataStale ? "HOLD" : tieredReport ? tieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  let candidate = calendarBlocked || goldMacroBlocked || macroContext.dataStale ? "HOLD" : tieredReport ? tieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
+  if (calendarBlocked) console.log("ECONOMIC CALENDAR SAFETY GATE: HOLD —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? "No verified event-risk clearance.");
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
@@ -310,21 +313,27 @@ async function analyseMarket(market, macroContext) {
 }
 
 async function main() {
-  let macroContext;
+  let articles = [];
   try {
-    const articles = await getForexNews();
-    macroContext = buildMacroContext(articles);
+    articles = await getForexNews();
   } catch (error) {
-    macroContext = buildMacroContext([]);
-    console.error("Macro news unavailable:", error.message);
+    console.error("Headline news unavailable:", error.message);
   }
+  const economicCalendar = await getEconomicCalendar();
+  console.log("ECONOMIC CALENDAR STATUS:", economicCalendar.status,
+    "| provider:", economicCalendar.provider, "| events:", economicCalendar.count ?? 0,
+    "| fetched:", economicCalendar.fetchedAt ?? "never", "| error:", economicCalendar.error ?? "none");
+
   // Sequential market execution keeps asynchronous Gemini/news output grouped
   // under the correct instrument in the saved report.
   let failed = false;
   for (const market of MARKETS) {
     try {
       const marketNews = market.symbol === "XAUUSD" ? await (await import("./gold-news.js")).getGoldNews() : null;
-      let context = marketNews ? buildMacroContext(marketNews) : macroContext;
+      const selectedArticles = marketNews ?? articles;
+      const marketRisk = evaluateEconomicRisk(economicCalendar, market.symbol);
+      const calendarForMarket = { ...economicCalendar, marketRisk: { [market.symbol]: marketRisk } };
+      let context = buildMacroContext(selectedArticles, Date.now(), calendarForMarket, market.symbol);
       if (market.symbol === "XAUUSD") {
         const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
         const liveGoldContext = await loadGoldLiveContext();
@@ -334,9 +343,10 @@ async function main() {
         const goldMacroBias = combineGoldMacroBias(freshYieldChange, liveGoldContext.dxyDirection);
         const headlineRisk = context.eventRisk ?? "UNKNOWN";
         const calendarRisk = goldMacro.eventRisk ?? "UNKNOWN";
-        const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" ? "HIGH"
-          : calendarRisk === "UNKNOWN" ? "UNKNOWN" : "NORMAL";
-        context = { ...context, ...goldMacro, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
+        const combinedRisk = headlineRisk === "HIGH" || calendarRisk === "HIGH" || context.eventRisk === "HIGH" ? "HIGH"
+          : context.eventRisk !== "NORMAL" ? context.eventRisk
+            : calendarRisk === "HIGH" ? "HIGH" : "NORMAL";
+        context = { ...context, goldMacro: goldMacro, goldMacroCalendar: goldMacro.calendar, liveGoldContext, goldMacroBias, eventRisk: combinedRisk, headlines: context.headlines ?? [] };
         console.log("GOLD MACRO DATA:", JSON.stringify(goldMacro));
         console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
       }
