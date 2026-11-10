@@ -15,7 +15,7 @@ test("normalizes event timestamps and compares numeric actual with consensus", (
   });
   assert.equal(event.timestamp, Date.parse("2026-11-10T13:30:00Z"));
   assert.equal(event.surprise.direction, "ABOVE_CONSENSUS");
-  assert.equal(event.surprise.difference, 0.1);
+  assert.ok(Math.abs(event.surprise.difference - 0.1) < 1e-9);
 });
 
 test("high-impact event blocks inside 15-minute pre-release window", () => {
@@ -60,5 +60,17 @@ test("unknown-time high-impact event today fails closed", () => {
 test("unavailable calendar blocks all markets", () => {
   const result = evaluateEconomicRisk({ status: "UNAVAILABLE", events: [] }, "XAUUSD");
   assert.equal(result.status, "UNKNOWN");
+  assert.equal(result.blocked, true);
+});
+
+test("stale relevant records block calendar clearance", () => {
+  const result = evaluateEconomicRisk({
+    status: "AVAILABLE",
+    events: [{
+      country: "US", impact: "HIGH", status: "confirmed",
+      timestamp: Date.parse("2026-11-12T13:30:00Z"), date: "2026-11-12", dataStale: true
+    }]
+  }, "BTCUSD", Date.parse("2026-11-10T08:00:00Z"));
+  assert.equal(result.status, "STALE_SOURCE_DATA");
   assert.equal(result.blocked, true);
 });
