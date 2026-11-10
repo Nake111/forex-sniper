@@ -54,6 +54,24 @@ test("six specialist roles are confirmed in one Gemini request", async () => {
   }
 });
 
+test("Gemini HTTP 503 is retried and a later valid response is retained", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) return new Response("temporarily unavailable", { status: 503 });
+    return geminiResponse();
+  };
+  try {
+    const result = await runIndependentLlmAgents({ market: "EURUSD" }, { apiKey: "test-key", timeoutMs: 2000, retryCount: 2 });
+    assert.equal(calls, 2);
+    assert.equal(result.status, "COMPLETE");
+    assert.equal(result.decision, "BUY");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("local HIGH macro risk blocks a Gemini BUY consensus", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => geminiResponse();
