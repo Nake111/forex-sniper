@@ -1,3 +1,5 @@
+import { runForecastAgents } from "./forecast-agents.js";
+
 // TradingAgents-inspired deterministic multi-agent decision layer.
 // Six additional specialist agents independently inspect higher-timeframe alignment,
 // volatility regime, M5 candle quality, momentum exhaustion, confirmed liquidity
@@ -79,7 +81,7 @@ function runAdditionalSpecialists(frames) {
   return agents;
 }
 
-export function runTradingAgents({ market, frames, macro = {} }) {
+export function runTradingAgents({ market, frames, macro = {}, candleHistory = {} }) {
   const { M5 = {}, M15 = {}, H1 = {} } = frames ?? {};
   const agents = [];
 
@@ -127,8 +129,10 @@ export function runTradingAgents({ market, frames, macro = {} }) {
   agents.push(vote("Volume and auction analyst", valueSum >= 2 ? "BUY" : valueSum <= -2 ? "SELL" : "HOLD", 1,
     "VWAP, volume-profile POC and cumulative-volume pressure proxy"));
 
-  // Six new local specialists; no new API calls or external credentials required.
+  // Six new quantitative candle forecasters; use closed M5 history only.
+  const forecastAgents = runForecastAgents(candleHistory.M5 ?? []);
   agents.push(...runAdditionalSpecialists(frames));
+  agents.push(...forecastAgents);
 
   const score = direction => agents.reduce((sum, agent) =>
     sum + (agent.direction === direction ? agent.weight : 0), 0);
@@ -158,9 +162,18 @@ export function runTradingAgents({ market, frames, macro = {} }) {
 
   return {
     market,
-    architecture: "11 local deterministic specialists + risk/debate/portfolio managers",
+    architecture: "11 technical specialists + 6 quantitative forecasting agents + risk/debate/portfolio managers",
     agents,
     agentCount: agents.length,
+    forecastingAgents: forecastAgents,
+    forecastingSummary: {
+      buyVotes: forecastAgents.filter(agent => agent.direction === "BUY").length,
+      sellVotes: forecastAgents.filter(agent => agent.direction === "SELL").length,
+      holdVotes: forecastAgents.filter(agent => agent.direction === "HOLD").length,
+      meanProbabilityUpPct: Math.round(forecastAgents.reduce((sum, agent) => sum + agent.probabilityUpPct, 0) / forecastAgents.length),
+      meanExpectedMoveAtr: Number((forecastAgents.reduce((sum, agent) => sum + agent.expectedMoveAtr, 0) / forecastAgents.length).toFixed(3)),
+      horizonCandles: 3
+    },
     additionalSpecialists: agents.slice(5).map(agent => agent.name),
     debate: { bullishResearchers: bullCase, bearishResearchers: bearCase, bullishScore: bullScore, bearishScore: bearScore, scoreGap: debateGap },
     trader: { bias: rawBias, confidencePct: confidence },
@@ -181,7 +194,9 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   const volatility = agents.find(agent => agent.name === "Volatility and regime analyst")?.direction;
   const riskClear = agentReport?.riskManager?.approved === true;
   const portfolioAgrees = agentReport?.portfolioManager?.decision === signal;
-  const structureComplete = agents.length >= 11;
+  const forecastAgents = agents.filter(agent => agent.name?.startsWith("Quantitative agent"));
+  const predictiveSupport = forecastAgents.filter(agent => agent.direction === signal).length;
+  const structureComplete = agents.length >= 17 && forecastAgents.length === 6;
   const good = structureComplete && supporting >= 6 && agreement >= 0.75 &&
     opposing <= 2 && coreSupport >= 3 && higherTimeframe === signal &&
     volatility === signal && riskClear && portfolioAgrees;
@@ -190,7 +205,7 @@ export function evaluateConfirmationQuality(signal, agentReport) {
     : supporting >= 5 && agreement >= 0.60 ? "MODERATE" : "WEAK";
   const reasons = [];
   if (!structureComplete) reasons.push("Incomplete specialist panel");
-  if (supporting < 6) reasons.push(`Only ${supporting}/11 specialists support the direction; 6 required`);
+  if (supporting < 6) reasons.push(`Only ${supporting}/17 specialists support the direction; 6 required`);\n  if (!structureComplete) reasons.push("Six quantitative forecast agents are not all available");\n  if (predictiveSupport < 4) reasons.push(`Only ${predictiveSupport}/6 quantitative forecasters support the direction; 4 required`);
   if (agreement < 0.75) reasons.push("Directional agreement below 75%");
   if (opposing > 2) reasons.push("Too many opposing specialist votes");
   if (coreSupport < 3) reasons.push("Fewer than 3 of the 5 core analysts agree");
@@ -200,7 +215,7 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   if (!portfolioAgrees) reasons.push("Portfolio manager does not approve this direction");
   return {
     tier, approved: good, strong,
-    supporting, opposing, directionalVotes: directional.length,
+    supporting, opposing, directionalVotes: directional.length, predictiveSupport, forecastAgentCount: forecastAgents.length,
     agreementPct: Math.round(agreement * 100), coreSupport,
     higherTimeframe, volatility, reasons
   };
@@ -216,6 +231,6 @@ export function gateSignalWithAgents(signal, agentReport) {
   }
   return {
     signal, ...quality,
-    reason: `${quality.tier} confirmation: ${quality.supporting}/11 agents agree (${quality.agreementPct}% of directional votes), ${quality.coreSupport}/5 core analysts, higher-timeframe and volatility filters aligned`
+    reason: `${quality.tier} confirmation: ${quality.supporting}/17 agents agree (${quality.agreementPct}% of directional votes), ${quality.coreSupport}/5 core analysts, higher-timeframe and volatility filters aligned`
   };
 }
