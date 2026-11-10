@@ -205,7 +205,8 @@ export function evaluateConfirmationQuality(signal, agentReport) {
     : supporting >= 5 && agreement >= 0.60 ? "MODERATE" : "WEAK";
   const reasons = [];
   if (!structureComplete) reasons.push("Incomplete 17-agent specialist panel");
-  if (supporting < 6) reasons.push(`Only ${supporting}/17 specialists support the direction; 6 required`);\n  if (!structureComplete) reasons.push("Six quantitative forecast agents are not all available");\n  if (predictiveSupport < 4) reasons.push(`Only ${predictiveSupport}/6 quantitative forecasters support the direction; 4 required`);
+  if (supporting < 6) reasons.push(`Only ${supporting}/17 specialists support the direction; 6 required`);
+  if (predictiveSupport < 4) reasons.push(`Only ${predictiveSupport}/6 quantitative forecasters support the direction; 4 required`);
   if (agreement < 0.75) reasons.push("Directional agreement below 75%");
   if (opposing > 2) reasons.push("Too many opposing specialist votes");
   if (coreSupport < 3) reasons.push("Fewer than 3 of the 5 core analysts agree");
