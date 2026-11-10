@@ -13,6 +13,14 @@ function report({ support = 6, oppose = 2, risk = true, higher = "BUY", volatili
       : index === 6 ? "Volatility and regime analyst" : `Specialist ${index + 1}`,
     direction
   }));
+  const forecastVotes = support === 8
+    ? ["BUY", "BUY", "BUY", "BUY", "BUY", "HOLD"]
+    : support === 6
+      ? ["BUY", "BUY", "BUY", "BUY", "HOLD", "HOLD"]
+      : ["BUY", "BUY", "SELL", "SELL", "HOLD", "HOLD"];
+  agents.push(...forecastVotes.map((direction, index) => ({
+    name: `Quantitative agent ${index + 1} — test forecast`, direction
+  })));
   agents[5].direction = higher;
   agents[6].direction = volatility;
   return {
@@ -26,8 +34,9 @@ test("six of eleven with 75% directional agreement and core/HTF alignment is GOO
   const result = evaluateConfirmationQuality("BUY", report());
   assert.equal(result.tier, "GOOD");
   assert.equal(result.approved, true);
-  assert.equal(result.supporting, 6);
-  assert.equal(result.agreementPct, 75);
+  assert.equal(result.predictiveSupport, 4);
+  assert.equal(result.forecastAgentCount, 6);
+  assert.equal(result.agreementPct, 83);
 });
 
 test("eight aligned specialists with strong agreement is STRONG", () => {
