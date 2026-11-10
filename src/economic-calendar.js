@@ -73,9 +73,10 @@ export function normalizeEconomicEvent(event) {
     source: event.source_name ?? "Finance Calendar",
     sourceUrl: event.source_url ?? event.url ?? null,
     lastVerifiedAt: event.last_verified_at ?? null,
-    dataStale: event.data_stale === true,
+    dataStale: event.data_stale === true || event.data_quality?.schedule?.stale === true,
     sourceLicense: event.source_license ?? null,
-    sourceRights: event.source_rights ?? null
+    sourceRights: event.source_rights ?? null,
+    sourceNotice: event.source_notice ?? event.source_rights?.notice ?? null
   };
 }
 
