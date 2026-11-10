@@ -279,7 +279,7 @@ async function analyseMarket(market, macroContext) {
   });
   const llmReport = await llmReviewPromise;
   console.log("INDEPENDENT LLM AGENT REPORT:", JSON.stringify(llmReport));
-  // The five local deterministic specialists are the fast primary decision path.
+  // The eleven local deterministic specialists are the fast primary decision path.
   // Gemini is an additional cloud review with a 5-second budget; only a complete,
   // schema-valid six-role response may veto. Timeout/error falls back to local agents.
   if (staleTimeframes.length) {
