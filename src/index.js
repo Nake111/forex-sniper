@@ -238,9 +238,16 @@ async function analyseMarket(market, macroContext) {
 
   const calendarBlocked = macroContext.eventRisk !== "NORMAL";
   const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
+  // Directional bias is technical research only; it cannot authorize an order.
+  const directionalContext = { ...macroContext, eventRisk: "NORMAL" };
+  const directionalTieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, directionalContext) : null;
+  const directionalBias = directionalTieredReport ? directionalTieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, directionalContext);
   const tieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, macroContext) : null;
-  let candidate = calendarBlocked || goldMacroBlocked || macroContext.dataStale ? "HOLD" : tieredReport ? tieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, macroContext);
-  if (calendarBlocked) console.log("ECONOMIC CALENDAR SAFETY GATE: HOLD —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? "No verified event-risk clearance.");
+  console.log("DIRECTIONAL BIAS (technical only):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
+  let candidate = directionalBias;
+  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
+    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
+  }
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
@@ -249,9 +256,15 @@ async function analyseMarket(market, macroContext) {
   }
   const agentGate = gateSignalWithAgents(candidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
-  console.log("MULTI-AGENT GATE:", agentGate.reason);
+  console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
   candidate = agentGate.signal;
-  console.log("LOCAL SIGNAL PREVIEW (before Gemini review):", candidate, "| local portfolio:", agentReport.portfolioManager.decision);
+  console.log("AGENT-REVIEWED DIRECTIONAL CANDIDATE:", candidate);
+  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
+    console.log("EXECUTION CANDIDATE: HOLD — directional bias is visible, but a mandatory safety gate is not clear.");
+    candidate = "HOLD";
+  } else {
+    console.log("EXECUTION CANDIDATE (pre-Gemini):", candidate);
+  }
 
   // Always request the six-role Gemini review, including when the local engine
   // says HOLD. This makes the six specialist assessments visible on every market
