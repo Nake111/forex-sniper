@@ -18,6 +18,18 @@ function parseInstant(event) {
   return Number.isFinite(value) ? value : null;
 }
 
+function dateInTimezone(now, timeZone) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timeZone || "UTC", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date(now));
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return values.year + "-" + values.month + "-" + values.day;
+  } catch {
+    return isoDate(now);
+  }
+}
+
 function numericValue(value) {
   if (value === null || value === undefined || value === "") return null;
   const match = String(value).trim().replace(/,/g, "").match(/^([+-]?\d+(?:\.\d+)?)\s*([KMBT])?\s*%?$/i);
@@ -43,6 +55,7 @@ export function normalizeEconomicEvent(event) {
     timestamp,
     scheduledAt: timestamp === null ? null : new Date(timestamp).toISOString(),
     date: event.date ?? null,
+    releaseTimezone: event.release_tz ?? null,
     timePrecision: event.time_precision ?? (timestamp === null ? "unknown" : "minute"),
     allDay: event.all_day === true,
     actual: event.actual ?? null,
@@ -124,7 +137,35 @@ export async function getEconomicCalendar({ now = Date.now(), apiKey = process.e
     };
   }
 
-  const events = payload.events.map(normalizeEconomicEvent);
+  const rawEvents = [...payload.events];
+  const total = Number(payload.total ?? payload.count ?? rawEvents.length);
+  let offset = rawEvents.length;
+  while (rawEvents.length < total && offset < 2500) {
+    const pageParams = new URLSearchParams(params);
+    pageParams.set("offset", String(offset));
+    let pageResponse;
+    try {
+      pageResponse = await fetch(API_URL + "?" + pageParams, {
+        headers: { "X-API-Key": apiKey, Accept: "application/json" },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        cache: "no-store"
+      });
+      if (!pageResponse.ok) throw new Error("HTTP " + pageResponse.status);
+      const page = await pageResponse.json();
+      if (!Array.isArray(page.events) || page.events.length === 0) throw new Error("Calendar pagination returned an empty or invalid page.");
+      rawEvents.push(...page.events);
+      offset += page.events.length;
+    } catch (error) {
+      return {
+        status: "INCOMPLETE", provider: "Finance Calendar", sourceUrl: SOURCE_URL,
+        fetchedAt: new Date(now).toISOString(), events: rawEvents.map(normalizeEconomicEvent),
+        count: rawEvents.length, total,
+        error: "Calendar pagination incomplete: " + error.message
+      };
+    }
+  }
+
+  const events = rawEvents.slice(0, total).map(normalizeEconomicEvent);
   const staleEvents = events.filter(event => event.dataStale).length;
   const unknownTimeHighImpact = events.filter(event =>
     event.impact === "HIGH" && event.timestamp === null &&
@@ -132,19 +173,19 @@ export async function getEconomicCalendar({ now = Date.now(), apiKey = process.e
   ).length;
 
   return {
-    status: "AVAILABLE",
+    status: rawEvents.length >= total ? "AVAILABLE" : "INCOMPLETE",
     provider: "Finance Calendar",
     sourceUrl: SOURCE_URL,
     fetchedAt: new Date(now).toISOString(),
     from, to,
-    total: Number(payload.total ?? payload.count ?? events.length),
+    total,
     count: events.length,
-    truncated: Number(payload.total ?? payload.count ?? events.length) > events.length,
+    truncated: rawEvents.length < total,
     staleEvents,
     unknownTimeHighImpact,
     attribution: payload.attribution ?? null,
     events: events.sort((a, b) => (a.timestamp ?? Date.parse(a.date ?? "")) - (b.timestamp ?? Date.parse(b.date ?? ""))),
-    error: null
+    error: rawEvents.length >= total ? null : "Calendar result exceeded the safe pagination cap; refusing to claim complete event coverage."
   };
 }
 
@@ -171,12 +212,13 @@ export function evaluateEconomicRisk(calendar, market, now = Date.now()) {
   let unknownTimeBlock = false;
 
   for (const event of relevant) {
+    const eventIsToday = event.date === dateInTimezone(now, event.releaseTimezone);
     if (event.dataStale) {
-      if (event.impact === "HIGH" && event.date === isoDate(now)) unknownTimeBlock = true;
+      if (event.impact === "HIGH" && eventIsToday) unknownTimeBlock = true;
       continue;
     }
     if (event.timestamp === null) {
-      if (event.impact === "HIGH" && event.date === isoDate(now)) unknownTimeBlock = true;
+      if (event.impact === "HIGH" && eventIsToday) unknownTimeBlock = true;
       continue;
     }
     const before = event.impact === "HIGH" ? HIGH_PRE_MINUTES * 60000
