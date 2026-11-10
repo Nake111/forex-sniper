@@ -19,9 +19,8 @@ export function buildMacroContext(articles = [], now = Date.now(), calendar = { 
     status: articles.length ? "NEWS_AVAILABLE" : "NEWS_UNAVAILABLE",
     calendar: {
       status: calendarStatus,
-      provider: calendar?.provider ?? "Finance Calendar",
-      sourceUrl: calendar?.sourceUrl ?? "https://www.financecalendar.com",
-      attributionUrl: "https://www.financecalendar.com",
+      provider: calendar?.provider ?? "NO_AUTOMATED_PROVIDER",
+      sourceUrl: calendar?.sourceUrl ?? null,
       fetchedAt: calendar?.fetchedAt ?? null,
       cacheHit: calendar?.cacheHit ?? false,
       cacheAgeMs: calendar?.cacheAgeMs ?? null,
@@ -35,11 +34,11 @@ export function buildMacroContext(articles = [], now = Date.now(), calendar = { 
       name: "Forex Factory",
       url: "https://www.forexfactory.com/calendar",
       integration: "MANUAL_REFERENCE_ONLY",
-      note: "Forex Factory is linked for manual cross-checking only. Automatic event lookup is performed through the authenticated structured calendar provider below; Forex Factory data is not scraped or redistributed."
+      note: "Forex Factory is linked for manual cross-checking only. No automated calendar provider is currently configured; schedules are not scraped or redistributed."
     },
     automaticCalendarReference: {
-      provider: calendar?.provider ?? "Finance Calendar",
-      url: calendar?.sourceUrl ?? "https://www.financecalendar.com",
+      provider: calendar?.provider ?? "NO_AUTOMATED_PROVIDER",
+      url: calendar?.sourceUrl ?? null,
       status: calendarStatus,
       fetchedAt: calendar?.fetchedAt ?? null,
       eventSources: (calendar?.events ?? []).filter(event => event.sourceUrl).map(event => ({
