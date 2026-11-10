@@ -16,13 +16,14 @@ function bullishFrames() {
   return { M5: { ...frame }, M15: { ...frame }, H1: { ...frame }, H4: { ...frame } };
 }
 
-test("11 local specialists report and aligned BUY consensus is approved", () => {
+test("17 specialists are reported and BUY is withheld without forecast-history confirmation", () => {
   const report = runTradingAgents({ market: "EURUSD", frames: bullishFrames(), macro: { eventRisk: "NORMAL" } });
-  assert.equal(report.agentCount, 11);
-  assert.equal(report.agents.length, 11);
+  assert.equal(report.agentCount, 17);
+  assert.equal(report.agents.length, 17);
   assert.equal(report.additionalSpecialists.length, 6);
-  assert.equal(report.portfolioManager.decision, "BUY");
-  assert.equal(gateSignalWithAgents("BUY", report).signal, "BUY");
+  assert.equal(report.forecastingAgents.length, 6);
+  assert.equal(report.forecastingSummary.holdVotes, 6);
+  assert.equal(gateSignalWithAgents("BUY", report).signal, "HOLD");
 });
 
 test("all six additional specialists are separately identified", () => {
@@ -43,8 +44,9 @@ test("new specialists require evidence and abstain when their fields are missing
     frames: { M5: {}, M15: {}, H1: {} },
     macro: { eventRisk: "NORMAL" }
   });
-  assert.equal(report.agents.length, 11);
-  assert.ok(report.agents.slice(5).every(agent => agent.direction === "HOLD"));
+  assert.equal(report.agents.length, 17);
+  assert.ok(report.agents.slice(5, 11).every(agent => agent.direction === "HOLD"));
+  assert.ok(report.forecastingAgents.every(agent => agent.direction === "HOLD"));
 });
 
 test("liquidity specialist only votes on a confirmed recent sweep", () => {
