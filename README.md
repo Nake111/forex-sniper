@@ -18,7 +18,7 @@ A Node.js market-analysis and paper-signal project for **EUR/USD**, **BTC/USD** 
 
 **Safety:** this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
-## Session context and source licensing
+## Forex Factory calendar reference\n\nThe dashboard includes a direct Forex Factory calendar link at `dashboard/forex-factory.html`. The engine records this as an external reference in macro context; it does not scrape, copy, or redistribute Forex Factory calendar data. Forex Factory does not document a public developer API and its notices prohibit redistribution of calendar schedules without prior written consent. Scheduled-event risk must therefore be verified on the official calendar; the automated signal gate does not claim to have consumed Forex Factory events.\n\n## Session context and source licensing
 
 The session module is an independent implementation of common market-session timing and range calculations. It does not include LuxAlgo source code. The LuxAlgo Pine Script supplied as a reference by the project owner is marked CC BY-NC-SA 4.0; do not copy or redistribute that source, or use a derivative of it commercially, unless the license terms permit it.
 
