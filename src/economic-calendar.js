@@ -52,18 +52,99 @@ export function normalizeEconomicEvent(event) {
   };
 }
 
-// Finance Calendar is removed. No automated provider is configured, so the
-// calendar gate deliberately fails closed until a replacement is verified.
+const CALENDAR_URL = "https://showmytrades.com/api/public/calendar/v1";
+const CALENDAR_TIMEOUT_MS = 12000;
+const CALENDAR_MAX_AGE_MS = 30 * 60 * 1000;
+
 export async function getEconomicCalendar({ now = Date.now() } = {}) {
-  return {
-    status: "UNAVAILABLE",
-    provider: "NO_AUTOMATED_PROVIDER",
-    sourceUrl: null,
-    fetchedAt: new Date(now).toISOString(),
-    count: 0,
-    events: [],
-    error: "No automated economic calendar provider is configured. Forex Factory is a manual cross-check only; automated event-risk clearance is unavailable."
-  };
+  try {
+    const params = new URLSearchParams({
+      currency: "EUR,USD",
+      impact: "high,medium",
+      days: "7",
+      format: "json"
+    });
+    const response = await fetch(`${CALENDAR_URL}?${params}`, {
+      signal: AbortSignal.timeout(CALENDAR_TIMEOUT_MS),
+      headers: { accept: "application/json" }
+    });
+    if (!response.ok) {
+      throw new Error(`Calendar HTTP ${response.status}`);
+    }
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error("Calendar returned invalid JSON");
+    }
+
+    if (!payload || !Array.isArray(payload.events) ||
+        !Number.isFinite(Number(payload.server_time))) {
+      throw new Error("Calendar response failed schema validation");
+    }
+
+    const generatedAt = Date.parse(payload.generated_at ?? "");
+    if (!Number.isFinite(generatedAt) ||
+        now - generatedAt < -5 * 60 * 1000 ||
+        now - generatedAt > CALENDAR_MAX_AGE_MS) {
+      throw new Error("Calendar response is stale or has an invalid generated_at timestamp");
+    }
+
+    const events = payload.events.map(raw => {
+      if (!raw || typeof raw !== "object" ||
+          !["EUR", "USD"].includes(raw.currency) ||
+          !["high", "medium"].includes(String(raw.impact).toLowerCase()) ||
+          typeof raw.title !== "string" || !raw.title.trim()) {
+        throw new Error("Calendar contains an invalid event record");
+      }
+      const tentative = raw.status === "tentative" ||
+        raw.confidence === "sources_disagree";
+      const time = tentative ? null : raw.time;
+      const date = typeof raw.time === "string" ? raw.time.slice(0, 10) : null;
+      return normalizeEconomicEvent({
+        id: raw.id,
+        name: raw.title,
+        country: raw.currency === "USD" ? "US" : "EU",
+        impact: raw.impact,
+        status: raw.status ?? "scheduled",
+        release_at_utc: time,
+        date,
+        release_tz: "UTC",
+        actual: raw.actual,
+        consensus: raw.forecast,
+        prior: raw.previous,
+        unit: raw.unit,
+        source_name: "ShowMyTrades Economic Calendar",
+        source_url: "https://showmytrades.com/tools/economic-calendar",
+        last_verified_at: payload.generated_at,
+        data_stale: tentative
+      });
+    });
+
+    return {
+      status: "AVAILABLE",
+      provider: "SHOWMYTRADES_FREE",
+      sourceUrl: "https://showmytrades.com/docs/api/economic-calendar",
+      fetchedAt: new Date(now).toISOString(),
+      generatedAt: payload.generated_at,
+      serverTime: payload.server_time,
+      count: events.length,
+      events,
+      attribution: payload.attribution ?? null,
+      error: null
+    };
+  } catch (error) {
+    return {
+      status: "UNAVAILABLE",
+      provider: "SHOWMYTRADES_FREE",
+      sourceUrl: "https://showmytrades.com/docs/api/economic-calendar",
+      fetchedAt: new Date(now).toISOString(),
+      count: 0,
+      events: [],
+      error: error.message
+    };
+  }
 }
 
 function dateInTimezone(now, timeZone) {
