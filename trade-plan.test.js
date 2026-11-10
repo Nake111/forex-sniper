@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { finalAction, tradePlan } from "./src/trade-plan.js";
 
-const market = { close: 1.12390, atr14: 0.000374 };
+const market = { close: 1.12390, atr14: 0.000374, lastCandle: { open: 1.12370, high: 1.12400, low: 1.12360, close: 1.12390 } };
 
 test("BUY with H1 WAIT means NO TRADE", () => {
   const plan = tradePlan("BUY", market, { status: "WAIT" });
@@ -36,6 +36,11 @@ test("structure stop uses swing invalidation with ATR buffer", () => {
 test("HOLD never creates a trade plan", () => {
   assert.equal(tradePlan("HOLD", market, { status: "H1 ALIGNED" }), null);
 });
+test("Missing or directionally invalid M5 entry trigger blocks a plan", () => {
+  assert.equal(tradePlan("BUY", { close: market.close, atr14: market.atr14 }, { status: "H1 ALIGNED" }), null);
+  assert.equal(tradePlan("BUY", { ...market, lastCandle: { open: 1.1240, high: 1.1241, low: 1.1237, close: 1.1239 } }, { status: "H1 ALIGNED" }), null);
+});
+
 test("Invalid ATR or missing confirmation blocks a plan", () => {
   assert.equal(tradePlan("BUY", { ...market, atr14: 0 }, { status: "H1 ALIGNED" }), null);
   assert.equal(tradePlan("BUY", market, null), null);
