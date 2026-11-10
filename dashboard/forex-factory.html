@@ -19,6 +19,7 @@ main{max-width:900px;margin:8vh auto;padding:24px}.panel{background:linear-gradi
 <a class="btn secondary" href="./index.html">Back to Forex Sniper</a>
 </div>
 <h2>How the engine uses macro context</h2>
+<p class="muted">Automated signal analysis uses a separate structured economic-calendar feed (Finance Calendar API), not Forex Factory data. The signal engine permits no new entry when the feed is missing, stale, incomplete or inside a protected release window. Add the private <code>FINANCE_CALENDAR_API_KEY</code> repository secret to enable live calendar clearance.</p><p class="muted small">Automated source: <a href="https://www.financecalendar.com/api/forex-calendar/" target="_blank" rel="noopener noreferrer">Finance Calendar API documentation</a>.</p>
 <ul>
 <li>Forex Sniper continues to use its existing news-intelligence and market-analysis modules.</li>
 <li>The official Forex Factory calendar is provided as an external verification step.</li>
