@@ -322,7 +322,7 @@ async function main() {
   const economicCalendar = await getEconomicCalendar();
   console.log("ECONOMIC CALENDAR STATUS:", economicCalendar.status,
     "| provider:", economicCalendar.provider, "| events:", economicCalendar.count ?? 0,
-    "| fetched:", economicCalendar.fetchedAt ?? "never", "| error:", economicCalendar.error ?? "none");
+    "| fetched:", economicCalendar.fetchedAt ?? "never", "| cache hit:", economicCalendar.cacheHit ?? false, "| cache age ms:", economicCalendar.cacheAgeMs ?? "n/a", "| error:", economicCalendar.error ?? "none");
 
   // Sequential market execution keeps asynchronous Gemini/news output grouped
   // under the correct instrument in the saved report.
