@@ -87,6 +87,11 @@ export async function getEconomicCalendar({ now = Date.now() } = {}) {
       throw new Error("Calendar returned no EUR/USD events; refusing to clear event risk");
     }
 
+    const serverTimeMs = Number(payload.server_time) * 1000;
+    if (Math.abs(now - serverTimeMs) > 10 * 60 * 1000) {
+      throw new Error("Calendar server clock is stale or inconsistent");
+    }
+
     const generatedAt = Date.parse(payload.generated_at ?? "");
     if (!Number.isFinite(generatedAt) ||
         now - generatedAt < -5 * 60 * 1000 ||
