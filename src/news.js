@@ -121,7 +121,7 @@ function isRecent(article) {
   );
 }
 
-function classifyArticle(article) {
+export function classifyArticle(article) {
   const title = String(article.title || "").toLowerCase();
 
   let score = 0;
@@ -188,7 +188,7 @@ function classifyArticle(article) {
   };
 }
 
-function isSafeArticleUrl(value) {
+export function isSafeArticleUrl(value) {
   try {
     const url = new URL(String(value));
     return url.protocol === "https:" || url.protocol === "http:";
@@ -197,7 +197,7 @@ function isSafeArticleUrl(value) {
   }
 }
 
-function normalizeArticles(articles) {
+export function normalizeArticles(articles) {
   if (!Array.isArray(articles)) {
     throw new Error("News provider returned an invalid article list");
   }
