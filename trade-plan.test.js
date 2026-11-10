@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { finalAction, tradePlan } from "./src/trade-plan.js";
 
 const market = { close: 1.12390, atr14: 0.000374, lastCandle: { open: 1.12370, high: 1.12400, low: 1.12360, close: 1.12390 } };
+const sellMarket = { ...market, lastCandle: { open: 1.12400, high: 1.12410, low: 1.12370, close: 1.12390 } };
 
 test("BUY with H1 WAIT means NO TRADE", () => {
   const plan = tradePlan("BUY", market, { status: "WAIT" });
@@ -10,7 +11,7 @@ test("BUY with H1 WAIT means NO TRADE", () => {
   assert.equal(finalAction("BUY", plan), "NO TRADE");
 });
 test("SELL with H1 WAIT means NO TRADE", () => {
-  assert.equal(tradePlan("SELL", market, { status: "WAIT" }), null);
+  assert.equal(tradePlan("SELL", sellMarket, { status: "WAIT" }), null);
 });
 test("BUY with H1 ALIGNED creates an ATR fallback plan", () => {
   const plan = tradePlan("BUY", market, { status: "H1 ALIGNED" });
@@ -21,7 +22,7 @@ test("BUY with H1 ALIGNED creates an ATR fallback plan", () => {
   assert.equal(plan.stopType, "ATR_FALLBACK");
 });
 test("SELL with H1 ALIGNED creates an ATR fallback plan", () => {
-  const plan = tradePlan("SELL", market, { status: "H1 ALIGNED" });
+  const plan = tradePlan("SELL", sellMarket, { status: "H1 ALIGNED" });
   assert.ok(plan);
   assert.ok(plan.stopLoss > plan.entry);
   assert.ok(plan.takeProfit < plan.entry);
@@ -38,7 +39,7 @@ test("HOLD never creates a trade plan", () => {
 });
 test("Missing or directionally invalid M5 entry trigger blocks a plan", () => {
   assert.equal(tradePlan("BUY", { close: market.close, atr14: market.atr14 }, { status: "H1 ALIGNED" }), null);
-  assert.equal(tradePlan("BUY", { ...market, lastCandle: { open: 1.1240, high: 1.1241, low: 1.1237, close: 1.1239 } }, { status: "H1 ALIGNED" }), null);
+  assert.equal(tradePlan("BUY", sellMarket, { status: "H1 ALIGNED" }), null);
 });
 
 test("Invalid ATR or missing confirmation blocks a plan", () => {
