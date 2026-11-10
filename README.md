@@ -22,7 +22,7 @@ A Node.js market-analysis and paper-signal project for **EUR/USD**, **BTC/USD** 
 
 The engine uses the authenticated Finance Calendar REST API as its structured economic-event source. Forex Factory remains a manual calendar reference only; this project does not scrape, copy or redistribute Forex Factory schedules. See the provider's [API documentation](https://www.financecalendar.com/api/forex-calendar/) and [service terms](https://www.financecalendar.com/api/terms/).
 
-Configure the repository secret **`FINANCE_CALENDAR_API_KEY`** under Settings → Secrets and variables → Actions. The key is sent only from the GitHub Actions runner in the `X-API-Key` header and is never written to dashboard JavaScript or committed files. The provider currently requires an activated account and API key for programmatic access; check its current plan and source coverage before enabling it.
+Configure the repository secret **`FINANCE_CALENDAR_API_KEY`** under Settings → Secrets and variables → Actions. The key is sent only from the GitHub Actions runner in the `X-API-Key` header and is never written to dashboard JavaScript or committed files. The provider's current documentation says programmatic data requests require an API key on an activated paid plan. Check the account's actual allowance and source coverage before enabling it.
 
 The engine requests high- and medium-impact releases for USD, EUR/eurozone, GBP, JPY, CAD, AUD, CHF and NZD for a rolling 17-day window. It normalizes UTC release timestamps, event status, impact, source provenance, actual, consensus and prior values. When actual and consensus are both numeric and comparable, it reports the numerical difference only; it never assumes that an above-consensus print is automatically bullish for that currency.
 
@@ -34,7 +34,7 @@ Risk controls:
 - If the API key is missing, the feed fails, the response is invalid, or coverage is incomplete, calendar risk is `UNKNOWN` and the signal engine and portfolio risk agent force `HOLD`.
 - The calendar is checked once per signal run and shared across EUR/USD, BTC/USD and XAU/USD. A private GitHub Actions cache reuses a verified snapshot for at most nine minutes, reducing API calls while the five-minute candle workflow runs. The cache is stored outside public dashboard artifacts. News headlines remain context only and do not replace scheduled-release data.
 
-The public dashboard continues to link to Forex Factory for discretionary verification. Do not claim the dashboard or signal engine has Forex Factory's data. A live run can only be considered calendar-enabled after the API secret is configured and a successful Actions report shows `ECONOMIC CALENDAR STATUS: AVAILABLE`.
+Each market's signal log prints the automatic provider reference, fetched timestamp, next relevant events and per-event source links when available, plus the Forex Factory link for manual cross-checking. Do not claim the dashboard or signal engine has Forex Factory's data. A live run can only be considered calendar-enabled after the API secret is configured and a successful Actions report shows `ECONOMIC CALENDAR STATUS: AVAILABLE`.
 
 ## Session context and source licensing
 
