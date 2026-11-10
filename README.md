@@ -110,7 +110,7 @@ npm test
 npm run check
 ```
 
-A HOLD / NO TRADE result is intentional when the timeframes disagree or confirmation is missing. Do not loosen filters just to force more trades; judge changes by out-of-sample backtests and risk-adjusted results.
+The default `balanced` profile labels A+ (strong), B (qualified) and C (HOLD) setups. It distinguishes trend continuation from pullback/reversal context. B-tier signals are not automatic orders: H1 momentum confirmation, local agent agreement, stale-data checks, macro risk and optional Gemini veto still apply. A reversal label describes the setup context, not a guarantee that a higher-timeframe trend has reversed. Compare `SIGNAL_PROFILE=baseline`, `balanced`, `institutional` and the stricter profiles using chronological holdout tests before relying on any change. A HOLD / NO TRADE result remains correct when confirmation or risk checks fail. No profile guarantees profitability.
 
 
 ## Quant Swarm dashboard
