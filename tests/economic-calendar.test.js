@@ -2,13 +2,59 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateEconomicRisk, getEconomicCalendar, normalizeEconomicEvent } from "../src/economic-calendar.js";
 
-test("removed provider makes no request and fails closed", async () => {
-  const result = await getEconomicCalendar({ now: Date.UTC(2026, 10, 10) });
-  assert.equal(result.status, "UNAVAILABLE");
-  assert.equal(result.provider, "NO_AUTOMATED_PROVIDER");
-  assert.equal(result.events.length, 0);
-  assert.match(result.error, /no automated economic calendar provider/i);
-  assert.equal(evaluateEconomicRisk(result, "EURUSD").blocked, true);
+test("free calendar provider response is validated and normalized", async () => {
+  const originalFetch = globalThis.fetch;
+  const now = Date.parse("2026-11-10T08:00:00Z");
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    server_time: now / 1000,
+    generated_at: new Date(now).toISOString(),
+    count: 1,
+    events: [{
+      id: "usd-cpi", time: "2026-11-10T13:30:00Z", currency: "USD",
+      impact: "high", title: "US CPI", forecast: "3.0%", previous: "2.9%",
+      actual: "", status: "scheduled", confidence: "official"
+    }]
+  }), { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const result = await getEconomicCalendar({ now });
+    assert.equal(result.status, "AVAILABLE");
+    assert.equal(result.provider, "SHOWMYTRADES_FREE");
+    assert.equal(result.events.length, 1);
+    assert.equal(result.events[0].country, "US");
+    assert.equal(result.events[0].impact, "HIGH");
+    assert.equal(result.events[0].timestamp, Date.parse("2026-11-10T13:30:00Z"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("calendar schema errors fail closed", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ events: "invalid" }), { status: 200 });
+  try {
+    const result = await getEconomicCalendar();
+    assert.equal(result.status, "UNAVAILABLE");
+    assert.equal(evaluateEconomicRisk(result, "EURUSD").blocked, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("stale calendar response fails closed", async () => {
+  const originalFetch = globalThis.fetch;
+  const now = Date.parse("2026-11-10T08:00:00Z");
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    server_time: now / 1000,
+    generated_at: new Date(now - 60 * 60_000).toISOString(),
+    events: [{ id: "usd-cpi", time: "2026-11-10T13:30:00Z", currency: "USD", impact: "high", title: "US CPI", status: "scheduled" }]
+  }), { status: 200 });
+  try {
+    const result = await getEconomicCalendar({ now });
+    assert.equal(result.status, "UNAVAILABLE");
+    assert.match(result.error, /stale/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("normalizes event timestamps and compares numeric actual with consensus", () => {
