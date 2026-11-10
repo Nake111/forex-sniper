@@ -163,7 +163,7 @@ function classifyArticle(article) {
   // A central-bank mention alone is not a high-impact event.
   // Require an identifiable release, policy decision, or intervention.
   const highImpactEvent =
-    /\\b(?:rate decision|interest[- ]rate decision|fomc decision|ecb decision|policy decision|raises interest rates|cuts interest rates|holds rates|rate cut|rate hike|inflation (?:rises|falls|jumps|drops) to|cpi (?:report|data|release)|consumer price index|nonfarm payroll(?:s)?|nfp|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting)\\b/.test(title);
+    /\b(?:rate decision|interest[- ]rate decision|fomc decision|ecb decision|policy decision|raises interest rates|cuts interest rates|holds rates|rate cut|rate hike|inflation (?:rises|falls|jumps|drops) to|cpi (?:report|data|release)|consumer price index|nonfarm payroll(?:s)?|nfp|jobs report|unemployment rate (?:rises|falls|jumps|drops)|gdp (?:growth|falls|rises|report)|flash pmi|currency intervention|emergency central bank meeting)\b/.test(title);
 
   if (highImpactEvent) {
     score += 2;
