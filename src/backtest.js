@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
 import { evaluateSignal, confirmSignal } from "./signal.js";
+import { evaluateTieredSignal } from "./tiered-signal.js";
 import { tradePlan } from "./trade-plan.js";
 import { summarizeSessionPerformance } from "./session-performance.js";
 
@@ -10,8 +11,8 @@ const DATA_PREFIX = MARKET === "BTCUSD"
   ? (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase()
   : MARKET.toLowerCase();
 const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
-const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "baseline").toLowerCase();
-if (!["baseline", "strict", "advanced", "institutional", "gold"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
+const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
+if (!["baseline", "strict", "advanced", "institutional", "gold", "balanced"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 const START_RATIO = Number(process.env.BACKTEST_START_RATIO ?? 0);
 if (!Number.isFinite(START_RATIO) || START_RATIO < 0 || START_RATIO >= 1) throw new Error("BACKTEST_START_RATIO must be in [0, 1)");
 
@@ -102,7 +103,9 @@ async function main() {
     const currentM5 = analyse(m5, i);
     if (!currentM5 || !cachedM15 || !cachedH1) { i++; continue; }
     const results = { M5: currentM5, M15: cachedM15, H1: cachedH1 };
-    const signal = evaluateSignal(results, SIGNAL_PROFILE, { eventRisk: "NORMAL" });
+    const signal = SIGNAL_PROFILE === "balanced"
+      ? evaluateTieredSignal(results, { eventRisk: "NORMAL" }).signal
+      : evaluateSignal(results, SIGNAL_PROFILE, { eventRisk: "NORMAL" });
     const confirmation = confirmSignal(signal, cachedH1);
     const plan = tradePlan(signal, currentM5, confirmation);
     signalsChecked++;
