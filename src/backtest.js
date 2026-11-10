@@ -151,6 +151,11 @@ async function main() {
   const loss = Math.abs(unprofitable.reduce((sum, t) => sum + t.netR, 0));
   const factor = loss > 0 ? profit / loss : null;
   const winRate = trades.length ? profitable.length / trades.length * 100 : 0;
+  const expectancyR = trades.length ? totalNetR / trades.length : null;
+  const averageWinR = profitable.length
+    ? profitable.reduce((sum, trade) => sum + trade.netR, 0) / profitable.length : null;
+  const averageLossR = unprofitable.length
+    ? unprofitable.reduce((sum, trade) => sum + trade.netR, 0) / unprofitable.length : null;
 
   console.log(`\n========== ${MARKET} HISTORICAL BACKTEST ==========`);
   console.log("PAIR:", MARKET === "EURUSD" ? "EUR/USD" : MARKET === "XAUUSD" ? "XAU/USD" : "BTC/USD");
@@ -172,6 +177,10 @@ async function main() {
   console.log(`Net profitable trades: ${profitable.length}`);
   console.log(`Net unprofitable trades: ${unprofitable.length}`);
   console.log(`Win rate: ${winRate.toFixed(2)}%`);
+  console.log(`Expectancy: ${expectancyR === null ? "N/A" : expectancyR.toFixed(3)} R per trade`);
+  console.log(`Average winning trade: ${averageWinR === null ? "N/A" : averageWinR.toFixed(3)} R`);
+  console.log(`Average losing trade: ${averageLossR === null ? "N/A" : averageLossR.toFixed(3)} R`);
+  if (trades.length < 30) console.log("SAMPLE WARNING: fewer than 30 closed trades; performance estimates are highly uncertain.");
   console.log(`Net price movement: ${totalNetMove.toFixed(MARKET === "EURUSD" ? 5 : 2)} per unit`);
   console.log(`Net result: ${totalNetR.toFixed(2)} R`);
   console.log(`Profit factor: ${factor === null ? "N/A" : factor.toFixed(2)}`);
