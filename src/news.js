@@ -238,6 +238,9 @@ function normalizeArticles(articles) {
 }
 
 function parseRss(xml) {
+  if (typeof xml !== "string" || !/<rss[\\s>]/i.test(xml) || !/<channel[\\s>]/i.test(xml)) {
+    throw new Error("Google News returned an invalid RSS document");
+  }
   const items = [
     ...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)
   ];
