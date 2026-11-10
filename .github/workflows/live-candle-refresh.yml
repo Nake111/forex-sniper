@@ -51,7 +51,9 @@ jobs:
       - name: Restore candle history cache
         uses: actions/cache/restore@v4
         with:
-          path: data
+          path: |
+            data
+            .cache
           key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             forex-sniper-candles-
@@ -138,7 +140,9 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: data
+          path: |
+            data
+            .cache
           key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload latest candles and signal report
