@@ -1,8 +1,21 @@
+function validEntryTrigger(signal, result) {
+  const candle = result?.lastCandle;
+  if (!candle || ![candle.open, candle.high, candle.low, candle.close].every(Number.isFinite)) return false;
+  if (Math.abs(candle.close - result.close) > Math.max(result.atr14 * 0.05, 1e-10)) return false;
+  const range = candle.high - candle.low;
+  if (!(range > 0) || candle.high < Math.max(candle.open, candle.close) ||
+      candle.low > Math.min(candle.open, candle.close)) return false;
+  const closeLocation = (candle.close - candle.low) / range;
+  return signal === "BUY"
+    ? candle.close > candle.open && closeLocation >= 0.65
+    : candle.close < candle.open && closeLocation <= 0.35;
+}
+
 export function tradePlan(signal, result, confirmation) {
   if (!["BUY", "SELL"].includes(signal) ||
       confirmation?.status !== "H1 ALIGNED" ||
       !Number.isFinite(result?.atr14) || result.atr14 <= 0 ||
-      !Number.isFinite(result?.close)) return null;
+      !Number.isFinite(result?.close) || !validEntryTrigger(signal, result)) return null;
 
   const entry = result.close;
   const atrRisk = result.atr14 * 1.5;
@@ -43,7 +56,12 @@ export function tradePlan(signal, result, confirmation) {
   const stopType = validStops.length ? "MARKET_STRUCTURE" : "ATR_FALLBACK";
   const risk = Math.abs(entry - stopLoss);
   const takeProfit = bullish ? entry + risk * 2 : entry - risk * 2;
-  return { entry, stopLoss, takeProfit, riskReward: "1:2", stopType, riskDistance: risk };
+  const reward = Math.abs(takeProfit - entry);
+  const riskRewardValue = risk > 0 ? reward / risk : 0;
+  if (![entry, stopLoss, takeProfit, risk, reward].every(Number.isFinite) ||
+      risk <= 0 || riskRewardValue < 2 ||
+      (bullish ? !(stopLoss < entry && takeProfit > entry) : !(stopLoss > entry && takeProfit < entry))) return null;
+  return { entry, stopLoss, takeProfit, riskReward: "1:2", riskRewardValue, stopType, riskDistance: risk, entryTrigger: "M5_DIRECTIONAL_CLOSE" };
 }
 
 export function finalAction(signal, plan) {
