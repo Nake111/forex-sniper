@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { finalAction, tradePlan } from "./src/trade-plan.js";
 
 const market = { close: 1.12390, atr14: 0.000374, lastCandle: { open: 1.12370, high: 1.12400, low: 1.12360, close: 1.12390 } };
-const sellMarket = { ...market, lastCandle: { open: 1.12400, high: 1.12410, low: 1.12370, close: 1.12390 } };
+const sellMarket = { close: 1.12370, atr14: market.atr14, lastCandle: { open: 1.12400, high: 1.12410, low: 1.12360, close: 1.12370 } };
 
 test("BUY with H1 WAIT means NO TRADE", () => {
   const plan = tradePlan("BUY", market, { status: "WAIT" });
