@@ -6,7 +6,7 @@ function report({ support = 6, oppose = 2, risk = true, higher = "BUY", volatili
   const votes = support === 8
     ? ["BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "SELL", "HOLD", "HOLD"]
     : support === 6
-      ? ["BUY", "BUY", "BUY", "SELL", "SELL", "BUY", "BUY", "BUY", "SELL", "HOLD", "HOLD"]
+      ? ["BUY", "BUY", "BUY", "SELL", "SELL", "BUY", "BUY", "BUY", "HOLD", "HOLD", "HOLD"]
       : ["BUY", "BUY", "SELL", "SELL", "SELL", "BUY", "BUY", "HOLD", "HOLD", "HOLD", "HOLD"];
   const agents = votes.map((direction, index) => ({
     name: index === 5 ? "Higher-timeframe confluence analyst"
