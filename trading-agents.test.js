@@ -3,10 +3,15 @@ import assert from "node:assert/strict";
 import { evaluateConfirmationQuality, gateSignalWithAgents } from "./src/trading-agents.js";
 
 function report({ support = 6, oppose = 2, risk = true, higher = "BUY", volatility = "BUY" } = {}) {
-  const agents = Array.from({ length: 11 }, (_, index) => ({
+  const votes = support === 8
+    ? ["BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "SELL", "HOLD", "HOLD"]
+    : support === 6
+      ? ["BUY", "BUY", "BUY", "SELL", "SELL", "BUY", "BUY", "BUY", "SELL", "HOLD", "HOLD"]
+      : ["BUY", "BUY", "SELL", "SELL", "SELL", "BUY", "BUY", "HOLD", "HOLD", "HOLD", "HOLD"];
+  const agents = votes.map((direction, index) => ({
     name: index === 5 ? "Higher-timeframe confluence analyst"
       : index === 6 ? "Volatility and regime analyst" : `Specialist ${index + 1}`,
-    direction: index < support ? "BUY" : index < support + oppose ? "SELL" : "HOLD"
+    direction
   }));
   agents[5].direction = higher;
   agents[6].direction = volatility;
