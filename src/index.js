@@ -256,6 +256,7 @@ async function analyseMarket(market, macroContext) {
   }
   const agentGate = gateSignalWithAgents(candidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
+  console.log("MULTI-AGENT CONFIRMATION QUALITY:", JSON.stringify({ tier: agentGate.quality ?? "WEAK", approved: agentGate.approved ?? false, supporting: agentGate.supporting ?? 0, opposing: agentGate.opposing ?? 0, agreementPct: agentGate.agreementPct ?? 0, coreSupport: agentGate.coreSupport ?? 0, higherTimeframe: agentGate.higherTimeframe ?? "UNKNOWN", volatility: agentGate.volatility ?? "UNKNOWN", reasons: agentGate.reasons ?? [] }));
   console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
   candidate = agentGate.signal;
   console.log("AGENT-REVIEWED DIRECTIONAL CANDIDATE:", candidate);
