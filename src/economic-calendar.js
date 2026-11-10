@@ -83,6 +83,9 @@ export async function getEconomicCalendar({ now = Date.now() } = {}) {
         !Number.isFinite(Number(payload.server_time))) {
       throw new Error("Calendar response failed schema validation");
     }
+    if (payload.events.length === 0) {
+      throw new Error("Calendar returned no EUR/USD events; refusing to clear event risk");
+    }
 
     const generatedAt = Date.parse(payload.generated_at ?? "");
     if (!Number.isFinite(generatedAt) ||
