@@ -187,13 +187,27 @@ function classifyArticle(article) {
   };
 }
 
+function isSafeArticleUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function normalizeArticles(articles) {
+  if (!Array.isArray(articles)) {
+    throw new Error("News provider returned an invalid article list");
+  }
+
   const unique = new Map();
 
   for (const article of articles) {
-    if (
-      !article.title ||
-      !article.url ||
+    if (!article || typeof article !== "object" ||
+      typeof article.title !== "string" ||
+      !article.title.trim() ||
+      !isSafeArticleUrl(article.url) ||
       !isRecent(article)
     ) {
       continue;
@@ -305,9 +319,17 @@ async function getGdeltNews() {
     );
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("GDELT returned invalid JSON");
+  }
+  if (!data || typeof data !== "object" || !Array.isArray(data.articles)) {
+    throw new Error("GDELT response is missing the articles array");
+  }
 
-  const articles = (data.articles || []).map(article => ({
+  const articles = data.articles.map(article => ({
     title: article.title,
     source: article.domain || "GDELT",
     date: article.seendate,
