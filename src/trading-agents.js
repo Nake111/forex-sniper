@@ -199,14 +199,14 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   const forecastAgents = agents.filter(agent => agent.name?.startsWith("Quantitative agent"));
   const predictiveSupport = forecastAgents.filter(agent => agent.direction === signal).length;
   const structureComplete = agents.length >= 17 && forecastAgents.length === 6;
-  const good = structureComplete && supporting >= 6 && agreement >= 0.75 &&
+  const good = structureComplete && supporting >= 6 && predictiveSupport >= 4 && agreement >= 0.75 &&
     opposing <= 2 && coreSupport >= 3 && higherTimeframe === signal &&
     volatility === signal && riskClear && portfolioAgrees;
   const strong = good && supporting >= 8 && agreement >= 0.85 && opposing <= 1;
   const tier = strong ? "STRONG" : good ? "GOOD"
     : supporting >= 5 && agreement >= 0.60 ? "MODERATE" : "WEAK";
   const reasons = [];
-  if (!structureComplete) reasons.push("Incomplete specialist panel");
+  if (!structureComplete) reasons.push("Incomplete 17-agent specialist panel");
   if (supporting < 6) reasons.push(`Only ${supporting}/17 specialists support the direction; 6 required`);\n  if (!structureComplete) reasons.push("Six quantitative forecast agents are not all available");\n  if (predictiveSupport < 4) reasons.push(`Only ${predictiveSupport}/6 quantitative forecasters support the direction; 4 required`);
   if (agreement < 0.75) reasons.push("Directional agreement below 75%");
   if (opposing > 2) reasons.push("Too many opposing specialist votes");
@@ -217,7 +217,7 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   if (!portfolioAgrees) reasons.push("Portfolio manager does not approve this direction");
   return {
     tier, approved: good, strong,
-    supporting, opposing, directionalVotes: directional.length, predictiveSupport, forecastAgentCount: forecastAgents.length, predictiveSupport, forecastAgentCount: forecastAgents.length,
+    supporting, opposing, directionalVotes: directional.length, predictiveSupport, forecastAgentCount: forecastAgents.length,
     agreementPct: Math.round(agreement * 100), coreSupport,
     higherTimeframe, volatility, reasons
   };
