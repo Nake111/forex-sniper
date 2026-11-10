@@ -14,7 +14,7 @@ export function buildMacroContext(articles = [], now = Date.now(), calendar = { 
   });
   const currencyRisk = calendar?.marketRisk?.[market] ?? null;
   const calendarStatus = calendar?.status === "AVAILABLE" ? "AVAILABLE" : (calendar?.status ?? "UNAVAILABLE");
-  const eventRisk = currencyRisk?.status ?? "UNKNOWN";
+  const eventRisk = recentHighImpact.length ? "HIGH" : (currencyRisk?.status ?? "UNKNOWN");
   return {
     status: articles.length ? "NEWS_AVAILABLE" : "NEWS_UNAVAILABLE",
     calendar: {
