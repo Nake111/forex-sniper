@@ -174,7 +174,7 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
       meanExpectedMoveAtr: Number((forecastAgents.reduce((sum, agent) => sum + agent.expectedMoveAtr, 0) / forecastAgents.length).toFixed(3)),
       horizonCandles: 3
     },
-    additionalSpecialists: agents.slice(5).map(agent => agent.name),
+    additionalSpecialists: agents.slice(5, 11).map(agent => agent.name),
     debate: { bullishResearchers: bullCase, bearishResearchers: bearCase, bullishScore: bullScore, bearishScore: bearScore, scoreGap: debateGap },
     trader: { bias: rawBias, confidencePct: confidence },
     riskManager: { approved: riskBlocks.length === 0, blocks: riskBlocks, volatilityRatio: Number.isFinite(atr) && atrBase > 0 ? Number((atr / atrBase).toFixed(2)) : null },
