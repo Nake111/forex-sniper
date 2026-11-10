@@ -225,7 +225,7 @@ export async function runIndependentLlmAgents(context, options = {}) {
       } catch (error) {
         lastError = error;
         const retryable = error?.name === "TimeoutError" || error?.name === "AbortError" ||
-          /fetch failed|network|ECONNRESET|ETIMEDOUT/i.test(error?.message ?? "");
+          /fetch failed|network|ECONNRESET|ETIMEDOUT|Gemini HTTP (408|425|429|500|502|503|504)/i.test(error?.message ?? "");
         if (!retryable || attempt === maxAttempts) throw error;
       }
       const delayMs = Math.min(1200, 250 * (2 ** (attempt - 1)));
