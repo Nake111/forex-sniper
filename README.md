@@ -57,6 +57,7 @@ This layer is a second opinion and safety gate, not proof of profitability. It i
 
 - Node.js 20+
 - npm
+- A Finance Calendar API key in `FINANCE_CALENDAR_API_KEY` for automated event-risk clearance
 
 ## Setup
 
