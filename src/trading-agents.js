@@ -1,7 +1,5 @@
 import { runForecastAgents } from "./forecast-agents.js";
 
-import { runForecastAgents } from "./forecast-agents.js";
-
 // TradingAgents-inspired deterministic multi-agent decision layer.
 // Six additional specialist agents independently inspect higher-timeframe alignment,
 // volatility regime, M5 candle quality, momentum exhaustion, confirmed liquidity
