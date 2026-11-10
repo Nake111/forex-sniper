@@ -22,7 +22,17 @@ Important safety behavior: with no verified automated calendar, event risk is UN
 
 ## Multi-agent decision layer
 
-The deterministic specialist agents and optional six-role Gemini review can confirm or veto a technical candidate. They cannot override stale candle checks, unknown calendar risk, entry validation, higher-timeframe confirmation or portfolio risk controls. No agent can promote a technical HOLD into an order.
+The local decision panel now contains 11 technical specialists plus six independent quantitative forecasting agents. The forecast agents use closed M5 candle history and estimate the next three candles with:
+- Exponentially weighted least-squares trend projection and residual statistics.
+- AR(1) conditional-return autoregression.
+- A two-state local-linear-trend Kalman filter.
+- EWMA volatility-adjusted momentum.
+- Autocorrelation-based dominant-cycle and harmonic projection.
+- Nearest-neighbour historical pattern outcomes.
+
+Each forecaster reports BUY, SELL or HOLD, estimated probability of an upward move, expected movement in ATR units and its evidence. Forecasts are estimates, not certainty. A GOOD confirmation requires at least four of the six forecast agents to agree, in addition to the existing technical consensus, higher-timeframe alignment, volatility agreement and risk approval. The optional six-role Gemini review remains an independent veto-only check.
+
+These agents cannot override stale candle checks, calendar risk, entry validation or portfolio risk controls. A technical HOLD cannot be promoted into a trade.
 
 ## Requirements
 
