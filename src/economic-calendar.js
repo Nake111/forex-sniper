@@ -1,6 +1,9 @@
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 const API_URL = "https://www.financecalendar.com/wp-json/fc/v1/calendar";
 const SOURCE_URL = "https://www.financecalendar.com";
 const TIMEOUT_MS = Number(process.env.ECONOMIC_CALENDAR_TIMEOUT_MS ?? 12000);
+const CACHE_PATH = ".cache/economic-calendar.json";
+const CACHE_TTL_MS = 9 * 60 * 1000;
 const COUNTRIES = "US,EU,DE,GB,JP,CA,AU,CH,NZ";
 const HIGH_PRE_MINUTES = 15;
 const HIGH_POST_MINUTES = 15;
@@ -88,6 +91,16 @@ export async function getEconomicCalendar({ now = Date.now(), apiKey = process.e
     };
   }
 
+  try {
+    const cached = JSON.parse(await readFile(CACHE_PATH, "utf8"));
+    const age = now - Date.parse(cached.fetchedAt ?? "");
+    if (cached.status === "AVAILABLE" && Number.isFinite(age) && age >= 0 && age < CACHE_TTL_MS) {
+      return { ...cached, cacheHit: true, cacheAgeMs: age };
+    }
+  } catch {
+    // First run or missing/invalid cache: fetch a fresh calendar snapshot.
+  }
+
   const from = isoDate(now - 3 * 86400000);
   const to = isoDate(now + 14 * 86400000);
   const params = new URLSearchParams({
@@ -172,7 +185,7 @@ export async function getEconomicCalendar({ now = Date.now(), apiKey = process.e
     event.date && event.status !== "cancelled"
   ).length;
 
-  return {
+  const result = {
     status: rawEvents.length >= total ? "AVAILABLE" : "INCOMPLETE",
     provider: "Finance Calendar",
     sourceUrl: SOURCE_URL,
@@ -185,8 +198,19 @@ export async function getEconomicCalendar({ now = Date.now(), apiKey = process.e
     unknownTimeHighImpact,
     attribution: payload.attribution ?? null,
     events: events.sort((a, b) => (a.timestamp ?? Date.parse(a.date ?? "")) - (b.timestamp ?? Date.parse(b.date ?? ""))),
-    error: rawEvents.length >= total ? null : "Calendar result exceeded the safe pagination cap; refusing to claim complete event coverage."
+    error: rawEvents.length >= total ? null : "Calendar result exceeded the safe pagination cap; refusing to claim complete event coverage.",
+    cacheHit: false,
+    cacheAgeMs: 0
   };
+  if (result.status === "AVAILABLE") {
+    try {
+      await mkdir(".cache", { recursive: true });
+      await writeFile(CACHE_PATH, JSON.stringify(result), "utf8");
+    } catch (error) {
+      console.warn("Economic calendar cache write failed:", error.message);
+    }
+  }
+  return result;
 }
 
 export function evaluateEconomicRisk(calendar, market, now = Date.now()) {
