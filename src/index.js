@@ -284,6 +284,21 @@ async function analyseMarket(market, macroContext) {
   if (tieredReport) console.log("TIERED SETUP:", JSON.stringify(tieredReport));
   if (SIGNAL_PROFILE === "institutional") console.log("INSTITUTIONAL SCORE:", scoreInstitutionalSetup(results, macroContext));
   console.log("MACRO CONTEXT:", JSON.stringify(macroContext));
+  console.log("AUTOMATIC ECONOMIC CALENDAR REFERENCE:",
+    macroContext.calendar?.provider ?? "unknown",
+    "| status:", macroContext.calendar?.status ?? "UNKNOWN",
+    "| source:", macroContext.calendar?.sourceUrl ?? "unavailable",
+    "| Forex Factory manual cross-check:", macroContext.calendarReference?.url ?? "unavailable");
+  for (const event of macroContext.calendar?.risk?.nextEvents ?? []) {
+    console.log("UPCOMING ECONOMIC EVENT:", event.name, "|", event.country, "|", event.impact,
+      "|", event.scheduledAt ?? event.date ?? "time unknown",
+      "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
+  }
+  for (const event of macroContext.calendar?.risk?.activeEvents ?? []) {
+    console.log("ACTIVE EVENT RISK:", event.name, "|", event.country, "|", event.impact,
+      "|", event.scheduledAt ?? "time unknown",
+      "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
+  }
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
