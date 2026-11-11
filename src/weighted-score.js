@@ -32,7 +32,7 @@ function component(name, weight, passed, available, detail) {
  * Weighted technical score. Missing inputs never earn points. Hard safety
  * gates are evaluated separately and cannot be overridden by the score.
  */
-export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false, macroBlocked = false, staleTimeframes = [] }) {
+export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false, macroBlocked = false, staleTimeframes = [], a1Heart = null }) {
   const side = SIDES.has(direction) ? direction : null;
   const h1 = sideOf(frames.H1), h4 = sideOf(frames.H4);
   const htfAvailable = h1 !== null || h4 !== null;
@@ -78,6 +78,7 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const coverage = availableWeight;
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
+  if (a1Heart?.status !== "READY" || a1Heart?.direction !== side) hardBlockers.push("A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction");
   if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");
   if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
   if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
