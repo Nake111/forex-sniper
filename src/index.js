@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
-import { tradePlan, finalAction } from "./trade-plan.js";
+import { buildIndicativeTradePlan, finalAction } from "./trade-plan.js";
+import { evaluateDeterministicFallback } from "./execution-policy.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { evaluateTieredSignal } from "./tiered-signal.js";
 import { evaluateVWAPStrategies, selectVWAPConsensus, resolvePrimaryDirection } from "./vwap-strategies.js";
@@ -283,8 +284,12 @@ async function analyseMarket(market, macroContext) {
       console.log("VWAP SILENT — A+ independent confluence fallback selected:", candidate);
     }
   }
+  const directionalCandidate = candidate;
+  const executionBlockers = [];
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
-    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
+    const reason = macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance.");
+    executionBlockers.push(reason);
+    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", reason);
   }
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
@@ -292,16 +297,29 @@ async function analyseMarket(market, macroContext) {
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
+  const deterministicFallback = evaluateDeterministicFallback(
+    directionalCandidate, market.symbol, results, macroContext,
+    market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries
+      ? ["Scheduled high-impact gold news window"] : []
+  );
+  console.log("MARKET-SPECIFIC DETERMINISTIC FALLBACK:", JSON.stringify(deterministicFallback));
   const agentGate = aPlusFallback?.approved
-    ? { signal: candidate, ...aPlusFallback }
-    : gateSignalWithAgents(candidate, agentReport);
+    ? { signal: directionalCandidate, ...aPlusFallback }
+    : gateSignalWithAgents(directionalCandidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT CONFIRMATION QUALITY:", JSON.stringify({ tier: agentGate.quality ?? "WEAK", approved: agentGate.approved ?? false, supporting: agentGate.supporting ?? 0, opposing: agentGate.opposing ?? 0, agreementPct: agentGate.agreementPct ?? 0, coreSupport: agentGate.coreSupport ?? 0, higherTimeframe: agentGate.higherTimeframe ?? "UNKNOWN", volatility: agentGate.volatility ?? "UNKNOWN", reasons: agentGate.reasons ?? [] }));
   console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
   candidate = agentGate.signal;
-  console.log("AGENT-REVIEWED DIRECTIONAL CANDIDATE:", candidate);
+  if (candidate === "HOLD" && deterministicFallback.approved && executionBlockers.length === 0) {
+    candidate = directionalCandidate;
+    console.log("DETERMINISTIC FALLBACK: APPROVED — cloud agent availability and strict panel agreement are not required.");
+  } else if (candidate === "HOLD" && directionalCandidate !== "HOLD") {
+    executionBlockers.push(...(agentGate.reasons ?? [agentGate.reason ?? "Multi-agent confirmation not approved"]));
+    if (!deterministicFallback.approved) executionBlockers.push(...deterministicFallback.reasons);
+  }
+  console.log("AGENT-REVIEWED EXECUTION CANDIDATE:", candidate);
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
-    console.log("EXECUTION CANDIDATE: HOLD — directional bias is visible, but a mandatory safety gate is not clear.");
+    console.log("EXECUTION CANDIDATE: HOLD — directional bias remains visible, but a mandatory safety gate is not clear.");
     candidate = "HOLD";
   } else {
     console.log("EXECUTION CANDIDATE (pre-Gemini):", candidate);
@@ -336,11 +354,12 @@ async function analyseMarket(market, macroContext) {
       ? !specialistVeto && supportVotes >= 2 && opposingVotes <= 1
       : llmReport.decision === candidate;
     if (!llmConfirms) {
+      executionBlockers.push("Gemini completed but six-role consensus did not confirm " + candidate + " (BUY " + (llmReport.votes?.buy ?? 0) + ", SELL " + (llmReport.votes?.sell ?? 0) + ", veto " + specialistVeto + ")");
       console.log("GEMINI SIX-ROLE VETO: HOLD — independent review did not sufficiently confirm the candidate.");
       candidate = "HOLD";
     }
-  } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
-    console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
+  } else if (["TIMEOUT", "ERROR", "NOT_CONFIGURED"].includes(llmReport.status)) {
+    console.log("GEMINI REVIEW:", llmReport.status, "— deterministic local validation remains authoritative; cloud failure does not erase a valid candidate.");
   }
 
   // Coinbase 10-second spot tape is a final BTC entry-timing veto only.
@@ -353,10 +372,12 @@ async function analyseMarket(market, macroContext) {
       downCandles: micro.downCandles, source: micro.source, reason: micro.reason
     }));
     if (candidate !== "HOLD" && micro.status !== "LIVE") {
+      executionBlockers.push("BTC 10-second microstructure feed: " + (micro.reason ?? "not live"));
       console.log("BTC LIVE-FEED SAFETY GATE: HOLD —", micro.reason ?? "10-second feed is not live.");
       candidate = "HOLD";
     } else if (candidate !== "HOLD" && micro.direction !== "NEUTRAL" &&
                micro.direction !== candidate) {
+      executionBlockers.push("BTC 10-second Coinbase tape opposes " + candidate);
       console.log("BTC MICROSTRUCTURE VETO: HOLD — 10-second Coinbase tape opposes", candidate);
       candidate = "HOLD";
     }
@@ -380,9 +401,13 @@ async function analyseMarket(market, macroContext) {
       "|", event.scheduledAt ?? "time unknown",
       "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
   }
-  const confirmation = confirmSignal(candidate, results.H1);
-  const plan = tradePlan(candidate, results.M5, confirmation);
+  const confirmation = confirmSignal(directionalCandidate, results.H1);
+  const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
+  if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
+  if (plan) executionBlockers.push("Broker bid/ask spread is unavailable; levels are not broker-verified");
   const action = finalAction(candidate, plan);
+  const executionStatus = action === "NO TRADE" ? "NOT APPROVED — levels are indicative only"
+    : "STRATEGY APPROVED — broker spread/execution still unverified";
 
   try {
     const brain = await updateSecondBrain({
@@ -406,19 +431,24 @@ async function analyseMarket(market, macroContext) {
   console.log("======================================");
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
-  console.log("CANDIDATE:", candidate);
+  console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
+  console.log("EXECUTION CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
+  console.log("ENTRY STATUS:", plan?.status ?? "NO LEVELS — insufficient ATR/price data");
+  console.log("EXECUTION STATUS:", executionStatus);
+  console.log("REJECTION / UNVERIFIED CONDITIONS:", JSON.stringify([...new Set(executionBlockers)]));
   if (confirmation.reason) console.log("REASON:", confirmation.reason);
   console.log("FINAL ACTION:", action);
 
   if (plan) {
     console.log("ENTRY:", plan.entry.toFixed(market.symbol === "EURUSD" ? 5 : 2));
+    console.log("M5 ENTRY TRIGGER CONFIRMED:", plan.entryTriggerConfirmed);
     console.log("STOP LOSS:", plan.stopLoss.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("TAKE PROFIT:", plan.takeProfit.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("RISK / REWARD:", plan.riskReward);
     console.log("STOP METHOD:", plan.stopType);
   } else {
-    console.log("No confirmed trade. Wait for a valid setup.");
+    console.log("No entry levels: directional candidate or valid ATR/close is unavailable.");
   }
 
   for (const { key, candles } of frames) console.log(`${key} closed candles:`, candles.length);
