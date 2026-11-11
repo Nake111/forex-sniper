@@ -440,6 +440,7 @@ async function analyseMarket(market, macroContext) {
   const approval = runSignalApprovalAgent({
     candidate, marketReview, plan, quoteValidation, quote: spreadQuote,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
+    entryAtr: results.M5.atr14,
     executionBlockers: approvalBlockers
   });
   console.log("AGENT 2 — INDEPENDENT SIGNAL APPROVAL:", JSON.stringify(approval));
