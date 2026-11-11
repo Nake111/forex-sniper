@@ -72,7 +72,7 @@ test("Gold headline caution retains a veto when H1 volatility is elevated", () =
 
 
 test("Gold retains headline veto when H1 volatility baseline is unavailable", () => {
-  const frames = { M5: frame("SELL", candle(100, 101, 98, 98.2)), H1: frame("SELL"), M15: frame("SELL") };
+  const frames = { M5: frame("SELL", candle(100, 101, 98, 98.2)), H1: { ...frame("SELL"), atrBaseline: null }, M15: frame("SELL") };
   const macro = { calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [], nextEvents: [] } },
     headlines: [{ title: "Recent headline", date: new Date(Date.now() - 60_000).toISOString() }] };
   const review = runMarketIntelligenceAgent({ market: "XAUUSD", frames, macro });
