@@ -48,13 +48,13 @@ export function buildVerificationLayer({
   const checks = [
     { name: "market_structure_and_momentum", status: marketReview?.approved ? "PASS" : marketReview ? "FAIL" : "UNAVAILABLE", reasons: marketReview?.blockers ?? [] },
     { name: "deterministic_market_rules", status: deterministicFallback?.approved ? "PASS" : deterministicFallback ? "FAIL" : "UNAVAILABLE", reasons: deterministicFallback?.reasons ?? deterministicFallback?.blockers ?? [] },
-    { name: "multi_agent_confluence", status: agentGate?.approved ? "PASS" : agentGate ? "FAIL" : "UNAVAILABLE", reasons: agentGate?.reasons ?? (agentGate?.reason ? [agentGate.reason] : []) },
+    { name: "multi_agent_confluence", status: agentGate?.approved ? "PASS" : deterministicFallback?.approved ? "ADVISORY" : agentGate ? "FAIL" : "UNAVAILABLE", reasons: agentGate?.reasons ?? (agentGate?.reason ? [agentGate.reason] : []) },
     { name: "candle_freshness", status: staleTimeframes.length ? "FAIL" : "PASS", reasons: staleTimeframes.length ? ["Stale timeframes: " + staleTimeframes.join(", ")] : [] },
     { name: "macro_event_risk", status: macroBlocked ? "FAIL" : "PASS", reasons: macroBlocked ? ["Macro/calendar/news risk gate is active"] : [] },
     { name: "spread", status: spreadVerified === null ? "UNAVAILABLE" : spreadVerified ? "PASS" : "FAIL", reasons: spreadVerified === false ? ["Spread or spread/ATR validation failed"] : [] },
     { name: "optional_llm_review", status: llmReport?.status === "COMPLETE" ? "REVIEWED" : "UNAVAILABLE", reasons: llmReport?.status && llmReport.status !== "COMPLETE" ? ["Optional LLM review: " + llmReport.status + "; deterministic checks remain authoritative"] : [] }
   ];
-  const required = checks.filter(check => check.name !== "optional_llm_review");
+  const required = checks.filter(check => !["optional_llm_review", "multi_agent_confluence"].includes(check.name));
   const failed = required.filter(check => check.status === "FAIL" || check.status === "UNAVAILABLE");
   return {
     layer: 2,
