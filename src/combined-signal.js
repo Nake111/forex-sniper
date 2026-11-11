@@ -35,12 +35,30 @@ export function evaluateCombinedSignal({ results, donchian, legacySignal = "HOLD
   const bearBreak = d15.close < d15.channelLow20 && d15.previousClose >= d15.previousChannelLow20;
   add(bullBreak ? "BULLISH" : bearBreak ? "BEARISH" : "NONE", 2, "M15 20-bar Donchian breakout");
 
-  const bosDirection = m15.structure?.bos;
-  const bosRecent = finite(m15.structure?.bosBarsAgo) && m15.structure.bosBarsAgo <= 6;
-  add(bosRecent && bosDirection === "BULLISH" ? "BULLISH" : bosRecent && bosDirection === "BEARISH" ? "BEARISH" : "NONE", 2, "M15 market-structure BOS");
+  // Treat recent structure events consistently across the primary structure and SMC layers.
+  // The previous engine only checked the swing BOS and could ignore a valid internal BOS.
+  const structureAge = Number(m15.structure?.bosBarsAgo);
+  const primaryBosRecent = Number.isFinite(structureAge) && structureAge >= 0 && structureAge <= 6;
+  const primaryBosDirection = primaryBosRecent ? m15.structure?.bos : "NONE";
+  const smcEvents = [m15.smartMoney?.swing, m15.smartMoney?.internal]
+    .filter(event => event && event.type === "BOS")
+    .map(event => ({ direction: event.direction, barsAgo: Number(event.barsAgo) }))
+    .filter(event => ["BULLISH", "BEARISH"].includes(event.direction) &&
+      Number.isFinite(event.barsAgo) && event.barsAgo >= 0 && event.barsAgo <= 6)
+    .sort((a, b) => a.barsAgo - b.barsAgo);
+  const recentSmcBos = smcEvents[0] ?? null;
+  const bosDirection = primaryBosRecent && ["BULLISH", "BEARISH"].includes(primaryBosDirection)
+    ? primaryBosDirection : recentSmcBos?.direction ?? "NONE";
+  const bosRecent = bosDirection !== "NONE";
+  if (primaryBosRecent && ["BULLISH", "BEARISH"].includes(primaryBosDirection)) {
+    add(primaryBosDirection, 2, "M15 market-structure BOS");
+  } else if (recentSmcBos) {
+    add(recentSmcBos.direction, 2, "M15 SMC swing/internal BOS");
+  }
   const smc = m15.smartMoney?.swing;
-  if (smc && finite(smc.barsAgo) && smc.barsAgo <= 4 && smc.type === "BOS") add(smc.direction, 1, "M15 SMC swing BOS");
-  if (smc && finite(smc.barsAgo) && smc.barsAgo <= 4 && smc.type === "CHoCH") add(smc.direction, 1, "M15 SMC change of character");
+  if (smc && Number(smc.barsAgo) >= 0 && Number(smc.barsAgo) <= 4 && smc.type === "CHoCH") {
+    add(smc.direction, 1, "M15 SMC change of character");
+  }
 
   const zoneBuffer = finite(m15.atr14) ? m15.atr14 * 0.25 : 0;
   const nearZone = (price, low, high) => finite(price) && finite(low) && finite(high) &&
