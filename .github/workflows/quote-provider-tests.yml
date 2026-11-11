@@ -7,6 +7,8 @@ on:
       - "src/twelve-data-quotes.js"
       - "src/index.js"
       - "src/trade-plan.js"
+      - "src/volume-profile.js"
+      - "market.test.js"
       - "tests/twelve-data-quotes.test.js"
       - "tests/execution-gates.test.js"
       - "package.json"
@@ -23,7 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
       - run: npm install
       - run: npm run check
       - run: npm test

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rsi, adx, rollingVwap, cumulativeVolumeDeltaProxy } from "./src/market.js";
+import { rsi, adx, rollingVwap, cumulativeVolumeDeltaProxy, analyseTimeframe } from "./src/market.js";
+import { calculateVolumeProfile } from "./src/volume-profile.js";
 import { classifyMarketRegime } from "./src/market-regime.js";
 import { buildMacroContext } from "./src/macro.js";
 import { evaluateSignal, hasDirectionalRetest, scoreInstitutionalSetup } from "./src/signal.js";
@@ -97,4 +98,36 @@ test("institutional scoring requires macro risk clearance and directional conflu
   const clear = scoreInstitutionalSetup(frames, { eventRisk: "NORMAL" });
   assert.equal(clear.signal, "BUY");
   assert.equal(scoreInstitutionalSetup(frames, { eventRisk: "HIGH" }).signal, "HOLD");
+});
+
+test("volume profile reports unavailable when a feed has zero volume instead of throwing", () => {
+  const candles = Array.from({ length: 60 }, (_, i) => ({
+    timestamp: 1_800_000_000_000 + i * 300_000,
+    open: 1.1 + i * 0.0001,
+    high: 1.1002 + i * 0.0001,
+    low: 1.0998 + i * 0.0001,
+    close: 1.1001 + i * 0.0001,
+    volume: 0
+  }));
+  const profile = calculateVolumeProfile(candles);
+  assert.equal(profile.available, false);
+  assert.equal(profile.reason, "NO_VOLUME_DATA");
+  assert.equal(profile.poc, null);
+  assert.equal(profile.totalVolume, 0);
+  const analysis = analyseTimeframe(candles);
+  assert.equal(analysis.volumeProfileAvailable, false);
+  assert.equal(analysis.poc, null);
+});
+
+test("volume profile remains calculated when positive volume exists", () => {
+  const candles = Array.from({ length: 60 }, (_, i) => ({
+    high: 100 + i + 1,
+    low: 100 + i,
+    close: 100 + i + 0.5,
+    volume: 10
+  }));
+  const profile = calculateVolumeProfile(candles);
+  assert.equal(profile.available, true);
+  assert.ok(Number.isFinite(profile.poc));
+  assert.equal(profile.totalVolume, 600);
 });

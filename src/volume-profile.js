@@ -61,7 +61,18 @@ export function calculateVolumeProfile(candles, binCount = 24, valueAreaPercent 
   const totalVolume = bins.reduce((sum, value) => sum + value, 0);
 
   if (totalVolume <= 0) {
-    throw new Error("No usable volume data");
+    // Some FX/CFD feeds expose no volume. Never fabricate a volume profile;
+    // mark it unavailable and allow price-only analysis to continue.
+    return {
+      available: false,
+      reason: "NO_VOLUME_DATA",
+      poc: null,
+      valueAreaHigh: null,
+      valueAreaLow: null,
+      totalVolume: 0,
+      binSize,
+      bins
+    };
   }
 
   const pocIndex = bins.indexOf(Math.max(...bins));
@@ -90,6 +101,8 @@ export function calculateVolumeProfile(candles, binCount = 24, valueAreaPercent 
   const priceAt = index => minPrice + (index + 0.5) * binSize;
 
   return {
+    available: true,
+    reason: null,
     poc: priceAt(pocIndex),
     valueAreaHigh: minPrice + (right + 1) * binSize,
     valueAreaLow: minPrice + left * binSize,

@@ -133,6 +133,7 @@ ${name} ANALYSIS`);
   console.log("ROC 12:", result.roc.value, "|", result.roc.direction);
   console.log("VWAP 24:", result.vwap);
   console.log("CVD pressure proxy:", result.cvd.direction, "slope:", result.cvd.slope);
+  console.log("VOLUME PROFILE:", result.volumeProfileAvailable ? "AVAILABLE" : "UNAVAILABLE — no reported candle volume; POC/VAH/VAL suppressed");
   console.log("POC / VAH / VAL:", result.poc, "/", result.valueAreaHigh, "/", result.valueAreaLow);
   console.log("BOS / Sweep:", result.structure.bos, "/", result.structure.sweep);
   console.log("Recent OB zones:", JSON.stringify(result.smartMoney.orderBlocks));
@@ -149,6 +150,12 @@ async function analyseMarket(market, macroContext, marketQuotes = {}) {
   console.log("Live trading: DISABLED");
   if (market.symbol === "BTCUSD") console.log("BTC data prefix:", process.env.BTC_DATA_PREFIX ?? market.prefix, "| Set BTC_DATA_PREFIX=kraken-btcusd to use Kraken XBT/USD spot candles (venue reference, not Vantage BTCUSD CFD).");
   if (market.symbol === "XAUUSD") {
+    const xauReference = marketQuotes.XAUUSD ?? null;
+    console.log("XAU/USD TWELVE DATA REFERENCE:", JSON.stringify(xauReference ? {
+      price: xauReference.price, bid: xauReference.bid, ask: xauReference.ask,
+      timestamp: xauReference.timestamp, receivedAt: xauReference.receivedAt,
+      source: xauReference.source, validation: validateTwelveDataQuote(xauReference)
+    } : { status: "UNAVAILABLE" }));
     try {
       const quotes = JSON.parse(await readFile("data/gold-live-quotes.json", "utf8"));
       for (const symbol of ["XAU/USD", "DXY"]) {
