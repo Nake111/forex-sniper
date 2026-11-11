@@ -86,3 +86,23 @@ test("fetchBiquoteQuote reads a live-style quote without credentials", async () 
   assert.equal(result.quote.market, "EURUSD");
   assert.equal(validateBiquoteTick(result.quote).valid, true);
 });
+
+test("fetchBidAskQuotes uses Biquote first for EUR/USD and Gold", async () => {
+  const fetchImpl = async url => {
+    const symbol = url.includes("XAUUSD") ? "XAUUSD" : "EURUSD";
+    const base = symbol === "XAUUSD" ? 4000 : 1.08;
+    return {
+      ok: true,
+      json: async () => ({
+        symbol, bid: base, ask: base + (symbol === "XAUUSD" ? 0.1 : 0.0001),
+        mid: base + (symbol === "XAUUSD" ? 0.05 : 0.00005),
+        timestamp: new Date().toISOString(), marketState: "open", stale: false,
+        source: "MetaTrader 5 (Broker 1)"
+      })
+    };
+  };
+  const result = await fetchBidAskQuotes({ markets: ["EURUSD", "XAUUSD"], fetchImpl });
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(result.quotes.EURUSD.source, "Biquote live bid/ask");
+  assert.equal(result.quotes.XAUUSD.source, "Biquote live bid/ask");
+});
