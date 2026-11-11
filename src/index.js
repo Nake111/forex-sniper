@@ -3,6 +3,7 @@ import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { evaluateTieredSignal } from "./tiered-signal.js";
+import { evaluateVWAPStrategies } from "./vwap-strategies.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
 import { getEconomicCalendar, evaluateEconomicRisk } from "./economic-calendar.js";
@@ -183,6 +184,17 @@ async function analyseMarket(market, macroContext) {
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
     [key, analyseTimeframe(candles)]
   ));
+
+  // VWAP strategy panel is advisory-only. It cannot promote or veto the primary signal.
+  const vwapReport = evaluateVWAPStrategies({
+    candles: frames.find(frame => frame.key === "M5").candles,
+    M5: results.M5, M15: results.M15, H1: results.H1, market: market.symbol
+  });
+  console.log("\\nFIVE-STRATEGY VWAP PANEL:", JSON.stringify(vwapReport));
+  for (const setup of vwapReport.strategies) {
+    console.log(`VWAP ${setup.name}: ${setup.signal} | ${setup.reason}`);
+  }
+
 
   let goldNewsWindow = null;
   if (market.symbol === "XAUUSD") {
