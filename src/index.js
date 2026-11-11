@@ -9,7 +9,7 @@ import { buildMacroContext } from "./macro.js";
 import { getEconomicCalendar, evaluateEconomicRisk } from "./economic-calendar.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
 import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.js";
-import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
+import { runTradingAgents, gateSignalWithAgents, evaluateAPlusFallback } from "./trading-agents.js";
 import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
@@ -272,6 +272,17 @@ async function analyseMarket(market, macroContext) {
   console.log("LEGACY TECHNICAL CHECK:", legacyDirectionalBias);
   console.log("DIRECTIONAL BIAS (VWAP primary):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
   let candidate = directionalBias;
+  let aPlusFallback = null;
+  if (candidate === "HOLD" && tieredReport && ["BUY", "SELL"].includes(tieredReport.signal)) {
+    aPlusFallback = evaluateAPlusFallback(
+      tieredReport.signal, tieredReport, legacyDirectionalBias, agentReport, macroContext
+    );
+    console.log("A+ INDEPENDENT CONFLUENCE FALLBACK:", JSON.stringify(aPlusFallback));
+    if (aPlusFallback.approved) {
+      candidate = tieredReport.signal;
+      console.log("VWAP SILENT — A+ independent confluence fallback selected:", candidate);
+    }
+  }
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
     console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
   }
@@ -281,7 +292,9 @@ async function analyseMarket(market, macroContext) {
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
     console.log("GOLD MACRO SAFETY GATE: HOLD — verified high-impact event risk is HIGH or the official calendar/news feed is UNKNOWN.");
   }
-  const agentGate = gateSignalWithAgents(candidate, agentReport);
+  const agentGate = aPlusFallback?.approved
+    ? { signal: candidate, ...aPlusFallback }
+    : gateSignalWithAgents(candidate, agentReport);
   console.log("MULTI-AGENT PORTFOLIO DECISION:", agentReport.portfolioManager.decision);
   console.log("MULTI-AGENT CONFIRMATION QUALITY:", JSON.stringify({ tier: agentGate.quality ?? "WEAK", approved: agentGate.approved ?? false, supporting: agentGate.supporting ?? 0, opposing: agentGate.opposing ?? 0, agreementPct: agentGate.agreementPct ?? 0, coreSupport: agentGate.coreSupport ?? 0, higherTimeframe: agentGate.higherTimeframe ?? "UNKNOWN", volatility: agentGate.volatility ?? "UNKNOWN", reasons: agentGate.reasons ?? [] }));
   console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
@@ -315,9 +328,17 @@ async function analyseMarket(market, macroContext) {
     console.log("HARD DATA SAFETY GATE: HOLD — stale candle data cannot be overridden by local agents or cloud review.");
   }
 
-  if (llmReport.status === "COMPLETE" && candidate !== "HOLD" && llmReport.decision !== candidate) {
-    console.log("GEMINI SIX-ROLE VETO: HOLD — completed Gemini panel did not confirm the local multi-agent candidate.");
-    candidate = "HOLD";
+  if (llmReport.status === "COMPLETE" && candidate !== "HOLD") {
+    const specialistVeto = (llmReport.agents ?? []).some(agent => agent.veto === true);
+    const supportVotes = candidate === "BUY" ? llmReport.votes?.buy ?? 0 : llmReport.votes?.sell ?? 0;
+    const opposingVotes = candidate === "BUY" ? llmReport.votes?.sell ?? 0 : llmReport.votes?.buy ?? 0;
+    const llmConfirms = aPlusFallback?.approved
+      ? !specialistVeto && supportVotes >= 2 && opposingVotes <= 1
+      : llmReport.decision === candidate;
+    if (!llmConfirms) {
+      console.log("GEMINI SIX-ROLE VETO: HOLD — independent review did not sufficiently confirm the candidate.");
+      candidate = "HOLD";
+    }
   } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
     console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
   }
