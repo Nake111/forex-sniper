@@ -9,6 +9,7 @@ on:
       - "src/publish-dashboard-data.js"
       - "src/download.js"
       - "src/index.js"
+      - "src/btc-live-microstructure.js"
       - "src/second-brain.js"
       - "second-brain.test.js"
       - "src/economic-calendar.js"
@@ -61,7 +62,7 @@ jobs:
           restore-keys: |
             forex-sniper-candles-
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Validate code (diagnostic; do not block market analysis)
         id: validation
         continue-on-error: true
