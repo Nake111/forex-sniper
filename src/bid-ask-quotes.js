@@ -1,21 +1,36 @@
-const OANDA_INSTRUMENTS = Object.freeze({ EURUSD: "EUR_USD", XAUUSD: "XAU_USD" });
+const CAPITAL_MARKETS = Object.freeze({
+  EURUSD: { searchTerm: "EUR/USD", match: market => {
+    const text = [market.instrumentName, market.symbol, market.epic].join(" ").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return text.includes("EURUSD") && market.instrumentType === "CURRENCIES";
+  } },
+  XAUUSD: { searchTerm: "Gold", match: market => {
+    const text = [market.instrumentName, market.symbol, market.epic].join(" ").toUpperCase();
+    return text.includes("GOLD") && market.instrumentType === "COMMODITIES" && (market.expiry === "-" || !market.expiry);
+  } }
+});
 
 function finitePositive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-export function normalizeOandaPrice(instrument, payload, receivedAt = Date.now()) {
-  const market = Object.entries(OANDA_INSTRUMENTS).find(([, value]) => value === instrument)?.[0];
-  if (!market || !payload || payload.instrument !== instrument) return null;
-  const bid = finitePositive(payload.bids?.[0]?.price);
-  const ask = finitePositive(payload.asks?.[0]?.price);
-  const timestamp = Date.parse(payload.time ?? "");
+export function normalizeCapitalMarket(market, symbol, receivedAt = Date.now()) {
+  if (!market || !["EURUSD", "XAUUSD"].includes(symbol)) return null;
+  const bid = finitePositive(market.bid);
+  const ask = finitePositive(market.offer ?? market.ask);
+  const timestamp = Date.parse(market.updateTimeUTC ?? market.updateTime ?? "");
   if (!bid || !ask || ask <= bid || !Number.isFinite(timestamp)) return null;
   return {
-    market, symbol: instrument.replace("_", "/"), bid, ask, price: (bid + ask) / 2,
-    timestamp, receivedAt, source: "OANDA pricing API",
-    venue: "OANDA", tradeable: payload.tradeable === true || payload.status === "tradeable",
+    market: symbol,
+    symbol: symbol === "EURUSD" ? "EUR/USD" : "XAU/USD",
+    bid, ask, price: (bid + ask) / 2,
+    timestamp, receivedAt,
+    source: "Capital.com REST market snapshot",
+    venue: "Capital.com",
+    epic: market.epic ?? null,
+    tradeable: market.marketStatus === "TRADEABLE" && Number(market.delayTime ?? 0) === 0,
+    marketStatus: market.marketStatus ?? "UNKNOWN",
+    delayTime: Number(market.delayTime ?? 0),
     timestampQuality: "PROVIDER_TIMESTAMP"
   };
 }
@@ -51,7 +66,7 @@ export function validateBidAskQuote(quote, { now = Date.now(), maxAgeMs = 15_000
   if (providerAgeMs > maxAgeMs || receiveAgeMs > maxAgeMs)
     return { valid: false, reason: "Quote is stale" };
   if (quote.tradeable === false)
-    return { valid: false, reason: "Provider marks instrument as not tradeable" };
+    return { valid: false, reason: "Provider marks instrument as not tradeable or prices delayed" };
   return {
     valid: true, ageMs: Math.max(0, providerAgeMs),
     spread: quote.ask - quote.bid,
@@ -65,41 +80,73 @@ async function fetchJson(url, options = {}, fetchImpl = fetch) {
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 5_000);
   try {
     const response = await fetchImpl(url, {
-      headers: options.headers ?? {}, signal: controller.signal
+      method: options.method ?? "GET",
+      headers: options.headers ?? {},
+      body: options.body,
+      signal: controller.signal
     });
     if (!response.ok) throw new Error("HTTP " + response.status);
-    return await response.json();
+    return { data: await response.json(), headers: response.headers };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function fetchOandaQuotes({ token, accountId, environment = "practice", fetchImpl = fetch, markets = Object.keys(OANDA_INSTRUMENTS) }) {
-  if (!markets.some(market => OANDA_INSTRUMENTS[market])) return { quotes: {}, error: null };
-  if (!token || !accountId) return { quotes: {}, error: "OANDA_API_TOKEN and OANDA_ACCOUNT_ID are not both configured" };
-  const host = environment === "live" ? "https://api-fxtrade.oanda.com" : "https://api-fxpractice.oanda.com";
-  const instruments = markets.map(market => OANDA_INSTRUMENTS[market]).filter(Boolean).join(",");
+async function fetchCapitalComQuotes({
+  apiKey, identifier, apiPassword, environment = "demo", fetchImpl = fetch,
+  markets = ["EURUSD", "XAUUSD"]
+}) {
+  const requested = markets.filter(market => CAPITAL_MARKETS[market]);
+  if (!requested.length) return { quotes: {}, error: null };
+  if (!apiKey || !identifier || !apiPassword) {
+    return { quotes: {}, error: "Capital.com credentials missing: CAPITAL_API_KEY, CAPITAL_IDENTIFIER, CAPITAL_API_PASSWORD" };
+  }
+  const baseUrl = environment === "live"
+    ? "https://api-capital.backend-capital.com"
+    : "https://demo-api-capital.backend-capital.com";
   try {
-    const data = await fetchJson(
-      host + "/v3/accounts/" + encodeURIComponent(accountId) + "/pricing?instruments=" + encodeURIComponent(instruments),
-      { headers: { Authorization: "Bearer " + token, Accept: "application/json" }, timeoutMs: 5_000 },
-      fetchImpl
-    );
+    const session = await fetchJson(baseUrl + "/api/v1/session", {
+      method: "POST",
+      headers: { "X-CAP-API-KEY": apiKey, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ identifier, password: apiPassword, encryptedPassword: false }),
+      timeoutMs: 8_000
+    }, fetchImpl);
+    const cst = session.headers?.get?.("CST");
+    const securityToken = session.headers?.get?.("X-SECURITY-TOKEN");
+    if (!cst || !securityToken) throw new Error("Capital.com session response omitted CST or X-SECURITY-TOKEN");
+    const headers = { CST: cst, "X-SECURITY-TOKEN": securityToken, Accept: "application/json" };
     const quotes = {};
-    for (const price of data.prices ?? []) {
-      const quote = normalizeOandaPrice(price.instrument, price);
-      if (quote) quotes[quote.market] = quote;
+    const errors = [];
+    for (const symbol of requested) {
+      try {
+        const config = CAPITAL_MARKETS[symbol];
+        const search = await fetchJson(
+          baseUrl + "/api/v1/markets?searchTerm=" + encodeURIComponent(config.searchTerm),
+          { headers, timeoutMs: 8_000 }, fetchImpl
+        );
+        const candidates = (search.data.markets ?? []).filter(config.match);
+        const market = candidates.find(item => item.marketStatus === "TRADEABLE") ?? candidates[0];
+        if (!market) {
+          errors.push(symbol + ": Capital.com did not return a matching instrument");
+          continue;
+        }
+        const quote = normalizeCapitalMarket(market, symbol);
+        if (quote) quotes[symbol] = quote;
+        else errors.push(symbol + ": Capital.com instrument had no valid bid/offer or provider timestamp");
+      } catch (error) {
+        errors.push(symbol + ": " + error.message);
+      }
     }
-    return { quotes, error: Object.keys(quotes).length ? null : "OANDA returned no valid EUR/USD or XAU/USD bid/ask prices" };
+    return { quotes, error: errors.length ? errors.join("; ") : null };
   } catch (error) {
-    return { quotes: {}, error: "OANDA pricing request failed: " + error.message };
+    return { quotes: {}, error: "Capital.com session/pricing request failed: " + error.message };
   }
 }
 
 async function fetchKrakenQuote({ fetchImpl = fetch }) {
   try {
-    const data = await fetchJson("https://api.kraken.com/0/public/Ticker?pair=XBTUSD", { timeoutMs: 5_000 }, fetchImpl);
-    const quote = normalizeKrakenTicker(data);
+    const response = await fetchJson("https://api.kraken.com/0/public/Ticker?pair=XBTUSD", { timeoutMs: 5_000 }, fetchImpl);
+    const quote = normalizeKrakenTicker(response.data);
     return { quote, error: quote ? null : "Kraken returned no valid XBT/USD order-book bid/ask" };
   } catch (error) {
     return { quote: null, error: "Kraken ticker request failed: " + error.message };
@@ -107,22 +154,26 @@ async function fetchKrakenQuote({ fetchImpl = fetch }) {
 }
 
 export async function fetchBidAskQuotes({
-  oandaToken = process.env.OANDA_API_TOKEN,
-  oandaAccountId = process.env.OANDA_ACCOUNT_ID,
-  oandaEnvironment = process.env.OANDA_ENVIRONMENT ?? "practice",
+  capitalApiKey = process.env.CAPITAL_API_KEY,
+  capitalIdentifier = process.env.CAPITAL_IDENTIFIER,
+  capitalApiPassword = process.env.CAPITAL_API_PASSWORD,
+  capitalEnvironment = process.env.CAPITAL_ENVIRONMENT ?? "demo",
   fetchImpl = fetch,
   markets = ["EURUSD", "BTCUSD", "XAUUSD"]
 } = {}) {
-  const [oanda, kraken] = await Promise.all([
-    fetchOandaQuotes({ token: oandaToken, accountId: oandaAccountId, environment: oandaEnvironment, fetchImpl, markets }),
+  const [capital, kraken] = await Promise.all([
+    fetchCapitalComQuotes({
+      apiKey: capitalApiKey, identifier: capitalIdentifier, apiPassword: capitalApiPassword,
+      environment: capitalEnvironment, fetchImpl, markets
+    }),
     markets.includes("BTCUSD") ? fetchKrakenQuote({ fetchImpl }) : Promise.resolve({ quote: null, error: null })
   ]);
-  const quotes = { ...oanda.quotes };
+  const quotes = { ...capital.quotes };
   if (kraken.quote) quotes.BTCUSD = kraken.quote;
-  const errors = [oanda.error, kraken.error].filter(Boolean);
+  const errors = [capital.error, kraken.error].filter(Boolean);
   return {
     status: markets.every(market => Boolean(quotes[market])) ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
-    provider: "OANDA + Kraken",
+    provider: "Capital.com + Kraken",
     quotes,
     errors,
     receivedAt: Date.now()
