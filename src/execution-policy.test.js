@@ -8,7 +8,7 @@ function alignedFrames(market = "EURUSD") {
     close: 1.1, atr14: 0.001, atrBaseline: 0.001, adx14: 22,
     regime: "BULL_TREND", macdHistogram: 0.0001, rsi14: 58,
     supertrend: { direction: "BULLISH" }, cci20: 75, roc: { direction: "BULLISH" },
-    lastCandle: { open: 1.099, high: 1.101, low: 1.0988, close: 1.1 },
+    lastCandle: { open: 1.099, high: 1.101, low: 1.098, close: 1.1 },
     structure: { swingLow: 1.097 }, smartMoney: { orderBlocks: [] }
   };
   const other = { regime: "BULL_TREND", macdHistogram: 0.0001, close: 1.1 };
