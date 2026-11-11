@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "../src/decision-layers.js";
+import { runSignalApprovalAgent } from "../src/signal-approval-agent.js";
 
 const frames = {
   M5: { close: 101, ema20: 101, ema50: 100 },
@@ -72,4 +73,40 @@ test("valid paper setup is distinct from executable broker order", () => {
   assert.equal(result.decision, "PAPER SIGNAL APPROVED");
   assert.equal(result.paperApproved, true);
   assert.equal(result.executable, false);
+});
+
+
+test("manual paper signal approval does not require a broker account", () => {
+  const approval = runSignalApprovalAgent({
+    candidate: "BUY",
+    marketReview: { market: "EURUSD", direction: "BUY", approved: true, blockers: [] },
+    plan: {
+      entry: 1.1, stopLoss: 1.099, takeProfit: 1.102,
+      riskRewardValue: 2, entryTriggerConfirmed: true
+    },
+    quoteValidation: { valid: true, spread: 0.0001 },
+    quote: { bid: 1.1000, ask: 1.1001 },
+    entryAtr: 0.001,
+    executionBlockers: []
+  });
+  assert.equal(approval.approved, true);
+  assert.equal(approval.decision, "BUY");
+  assert.equal(approval.approvalType, "PAPER_SIGNAL_APPROVED");
+});
+
+test("manual paper approval still rejects real market-risk blockers", () => {
+  const approval = runSignalApprovalAgent({
+    candidate: "SELL",
+    marketReview: { market: "EURUSD", direction: "SELL", approved: true, blockers: [] },
+    plan: {
+      entry: 1.1, stopLoss: 1.101, takeProfit: 1.098,
+      riskRewardValue: 2, entryTriggerConfirmed: true
+    },
+    quoteValidation: { valid: true, spread: 0.0001 },
+    quote: { bid: 1.0999, ask: 1.1000 },
+    entryAtr: 0.001,
+    executionBlockers: ["High-impact economic calendar event"]
+  });
+  assert.equal(approval.approved, false);
+  assert.ok(approval.blockers.includes("High-impact economic calendar event"));
 });
