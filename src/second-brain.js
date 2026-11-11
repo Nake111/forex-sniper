@@ -34,7 +34,7 @@ function candleTime(candle) {
  */
 export async function updateSecondBrain({
   market, candles = [], signal = "HOLD", plan = null, vwap = {},
-  agents = {}, llm = {}, macro = {}, frames = {}, path = "data/second-brain.jsonl",
+  agents = {}, llm = {}, macro = {}, frames = {}, marketIntelligence = {}, approval = {}, path = "data/second-brain.jsonl",
   now = Date.now()
 }) {
   const records = await readJournal(path);
@@ -101,6 +101,8 @@ export async function updateSecondBrain({
         }))
       },
       llm: { status: llm.status ?? "NOT_CONFIGURED", decision: llm.decision ?? "UNKNOWN" },
+      marketIntelligence: { agent: marketIntelligence.agent ?? "UNAVAILABLE", direction: marketIntelligence.direction ?? null, approved: marketIntelligence.approved === true, blockers: marketIntelligence.blockers ?? [], orderFlow: marketIntelligence.orderFlow ?? null, eventRisk: marketIntelligence.eventRisk ?? null },
+      approval: { agent: approval.agent ?? "UNAVAILABLE", decision: approval.decision ?? "UNKNOWN", approved: approval.approved === true, blockers: approval.blockers ?? [] },
       macro: { eventRisk: macro.eventRisk ?? "UNKNOWN", dataStale: macro.dataStale === true },
       timeframes: timeframeSummary
     });
