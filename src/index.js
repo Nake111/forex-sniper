@@ -20,6 +20,7 @@ import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
+import { scoreCandidate } from "./weighted-score.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -439,6 +440,26 @@ async function analyseMarket(market, macroContext) {
     validation: quoteValidation
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
+  const weightedScore = scoreCandidate({
+    market: market.symbol,
+    direction: directionalCandidate,
+    frames: results,
+    marketReview,
+    quoteValidation,
+    spreadVerified,
+    macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
+    staleTimeframes: staleTimeframes.map(tf => tf.key)
+  });
+  console.log("WEIGHTED VERIFICATION SCORE:", JSON.stringify(weightedScore));
+  // Agents and specialist vote counts are advisory. Restore the discovered
+  // direction only when the weighted evidence passes and all hard safety gates clear.
+  if (weightedScore.status === "ELIGIBLE_FOR_RISK_GATE") {
+    candidate = directionalCandidate;
+    console.log("WEIGHTED ENGINE: candidate advanced to deterministic risk approval.");
+  } else {
+    candidate = "HOLD";
+    console.log("WEIGHTED ENGINE: candidate retained for research but not advanced:", weightedScore.status);
+  }
   const spreadAtrRatio = Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 && Number.isFinite(quoteValidation.spread)
     ? quoteValidation.spread / results.M5.atr14 : null;
   console.log("MARKET SPREAD/ATR CHECK:", JSON.stringify({
@@ -453,7 +474,7 @@ async function analyseMarket(market, macroContext) {
   executionBlockers.push("Execution venue/account is not connected and verified; market-data quotes alone cannot authorize an order");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
   if (!marketReview.approved) executionBlockers.push(...(marketReview.blockers ?? ["Market-intelligence agent rejected the setup"]));
-  const approvalBlockers = executionBlockers.filter(reason => !reason.startsWith("Execution venue/account is not connected"));
+  const approvalBlockers = executionBlockers.filter(reason =>\n    reason.startsWith("Execution venue/account is not connected") ||\n    /calendar|economic|news window|stale|bid\\/ask|spread|BTC 10-second|Coinbase/i.test(reason)\n  );
   const approval = runSignalApprovalAgent({
     candidate, marketReview, plan, quoteValidation, quote: spreadQuote,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
@@ -498,7 +519,7 @@ async function analyseMarket(market, macroContext) {
       macro: macroContext,
       frames: results,
       marketIntelligence: marketReview,
-      decisionLayers: { discovery: discoveryLayer, verification: verificationLayer, execution: executionLayer },
+      decisionLayers: { discovery: discoveryLayer, weightedScore, verification: verificationLayer, execution: executionLayer },
       approval,
       verification
     });
@@ -513,7 +534,7 @@ async function analyseMarket(market, macroContext) {
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
   console.log("LAYER 1 DISCOVERED CANDIDATE:", discoveryLayer.candidate);
-  console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
+  console.log("WEIGHTED SCORE / COVERAGE:", weightedScore.score + "/100", "/", weightedScore.coverage + "%");\n  console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
   console.log("LAYER 3 EXECUTION:", executionLayer.decision, "| broker executable:", executionLayer.executable);
   console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
   console.log("EXECUTION CANDIDATE:", candidate);
