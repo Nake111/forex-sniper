@@ -78,6 +78,8 @@ export function runEntryVerificationAgent({
     decision: approved ? candidate : "NO APPROVED TRADE",
     approved,
     checkedAt: new Date(now).toISOString(),
+    quoteValidationValid: quoteValidation?.valid === true,
+    quoteAgeMs: Number.isFinite(Number(quoteValidation?.ageMs)) ? Number(quoteValidation.ageMs) : null,
     quote: quote ? { bid: quote.bid ?? null, ask: quote.ask ?? null, source: quote.source ?? null, venue: quote.venue ?? null } : null,
     executablePrice,
     spread,
