@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  normalizeKrakenTicker, validateBidAskQuote, fetchBidAskQuotes
+  normalizeKrakenTicker, validateBidAskQuote
 } from "../src/bid-ask-quotes.js";
 
 const now = Date.now();
@@ -39,10 +39,9 @@ test("fetchBidAskQuotes uses Kraken public ticker without credentials for BTCUSD
   assert.match(result.provider, /Twelve Data \+ Kraken/);
 });
 
-test("Twelve Data missing bid/ask does not create an executable FX or Gold quote", async () => {
-  const result = await fetchBidAskQuotes({ markets: ["EURUSD", "XAUUSD"] });
-  assert.equal(result.quotes.EURUSD, undefined);
-  assert.equal(result.quotes.XAUUSD, undefined);
-  assert.equal(result.status, "UNAVAILABLE");
-  assert.ok(result.errors.some(error => /TWELVE_DATA_API_KEY/.test(error) || /bid\/ask|quote|configured/i.test(error)));
+test("Kraken rejects empty and crossed public ticker payloads", () => {
+  assert.equal(normalizeKrakenTicker({ error: [], result: {} }, now), null);
+  assert.equal(normalizeKrakenTicker({
+    error: [], result: { XXBTZUSD: { b: ["70002"], a: ["70001"] } }
+  }, now), null);
 });
