@@ -474,7 +474,10 @@ async function analyseMarket(market, macroContext) {
   executionBlockers.push("Execution venue/account is not connected and verified; market-data quotes alone cannot authorize an order");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
   if (!marketReview.approved) executionBlockers.push(...(marketReview.blockers ?? ["Market-intelligence agent rejected the setup"]));
-  const approvalBlockers = executionBlockers.filter(reason =>\n    reason.startsWith("Execution venue/account is not connected") ||\n    /calendar|economic|news window|stale|bid\\/ask|spread|BTC 10-second|Coinbase/i.test(reason)\n  );
+  const approvalBlockers = executionBlockers.filter(reason =>
+    reason.startsWith("Execution venue/account is not connected") ||
+    /calendar|economic|news window|stale|bid\/ask|spread|BTC 10-second|Coinbase/i.test(reason)
+  );
   const approval = runSignalApprovalAgent({
     candidate, marketReview, plan, quoteValidation, quote: spreadQuote,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
