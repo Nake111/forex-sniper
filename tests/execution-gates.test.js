@@ -26,13 +26,21 @@ test("does not issue a signal when H1 confirmation or risk clearance fails", () 
 });
 
 test("issues BUY or SELL only when every mandatory execution check passes", () => {
-  const checks = { confirmationStatus: "H1 ALIGNED", riskClear: true, spreadVerified: true };
+  const checks = { confirmationStatus: "H1 ALIGNED", riskClear: true, spreadVerified: true, executionVenueVerified: true };
   assert.equal(finalAction("BUY", plan, checks), "BUY");
   assert.equal(finalAction("SELL", plan, checks), "SELL");
 });
 
 test("never promotes HOLD or a missing plan into an order", () => {
-  const checks = { confirmationStatus: "H1 ALIGNED", riskClear: true, spreadVerified: true };
+  const checks = { confirmationStatus: "H1 ALIGNED", riskClear: true, spreadVerified: true, executionVenueVerified: true };
   assert.equal(finalAction("HOLD", plan, checks), "NO TRADE");
   assert.equal(finalAction("BUY", null, checks), "NO TRADE");
+});
+
+
+test("does not authorize a third-party reference quote without venue verification", () => {
+  assert.equal(finalAction("BUY", plan, {
+    confirmationStatus: "H1 ALIGNED", riskClear: true, spreadVerified: true,
+    executionVenueVerified: false
+  }), "NO TRADE");
 });
