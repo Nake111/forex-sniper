@@ -10,7 +10,7 @@ const MARKETS = [
 ];
 const TIMEFRAMES = ["m5", "m15", "h1", "h4"];
 const MARKET_FILTER = process.env.MARKET_FILTER?.toUpperCase();
-const DOWNLOAD_CONCURRENCY = Number(process.env.DOWNLOAD_CONCURRENCY ?? 4);
+const DOWNLOAD_CONCURRENCY = Number(process.env.DOWNLOAD_CONCURRENCY ?? 6);
 if (!Number.isInteger(DOWNLOAD_CONCURRENCY) || DOWNLOAD_CONCURRENCY < 1 || DOWNLOAD_CONCURRENCY > 6) {
   throw new Error("DOWNLOAD_CONCURRENCY must be an integer between 1 and 6");
 }
