@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import {
   fetchBidAskQuotes, normalizeKrakenTicker, validateBidAskQuote
 } from "../src/bid-ask-quotes.js";
+import {
+  fetchBiquoteQuote, normalizeBiquoteTick, validateBiquoteTick
+} from "../src/biquote-quotes.js";
 
 const now = Date.now();
 
@@ -44,4 +47,42 @@ test("Kraken rejects empty and crossed public ticker payloads", () => {
   assert.equal(normalizeKrakenTicker({
     error: [], result: { XXBTZUSD: { b: ["70002"], a: ["70001"] } }
   }, now), null);
+});
+
+test("normalizes fresh Biquote EUR/USD and XAU/USD bid/ask ticks", () => {
+  for (const [symbol, market] of [["EURUSD", "EURUSD"], ["XAUUSD", "XAUUSD"]]) {
+    const quote = normalizeBiquoteTick({
+      symbol, bid: "1.08", ask: "1.0801", mid: "1.08005",
+      timestamp: new Date(now).toISOString(), marketState: "open", stale: false,
+      source: "MetaTrader 5 (Broker 1)"
+    }, now);
+    assert.equal(quote.market, market);
+    assert.equal(validateBiquoteTick(quote, { now }).valid, true);
+  }
+});
+
+test("rejects stale, closed, missing and crossed Biquote quotes", () => {
+  const base = normalizeBiquoteTick({
+    symbol: "EURUSD", bid: 1.08, ask: 1.0801,
+    timestamp: new Date(now).toISOString(), marketState: "open", stale: false
+  }, now);
+  assert.equal(validateBiquoteTick({ ...base, timestamp: now - 20_000 }, { now }).valid, false);
+  assert.equal(validateBiquoteTick({ ...base, marketState: "closed" }, { now }).valid, false);
+  assert.equal(normalizeBiquoteTick({ symbol: "XAUUSD", bid: 1, ask: 1 }, now), null);
+  assert.equal(normalizeBiquoteTick({ symbol: "EURUSD", bid: 1.1, ask: 1.09,
+    timestamp: new Date(now).toISOString(), marketState: "open" }, now), null);
+});
+
+test("fetchBiquoteQuote reads a live-style quote without credentials", async () => {
+  const fetchImpl = async url => ({
+    ok: true,
+    json: async () => ({
+      symbol: url.includes("XAUUSD") ? "XAUUSD" : "EURUSD",
+      bid: "1.08", ask: "1.0801", mid: "1.08005",
+      timestamp: new Date().toISOString(), marketState: "open", stale: false
+    })
+  });
+  const result = await fetchBiquoteQuote("EURUSD", { fetchImpl });
+  assert.equal(result.quote.market, "EURUSD");
+  assert.equal(validateBiquoteTick(result.quote).valid, true);
 });
