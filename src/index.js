@@ -15,6 +15,7 @@ import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
+import { fetchTwelveDataQuotes, validateTwelveDataQuote } from "./twelve-data-quotes.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -140,7 +141,7 @@ ${name} ANALYSIS`);
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
-async function analyseMarket(market, macroContext) {
+async function analyseMarket(market, macroContext, marketQuotes = {}) {
   console.log("\n======================================");
   console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
@@ -412,17 +413,21 @@ async function analyseMarket(market, macroContext) {
   // A strategy candidate is not an executable order. The current data adapters
   // do not provide a verified, timestamped broker bid/ask quote for all three
   // markets, so spreadVerified remains false until a supported quote feed is wired.
-  const spreadQuote = results.M5.spreadQuote ?? null;
-  const spreadVerified = Boolean(spreadQuote &&
-    Number.isFinite(spreadQuote.bid) && Number.isFinite(spreadQuote.ask) &&
-    spreadQuote.bid > 0 && spreadQuote.ask > spreadQuote.bid &&
-    Number.isFinite(spreadQuote.timestamp) &&
-    Date.now() - spreadQuote.timestamp >= 0 &&
-    Date.now() - spreadQuote.timestamp <= 15_000 &&
+  const spreadQuote = marketQuotes[market.symbol] ?? null;
+  const quoteValidation = validateTwelveDataQuote(spreadQuote);
+  const spreadVerified = Boolean(quoteValidation.valid &&
     Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
-    (spreadQuote.ask - spreadQuote.bid) / results.M5.atr14 <=
+    quoteValidation.spread / results.M5.atr14 <=
       (market.symbol === "EURUSD" ? 0.12 : market.symbol === "BTCUSD" ? 0.18 : 0.15));
-  if (!spreadVerified) executionBlockers.push("Fresh validated bid/ask spread unavailable or outside market-specific limit");
+  console.log("TWELVE DATA REFERENCE QUOTE:", JSON.stringify({
+    symbol: spreadQuote?.symbol ?? null, price: spreadQuote?.price ?? null,
+    bid: spreadQuote?.bid ?? null, ask: spreadQuote?.ask ?? null,
+    exchange: spreadQuote?.exchange ?? null, timestamp: spreadQuote?.timestamp ?? null,
+    source: spreadQuote?.source ?? "unavailable", validation: quoteValidation
+  }));
+  if (!spreadVerified) executionBlockers.push("Twelve Data bid/ask unavailable, stale, invalid or outside the market-specific spread/ATR limit");
+  // Third-party reference quotes are not execution-venue quotes and cannot authorize an order.
+  executionBlockers.push("Execution-venue quote is not connected; Twelve Data is reference data only");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
   const riskClear = executionBlockers.length === 0 &&
     !calendarBlocked && !goldMacroBlocked && !macroContext.dataStale &&
@@ -430,7 +435,8 @@ async function analyseMarket(market, macroContext) {
   const action = finalAction(candidate, plan, {
     confirmationStatus: confirmation.status,
     riskClear,
-    spreadVerified
+    spreadVerified,
+    executionVenueVerified: false
   });
   const executionStatus = action === "BUY" || action === "SELL"
     ? "EXECUTABLE SIGNAL — fresh quote, M5 trigger, H1 confirmation and risk gates passed"
@@ -494,6 +500,13 @@ async function main() {
     "| provider:", economicCalendar.provider, "| events:", economicCalendar.count ?? 0,
     "| fetched:", economicCalendar.fetchedAt ?? "never", "| cache hit:", economicCalendar.cacheHit ?? false, "| cache age ms:", economicCalendar.cacheAgeMs ?? "n/a", "| error:", economicCalendar.error ?? "none");
 
+  // One multiplexed Twelve Data session requests reference quotes for all markets.
+  // Missing/stale/bid-ask-less quotes fail closed; this feed is not an execution venue.
+  const quoteFeed = await fetchTwelveDataQuotes();
+  console.log("TWELVE DATA MARKET-DATA STATUS:", JSON.stringify({
+    status: quoteFeed.status, provider: quoteFeed.provider,
+    marketsReceived: Object.keys(quoteFeed.quotes), errors: quoteFeed.errors
+  }));
   // Sequential market execution keeps asynchronous Gemini/news output grouped
   // under the correct instrument in the saved report.
   let failed = false;
@@ -521,7 +534,7 @@ async function main() {
         console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
       }
       if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
-      await analyseMarket(market, context);
+      await analyseMarket(market, context, quoteFeed.quotes);
     } catch (error) {
       failed = true;
       console.error(`\n${market.label} ANALYSIS ERROR:`, error);

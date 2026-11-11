@@ -1,0 +1,29 @@
+name: Market Data Provider Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/twelve-data-quotes.js"
+      - "src/index.js"
+      - "src/trade-plan.js"
+      - "tests/twelve-data-quotes.test.js"
+      - "tests/execution-gates.test.js"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm install
+      - run: npm run check
+      - run: npm test
