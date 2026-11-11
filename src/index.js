@@ -326,6 +326,16 @@ async function analyseMarket(market, macroContext) {
       "|", event.scheduledAt ?? "time unknown",
       "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
   }
+  // Re-check immediately before producing the final signal: agent/news analysis may
+  // take longer than the 150 ms freshness budget after the initial market snapshot.
+  const finalLiveTickGate = await getLiveTickGate(market.symbol);
+  console.log("FINAL LIVE TICK CHECK:", JSON.stringify(finalLiveTickGate));
+  if (!finalLiveTickGate.ok) {
+    candidate = "HOLD";
+    console.log("FINAL LIVE TICK SAFETY GATE: HOLD —", finalLiveTickGate.reason,
+      "| the tick must still be <= 150 ms old at final decision time.");
+  }
+
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
