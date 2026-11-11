@@ -121,7 +121,7 @@ function goldEventRisk(macro, now) {
   const officialUpcoming = officialTimed.filter(event => event.timestamp - now > 30 * 60_000 && event.timestamp - now <= 24 * 60 * 60_000);
   let status = "NORMAL";
   let reason = "No active or imminent high-impact event in the verified release protection window.";
-  if (calendar.status !== "AVAILABLE" || risk.status === "UNKNOWN" || risk.status === "STALE_SOURCE_DATA" || risk.status === "UNKNOWN_TIME_HIGH_IMPACT" || macro.goldMacro?.calendar?.unavailable) {
+  if (calendar.status !== "AVAILABLE" || risk.status === "UNKNOWN" || risk.status === "STALE_SOURCE_DATA" || risk.status === "UNKNOWN_TIME_HIGH_IMPACT") {
     status = "UNKNOWN";
     reason = "Calendar unavailable, stale, or a high-impact event has no verified release time.";
   } else if (highActive.length || officialActive.length) {
@@ -139,6 +139,8 @@ function goldEventRisk(macro, now) {
   }
   return {
     status, reason,
+    secondaryCalendarStatus: macro.goldMacro?.calendar?.unavailable ? "UNAVAILABLE — primary ShowMyTrades calendar still evaluated" : "AVAILABLE",
+    secondaryCalendarWarning: macro.goldMacro?.calendar?.unavailable ?? null,
     activeHighImpactEvents: [
       ...highActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
       ...officialActive.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH" }))
