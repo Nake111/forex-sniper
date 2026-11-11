@@ -1,8 +1,8 @@
 import WebSocket from "ws";
 import { createServer } from "node:http";
 
-const SYMBOL = "BTCUSDT";
-const STREAM_URL = "wss://stream.binance.com:9443/ws/btcusdt@trade";
+const SYMBOL = "BTC-USD";
+const STREAM_URL = "wss://advanced-trade-ws.coinbase.com";
 const BUCKET_MS = 10_000;
 const MAX_CANDLES = 500;
 const PORT = Number(process.env.PORT ?? 8080);
@@ -29,7 +29,7 @@ function validTrade(price, quantity, timestamp) {
 
 function closeCurrent() {
   if (!current) return;
-  const candle = { ...current, closedAt: Date.now(), source: "Binance spot BTCUSDT trades", intervalSeconds: 10 };
+  const candle = { ...current, closedAt: Date.now(), source: "Coinbase spot BTC-USD market trades", intervalSeconds: 10 };
   if (lastClosedBucket !== null && candle.timestamp > lastClosedBucket + BUCKET_MS) {
     candle.gapBefore = true;
     gapCount += Math.max(1, Math.floor((candle.timestamp - lastClosedBucket) / BUCKET_MS) - 1);
@@ -44,10 +44,21 @@ function closeCurrent() {
 function acceptTrade(raw) {
   let payload;
   try { payload = JSON.parse(raw.toString()); } catch { return; }
-  if (payload.e !== "trade" || payload.s !== SYMBOL) return;
-  const price = Number(payload.p);
-  const quantity = Number(payload.q);
-  const timestamp = Number(payload.T);
+  if (payload.channel !== "market_trades" || !Array.isArray(payload.events)) return;
+  for (const event of payload.events) {
+    for (const trade of (event.trades ?? [])) {
+      if (trade.product_id !== SYMBOL) continue;
+      const price = Number(trade.price);
+      const quantity = Number(trade.size);
+      const timestamp = Date.parse(trade.time);
+      processTrade(price, quantity, timestamp);
+    }
+  }
+  return;
+}
+
+function processTrade(price, quantity, timestamp) {
+  
   if (!validTrade(price, quantity, timestamp)) return;
 
   const bucket = Math.floor(timestamp / BUCKET_MS) * BUCKET_MS;
@@ -72,6 +83,11 @@ function connect() {
   socket = new WebSocket(STREAM_URL, { handshakeTimeout: 15_000 });
 
   socket.on("open", () => {
+    socket.send(JSON.stringify({
+      type: "subscribe",
+      product_ids: [SYMBOL],
+      channel: "market_trades"
+    }));
     reconnectAttempt = 0;
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
