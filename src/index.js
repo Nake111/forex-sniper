@@ -445,7 +445,8 @@ async function analyseMarket(market, macroContext) {
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
   const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
-  console.log("A1 HEART — NEW YORK OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
+  console.log("A1 HEART — MULTI-SESSION OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
+  console.log("A1 HEART SESSION STATUS:", (a1Heart.sessions ?? []).map(session => `${session.name}: ${session.status}`).join(" | "));
   const weightedScore = scoreCandidate({
     market: market.symbol,
     direction: directionalCandidate,
