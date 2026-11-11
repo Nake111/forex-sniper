@@ -1,0 +1,94 @@
+const SIDES = new Set(["BUY", "SELL"]);
+const WEIGHTS = Object.freeze({
+  higherTimeframe: 25,
+  m15Momentum: 20,
+  m5Trigger: 20,
+  liquidityStructure: 15,
+  quoteQuality: 10,
+  volatilitySession: 10
+});
+
+const sideOf = frame => frame?.regime === "BULL_TREND" ||
+  (Number.isFinite(frame?.close) && Number.isFinite(frame?.ema20) &&
+   Number.isFinite(frame?.ema50) && frame.close > frame.ema50 && frame.ema20 > frame.ema50)
+  ? "BUY" : frame?.regime === "BEAR_TREND" ||
+  (Number.isFinite(frame?.close) && Number.isFinite(frame?.ema20) &&
+   Number.isFinite(frame?.ema50) && frame.close < frame.ema50 && frame.ema20 < frame.ema50)
+  ? "SELL" : null;
+
+function candleTrigger(frame, side) {
+  const c = frame?.lastCandle;
+  if (!c || ![c.open, c.high, c.low, c.close].every(Number.isFinite) || !(c.high > c.low)) return null;
+  const location = (c.close - c.low) / (c.high - c.low);
+  return side === "BUY" ? c.close > c.open && location >= 0.65
+    : c.close < c.open && location <= 0.35;
+}
+
+function component(name, weight, passed, available, detail) {
+  return { name, weight, status: !available ? "UNAVAILABLE" : passed ? "PASS" : "FAIL", points: available && passed ? weight : 0, detail };
+}
+
+/**
+ * Weighted technical score. Missing inputs never earn points. Hard safety
+ * gates are evaluated separately and cannot be overridden by the score.
+ */
+export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false }) {
+  const side = SIDES.has(direction) ? direction : null;
+  const h1 = sideOf(frames.H1), h4 = sideOf(frames.H4);
+  const htfAvailable = h1 !== null || h4 !== null;
+  const htfPass = [h1, h4].filter(value => value === side).length >= 1 &&
+    ![h1, h4].some(value => value && value !== side);
+  const m15 = frames.M15 ?? {};
+  const momentumAvailable = Number.isFinite(m15.macdHistogram) || Number.isFinite(m15.rsi14);
+  const momentumPass = side === "BUY"
+    ? (Number.isFinite(m15.macdHistogram) && m15.macdHistogram > 0) ||
+      (Number.isFinite(m15.rsi14) && m15.rsi14 >= 52)
+    : side === "SELL"
+      ? (Number.isFinite(m15.macdHistogram) && m15.macdHistogram < 0) ||
+        (Number.isFinite(m15.rsi14) && m15.rsi14 <= 48) : false;
+  const triggerValue = marketReview?.m5?.confirmed;
+  const triggerAvailable = typeof triggerValue === "boolean" || Boolean(frames.M5?.lastCandle);
+  const triggerPass = typeof triggerValue === "boolean" ? triggerValue : candleTrigger(frames.M5, side) === true;
+  const structure = frames.M5?.structure ?? {};
+  const smartMoney = frames.M5?.smartMoney ?? {};
+  const structureAvailable = Boolean(structure.bos || structure.sweep ||
+    (Array.isArray(smartMoney.orderBlocks) && smartMoney.orderBlocks.length) ||
+    (Array.isArray(smartMoney.fairValueGaps) && smartMoney.fairValueGaps.length));
+  const pressure = marketReview?.orderFlow;
+  const liquidityPass = Boolean(structure.sweep || structure.bos ||
+    (pressure && pressure.direction === side && Number(pressure.strength) >= 2) ||
+    (Array.isArray(smartMoney.orderBlocks) && smartMoney.orderBlocks.some(zone =>
+      !zone.invalidated && zone.direction === (side === "BUY" ? "BULLISH" : "BEARISH"))));
+  const quoteAvailable = quoteValidation?.valid === true && Number.isFinite(quoteValidation.spread);
+  const volatilityAvailable = Number.isFinite(frames.M5?.atr14) && frames.M5.atr14 > 0 &&
+    Number.isFinite(frames.M5?.atrBaseline) && frames.M5.atrBaseline > 0;
+  const atrRatio = volatilityAvailable ? frames.M5.atr14 / frames.M5.atrBaseline : null;
+  const volatilityPass = volatilityAvailable && atrRatio <= (market === "BTCUSD" ? 2.6 : market === "XAUUSD" ? 2.2 : 2.1);
+
+  const components = [
+    component("higher_timeframe_trend_and_structure", WEIGHTS.higherTimeframe, htfPass, htfAvailable, { H1: h1 ?? "UNAVAILABLE", H4: h4 ?? "UNAVAILABLE" }),
+    component("M15_momentum", WEIGHTS.m15Momentum, momentumPass, momentumAvailable, { rsi14: m15.rsi14 ?? null, macdHistogram: m15.macdHistogram ?? null }),
+    component("M5_closed_candle_trigger", WEIGHTS.m5Trigger, triggerPass, triggerAvailable, { confirmed: triggerAvailable ? triggerPass : null }),
+    component("liquidity_and_SMC", WEIGHTS.liquidityStructure, liquidityPass, structureAvailable || Boolean(pressure), { bos: structure.bos ?? null, sweep: structure.sweep ?? null, pressure: pressure?.direction ?? "UNAVAILABLE" }),
+    component("quote_and_spread", WEIGHTS.quoteQuality, spreadVerified === true, quoteAvailable, { spread: quoteValidation.spread ?? null, spreadAtr: quoteValidation.spreadAtr ?? null }),
+    component("volatility_and_session", WEIGHTS.volatilitySession, volatilityPass, volatilityAvailable, { atrRatio })
+  ];
+  const score = components.reduce((sum, item) => sum + item.points, 0);
+  const availableWeight = components.filter(item => item.status !== "UNAVAILABLE").reduce((sum, item) => sum + item.weight, 0);
+  const coverage = availableWeight;
+  const hardBlockers = [];
+  if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
+  if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
+  if (!triggerAvailable || !triggerPass) hardBlockers.push("Required closed M5 entry trigger is not confirmed");
+  const status = hardBlockers.length ? "REJECTED"
+    : score >= 75 && coverage >= 70 ? "ELIGIBLE_FOR_RISK_GATE"
+      : score >= 65 && coverage >= 70 ? "WATCHLIST" : "REJECTED";
+  return {
+    market, direction: side ?? "NO SETUP", score, coverage, maxScore: 100,
+    threshold: { eligible: 75, watchlist: 65, minimumCoverage: 70 },
+    components, hardBlockers, status,
+    note: "Weighted score is a research filter, not a probability of winning. Hard risk gates always override it."
+  };
+}
+
+export { WEIGHTS as DECISION_SCORE_WEIGHTS };
