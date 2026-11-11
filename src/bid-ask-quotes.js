@@ -85,7 +85,7 @@ export async function fetchBidAskQuotes({
 
   const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD");
   if (nonCryptoMarkets.length) {
-    const feed = await fetchTwelveDataQuotes();
+    const feed = await fetchTwelveDataQuotes({ markets: nonCryptoMarkets, requireBidAsk: true });
     for (const symbol of nonCryptoMarkets) {
       const quote = feed.quotes?.[symbol];
       const validation = validateBidAskQuote(quote);
@@ -105,7 +105,7 @@ export async function fetchBidAskQuotes({
       quotes.BTCUSD = kraken.quote;
     } else {
       errors.push(kraken.error ?? "Kraken BTC/USD quote failed validation");
-      const fallback = await fetchTwelveDataQuotes();
+      const fallback = await fetchTwelveDataQuotes({ markets: ["BTCUSD"], requireBidAsk: true });
       const quote = fallback.quotes?.BTCUSD;
       const validation = validateBidAskQuote(quote);
       if (validation.valid) {
