@@ -411,8 +411,9 @@ async function analyseMarket(market, macroContext) {
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
   if (plan) executionBlockers.push("Broker bid/ask spread is unavailable; levels are not broker-verified");
   const action = finalAction(candidate, plan);
-  const executionStatus = action === "NO TRADE" ? "NOT APPROVED — levels are indicative only"
-    : "STRATEGY APPROVED — broker spread/execution still unverified";
+  const executionStatus = action === "BUY" || action === "SELL"
+    ? "STRATEGY APPROVED — broker spread/execution still unverified"
+    : "NOT APPROVED — directional candidate or confirmation gates did not pass; levels are indicative only";
 
   try {
     const brain = await updateSecondBrain({
