@@ -472,7 +472,7 @@ export function analyseTimeframe(candles) {
     supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20, stochRsi, psar, donchian: donchian20, obv,
     williamsR: williams, keltner, aroon: aroonData, roc: roc12,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
-    profileVolume: profile.totalVolume, vwap, cvd, squeeze, structure, smartMoney,
+    profileVolume: profile.totalVolume, volumeProfileAvailable: profile.available === true, vwap, cvd, squeeze, structure, smartMoney,
     bullishVotes: bullish.filter(Boolean).length, bearishVotes: bearish.filter(Boolean).length,
     bullishConditions: bullish, bearishConditions: bearish
   };
