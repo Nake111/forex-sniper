@@ -9,6 +9,8 @@ on:
       - "src/publish-dashboard-data.js"
       - "src/download.js"
       - "src/index.js"
+      - "src/twelve-data-quotes.js"
+      - "tests/twelve-data-quotes.test.js"
       - "src/btc-live-microstructure.js"
       - "src/second-brain.js"
       - "second-brain.test.js"
@@ -94,6 +96,7 @@ jobs:
           npm start 2>&1 | tee "reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
       - name: Validate and publish closed candles for the dashboard
