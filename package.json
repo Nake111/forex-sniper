@@ -25,7 +25,8 @@
     "backtest:gold": "MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:gold:holdout": "BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:polymarket": "node src/polymarket-backtest.js",
-    "publish:data": "node src/publish-dashboard-data.js"
+    "publish:data": "node src/publish-dashboard-data.js",
+    "live:btc:10s": "node src/live-feed-10s.js"
   },
   "dependencies": {
     "dukascopy-node": "^1.40.0",
