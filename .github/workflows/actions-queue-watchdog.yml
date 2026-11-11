@@ -1,0 +1,113 @@
+name: Actions Queue Watchdog
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: actions-queue-watchdog
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel stale queued test runs and dispatch one recovery check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const staleAfterMs = 60 * 1000;
+            const dispatchCooldownMs = 15 * 60 * 1000;
+            const targetNames = new Set([
+              "Main Branch Code and Test Check",
+              "Quant Swarm Validation",
+              "Signal Engine Regression Tests",
+              "Market Data Provider Tests"
+            ]);
+
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, per_page: 100
+            });
+
+            const now = Date.now();
+            const stale = data.workflow_runs.filter(run =>
+              targetNames.has(run.name) &&
+              run.status === "queued" &&
+              now - Date.parse(run.created_at) >= staleAfterMs
+            );
+
+            const cancelled = [];
+            for (const run of stale) {
+              const { data: jobsData } = await github.rest.actions.listJobsForWorkflowRun({
+                owner, repo, run_id: run.id, per_page: 100
+              });
+              if (jobsData.jobs.length !== 0) continue;
+
+              await github.rest.actions.cancelWorkflowRun({
+                owner, repo, run_id: run.id
+              });
+              cancelled.push(run);
+              core.info(`Cancelled stale queued run ${run.id} (${run.name})`);
+            }
+
+            if (cancelled.length === 0) {
+              core.info("No stale queued test runs without jobs. No recovery dispatch needed.");
+              return;
+            }
+
+            const latestRuns = await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, per_page: 100
+            });
+            const runs = latestRuns.data.workflow_runs;
+            const checkRuns = runs.filter(run =>
+              run.path === ".github/workflows/check.yml"
+            );
+
+            const recentDispatch = checkRuns
+              .filter(run =>
+                run.event === "workflow_dispatch" &&
+                now - Date.parse(run.created_at) < dispatchCooldownMs
+              )
+              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+
+            if (recentDispatch) {
+              core.info(`Recovery dispatch skipped: 15-minute cooldown active (run ${recentDispatch.id}).`);
+              return;
+            }
+
+            const activeCheck = checkRuns.find(run =>
+              ["queued", "in_progress"].includes(run.status) &&
+              !cancelled.some(old => old.id === run.id)
+            );
+            if (activeCheck) {
+              core.info(`Recovery dispatch skipped: check workflow ${activeCheck.id} is already active.`);
+              return;
+            }
+
+            const ref = cancelled
+              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0]
+              .head_branch || "main";
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: "check.yml",
+              ref
+            });
+
+            core.notice(`Dispatched one recovery code/test workflow on ref: ${ref}`);
+            core.summary
+              .addHeading("Actions queue recovery")
+              .addList([
+                `Cancelled ${cancelled.length} stale queued test run(s) with no jobs.`,
+                `Dispatched one Main Branch Code and Test Check on ${ref}.`,
+                "A 15-minute cooldown prevents repeated recovery dispatches."
+              ])
+              .write();
