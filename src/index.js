@@ -409,7 +409,6 @@ async function analyseMarket(market, macroContext) {
   const confirmation = confirmSignal(directionalCandidate, results.H1);
   const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
-  if (plan) executionBlockers.push("Broker bid/ask spread is unavailable; levels are not broker-verified");
   // A strategy candidate is not an executable order. The current data adapters
   // do not provide a verified, timestamped broker bid/ask quote for all three
   // markets, so spreadVerified remains false until a supported quote feed is wired.
