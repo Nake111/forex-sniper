@@ -32,6 +32,7 @@ jobs:
       - name: Download recent candles for prompt signal analysis
         run: npm run download
         env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           DATA_DAYS_BACK: "30"
           DOWNLOAD_CONCURRENCY: "3"
           DUKASCOPY_BATCH_SIZE: "10"
