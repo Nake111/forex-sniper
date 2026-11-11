@@ -1,3 +1,35 @@
+export async function fetchRealtimeFeedQuotes({
+  url = process.env.REALTIME_FEED_URL,
+  fetchImpl = fetch,
+  markets = ["EURUSD", "BTCUSD", "XAUUSD"],
+  now = Date.now()
+} = {}) {
+  if (!url) return { status: "NOT_CONFIGURED", quotes: {}, errors: [] };
+  try {
+    const base = String(url).replace(/\/+$/, "");
+    const response = await fetchImpl(base + "/quotes", { signal: AbortSignal.timeout(4_000) });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const payload = await response.json();
+    const quotes = {};
+    const errors = [];
+    for (const market of markets) {
+      const quote = payload?.quotes?.[market];
+      if (!quote) { errors.push(market + ": no quote in realtime feed"); continue; }
+      const validation = market === "BTCUSD"
+        ? validateBidAskQuote(quote, { now, maxAgeMs: 15_000 })
+        : validateBiquoteTick(quote, { now, maxAgeMs: 15_000 });
+      if (!validation.valid) { errors.push(market + ": " + validation.reason); continue; }
+      quotes[market] = { ...quote, source: "Railway continuous realtime feed", realtime: true };
+    }
+    return {
+      status: markets.every(market => quotes[market]) ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
+      quotes, errors, provider: "Railway continuous feed", receivedAt: Date.now()
+    };
+  } catch (error) {
+    return { status: "UNAVAILABLE", quotes: {}, errors: ["Realtime feed request failed: " + error.message] };
+  }
+}
+
 import { fetchTwelveDataQuotes } from "./twelve-data-quotes.js";
 import { fetchBiquoteQuote, validateBiquoteTick } from "./biquote-quotes.js";
 
@@ -81,10 +113,11 @@ export async function fetchBidAskQuotes({
   const requested = [...new Set(markets)].filter(symbol =>
     ["EURUSD", "BTCUSD", "XAUUSD"].includes(symbol)
   );
-  const quotes = {};
-  const errors = [];
+  const realtime = await fetchRealtimeFeedQuotes({ fetchImpl, markets: requested });
+  const quotes = { ...realtime.quotes };
+  const errors = [...realtime.errors];
 
-  const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD");
+  const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD" && !quotes[symbol]);
   if (nonCryptoMarkets.length) {
     const biquoteResults = await Promise.all(nonCryptoMarkets.map(async symbol => [
       symbol, await fetchBiquoteQuote(symbol, { fetchImpl })
@@ -122,7 +155,7 @@ export async function fetchBidAskQuotes({
     }
   }
 
-  if (requested.includes("BTCUSD")) {
+  if (requested.includes("BTCUSD") && !quotes.BTCUSD) {
     const kraken = await fetchKrakenQuote(fetchImpl);
     if (kraken.quote && validateBidAskQuote(kraken.quote).valid) {
       quotes.BTCUSD = kraken.quote;
