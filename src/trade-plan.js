@@ -2,7 +2,7 @@
 export function tradePlan(signal, result, confirmation) {
   if (
     !["BUY", "SELL"].includes(signal) ||
-    confirmation?.status !== "H1 ALIGNED" ||
+    !["H1 ALIGNED", "ALL FILTERS ALIGNED"].includes(confirmation?.status)" ||
     !Number.isFinite(result?.atr14) ||
     result.atr14 <= 0 ||
     !Number.isFinite(result?.close)
