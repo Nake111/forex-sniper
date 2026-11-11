@@ -5,9 +5,12 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, Btcusd]
     paths:
       - ".github/workflows/btcusd-branch-live.yml"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
 
 permissions:
   contents: write
