@@ -75,20 +75,24 @@ function btcUsdReview(frames) {
   const previousState = squeeze.previousState ?? null;
   const released = squeeze.state === "SQUEEZE_RELEASED" ||
     (previousState === "SQUEEZE_ON" && squeeze.state === "NO_SQUEEZE");
+  const noActiveSqueeze = squeeze.state === "NO_SQUEEZE";
   const momentum = Number(squeeze.momentum);
-  const direction = Number.isFinite(momentum) && momentum > 0 && String(squeeze.direction).startsWith("BULLISH") ? "BUY"
-    : Number.isFinite(momentum) && momentum < 0 && String(squeeze.direction).startsWith("BEARISH") ? "SELL" : null;
+  const squeezeDirection = String(squeeze.direction ?? "");
+  const direction = Number.isFinite(momentum) && momentum > 0 && squeezeDirection === "BULLISH_STRENGTHENING" ? "BUY"
+    : Number.isFinite(momentum) && momentum < 0 && squeezeDirection === "BEARISH_STRENGTHENING" ? "SELL" : null;
+  const h1Trend = trendDirection(H1);
   const pressure = candlePressure(M15);
-  const confirmed = released && direction !== null &&
-    (pressure.direction === direction || pressure.strength < 2);
+  const confirmed = squeeze.state !== "SQUEEZE_ON" && direction !== null &&
+    h1Trend === direction && (pressure.direction === direction || pressure.strength < 2);
   const blockers = [];
   if (squeeze.state === "SQUEEZE_ON") blockers.push("H1 volatility squeeze is still active; wait for a closed-bar release");
-  else if (!released) blockers.push("No confirmed H1 squeeze release transition");
-  if (!direction) blockers.push("H1 squeeze momentum has no directional sign and slope confirmation");
+  if (!released && !noActiveSqueeze) blockers.push("H1 squeeze state is unavailable or not released");
+  if (!direction) blockers.push("H1 squeeze momentum is not strengthening in a clear direction");
+  if (direction && h1Trend !== direction) blockers.push("H1 EMA/regime trend does not agree with squeeze momentum");
   if (direction && pressure.direction !== direction && pressure.strength >= 2) blockers.push("M15 buyer/seller pressure proxy conflicts with H1 release");
   return {
     market: "BTCUSD", direction, approved: confirmed,
-    squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released },
+    squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released, noActiveSqueeze, h1Trend },
     orderFlow: pressure, blockers
   };
 }
