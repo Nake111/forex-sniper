@@ -39,7 +39,7 @@ test("fetchBidAskQuotes uses Kraken public ticker without credentials for BTCUSD
   assert.equal(result.quotes.BTCUSD.bid, 70000);
   assert.equal(result.quotes.BTCUSD.ask, 70001);
   assert.equal(result.status, "COMPLETE");
-  assert.match(result.provider, /Twelve Data \+ Kraken/);
+  assert.match(result.provider, /Biquote \\+ Kraken/);
 });
 
 test("Kraken rejects empty and crossed public ticker payloads", () => {
