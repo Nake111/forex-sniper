@@ -138,7 +138,10 @@ async function pollBiquoteRest() {
     const records = Array.isArray(payload) ? payload
       : Array.isArray(payload?.ticks) ? payload.ticks
       : Array.isArray(payload?.items) ? payload.items
-      : Object.values(payload ?? {});
+      : Object.entries(payload ?? {}).map(([symbol, tick]) => ({
+          ...(tick && typeof tick === "object" ? tick : {}),
+          symbol: tick?.symbol ?? symbol
+        }));
     let accepted = 0;
     for (const record of records) accepted += ingestBiquotePayload(record, "REST");
     biquoteRestConnected = true;
