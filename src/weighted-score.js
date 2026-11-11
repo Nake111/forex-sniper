@@ -78,7 +78,8 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const coverage = availableWeight;
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
-  if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");\n  if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
+  if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");
+  if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
   if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
   if (!triggerAvailable || !triggerPass) hardBlockers.push("Required closed M5 entry trigger is not confirmed");
   const status = hardBlockers.length ? "REJECTED"
