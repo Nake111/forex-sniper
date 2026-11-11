@@ -107,29 +107,47 @@ function goldEventRisk(macro, now) {
     const t = Date.parse(item.date ?? "");
     return Number.isFinite(t) && now - t >= 0 && now - t <= 90 * 60_000;
   });
+  const officialEvents = Array.isArray(macro.goldMacro?.calendar?.events) ? macro.goldMacro.calendar.events : [];
+  const officialTimed = officialEvents.map(event => ({
+    name: event.name,
+    timestamp: Number(event.timestamp ?? Date.parse(event.scheduledAt ?? ""))
+  })).filter(event => Number.isFinite(event.timestamp));
+  const officialActive = officialTimed.filter(event => now >= event.timestamp && now - event.timestamp <= 30 * 60_000);
+  const officialUpcomingLock = officialTimed.filter(event => event.timestamp > now && event.timestamp - now <= 30 * 60_000);
+  const officialUpcoming = officialTimed.filter(event => event.timestamp - now > 30 * 60_000 && event.timestamp - now <= 24 * 60 * 60_000);
   let status = "NORMAL";
-  let reason = "No active high-impact event in the verified release protection window.";
-  if (calendar.status !== "AVAILABLE" || risk.status === "UNKNOWN" || risk.status === "STALE_SOURCE_DATA" || risk.status === "UNKNOWN_TIME_HIGH_IMPACT") {
+  let reason = "No active or imminent high-impact event in the verified release protection window.";
+  if (calendar.status !== "AVAILABLE" || risk.status === "UNKNOWN" || risk.status === "STALE_SOURCE_DATA" || risk.status === "UNKNOWN_TIME_HIGH_IMPACT" || macro.goldMacro?.calendar?.unavailable) {
     status = "UNKNOWN";
     reason = "Calendar unavailable, stale, or a high-impact event has no verified release time.";
-  } else if (highActive.length) {
+  } else if (highActive.length || officialActive.length) {
     status = "HIGH";
-    reason = "A high-impact event is inside the active protection window.";
+    reason = "A high-impact release is active or inside its post-release protection window.";
+  } else if (officialUpcomingLock.length) {
+    status = "UPCOMING_HIGH";
+    reason = "A verified high-impact release is approaching within 30 minutes; pre-release entries are locked.";
   } else if (mediumActive.length) {
     status = "MEDIUM";
     reason = "A medium-impact event is inside the active protection window.";
   } else if (recentHeadlineRisk.length) {
     status = "HEADLINE_CAUTION";
-    reason = "Recent high-impact headlines require volatility review; this is not classified as an upcoming scheduled event.";
+    reason = "Recent high-impact headlines require volatility review; no active scheduled event is identified.";
   }
   return {
     status, reason,
-    activeHighImpactEvents: highActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+    activeHighImpactEvents: [
+      ...highActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+      ...officialActive.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH" }))
+    ],
     activeMediumImpactEvents: mediumActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
-    upcomingHighImpactEvents: verifiedUpcomingHigh.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+    upcomingHighImpactEvents: [
+      ...verifiedUpcomingHigh.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+      ...officialUpcomingLock.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH", withinProtectionWindow: true })),
+      ...officialUpcoming.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH", withinProtectionWindow: false }))
+    ],
     recentHighImpactHeadlines: recentHeadlineRisk.map(e => ({ title: e.title, date: e.date })),
-    upcomingEventIsActive: false,
-    blocksNewEntry: status === "HIGH" || status === "MEDIUM" || status === "UNKNOWN"
+    upcomingEventIsActive: officialUpcomingLock.length > 0,
+    blocksNewEntry: ["HIGH", "UPCOMING_HIGH", "MEDIUM", "UNKNOWN"].includes(status)
   };
 }
 
