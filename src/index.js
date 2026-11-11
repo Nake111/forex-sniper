@@ -494,7 +494,7 @@ async function analyseMarket(market, macroContext) {
   const verificationLayer = buildVerificationLayer({
     discovery: discoveryLayer, marketReview, deterministicFallback, agentGate, llmReport,
     staleTimeframes, macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
-    spreadVerified
+    spreadVerified, weightedScore
   });
   console.log("LAYER 2 — INDEPENDENT VERIFICATION:", JSON.stringify(verificationLayer));
   const riskClear = approval.approved && verification.approved && !calendarBlocked && !goldMacroBlocked &&

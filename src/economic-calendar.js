@@ -7,7 +7,7 @@ function parseInstant(event) {
 
 function numericValue(value) {
   if (value === null || value === undefined || value === "") return null;
-  const match = String(value).trim().replace(/,/g, "").match(/^([+-]?\\d+(?:\\.\\d+)?)\\s*([KMBT])?\\s*%?$/i);
+  const match = String(value).trim().replace(/,/g, "").match(/^([+-]?\d+(?:\.\d+)?)\s*([KMBT])?\s*%?$/i);
   if (!match) return null;
   const scale = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 };
   return Number(match[1]) * (scale[(match[2] ?? "").toUpperCase()] ?? 1);

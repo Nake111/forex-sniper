@@ -46,7 +46,7 @@ test("rejects missing or stale quote and an unconfirmed candle trigger", () => {
 
 test("rejects invalid live-side stop/target geometry and insufficient effective reward/risk", () => {
   const result = runEntryVerificationAgent({
-    ...base, plan: { ...base.plan, stopLoss: 1.10001, takeProfit: 1.10003 }
+    ...base, plan: { ...base.plan, stopLoss: 1.10003, takeProfit: 1.10001 }
   });
   assert.equal(result.approved, false);
   assert.ok(result.blockers.some(x => x.includes("correct sides")));
@@ -55,7 +55,8 @@ test("rejects invalid live-side stop/target geometry and insufficient effective 
 
 test("rejects when either independent upstream agent disagrees", () => {
   const result = runEntryVerificationAgent({
-    ...base, marketReview: { approved: false, direction: "SELL" }
+    ...base, marketReview: { approved: false, direction: "SELL" },
+    approval: { approved: false, decision: "SELL" }
   });
   assert.equal(result.approved, false);
   assert.ok(result.blockers.some(x => x.includes("market-intelligence")));

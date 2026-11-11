@@ -20,7 +20,7 @@ export function runEntryVerificationAgent({
   if (!["EURUSD", "BTCUSD", "XAUUSD"].includes(market)) blockers.push("Unsupported market");
   if (!["BUY", "SELL"].includes(candidate)) blockers.push("No BUY/SELL candidate to verify");
   if (!approval?.approved || approval?.decision !== candidate) blockers.push("Independent signal approval agent did not approve this direction");
-  if (!marketReview?.approved || marketReview?.direction !== candidate) blockers.push("Market-intelligence agent did not independently confirm this direction");
+  if (!marketReview?.approved || marketReview?.direction !== candidate) blockers.push("market-intelligence agent did not independently confirm this direction");
   if (dataStale) blockers.push("One or more required candle timeframes are stale");
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Latest bid/ask quote is not valid");
   if (!quote || !finite(quote.bid) || !finite(quote.ask) || Number(quote.bid) <= 0 || Number(quote.ask) <= Number(quote.bid)) {

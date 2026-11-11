@@ -30,7 +30,7 @@ test("optional LLM outage does not veto deterministic verification", () => {
   const discovery = buildDiscoveryLayer({ market: "BTCUSD", candidate: "SELL", frames });
   const verification = buildVerificationLayer({
     discovery,
-    marketReview: { approved: true, blockers: [] },
+    marketReview: { approved: true, blockers: [], trend: { direction: "SELL" }, m5: { confirmed: true } },
     deterministicFallback: { approved: true, reasons: [] },
     agentGate: { approved: true, reasons: [] },
     llmReport: { status: "TIMEOUT" },

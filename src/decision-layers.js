@@ -42,7 +42,8 @@ export function buildVerificationLayer({
   llmReport,
   staleTimeframes = [],
   macroBlocked = false,
-  spreadVerified = null
+  spreadVerified = null,
+  weightedScore = null
 }) {
   const candidate = discovery?.candidate;
   const higherTimeframeDirection = marketReview?.trend?.direction ?? marketReview?.squeeze?.h1Trend ?? marketReview?.direction ?? null;
