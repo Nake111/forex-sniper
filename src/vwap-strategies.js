@@ -138,3 +138,31 @@ export function selectVWAPConsensus(report) {
       : `${signal} confirmed by ${signal === "BUY" ? buys : sells} of five VWAP strategies`
   };
 }
+
+
+/**
+ * The technical engine owns directional discovery. VWAP is an independent
+ * confirmation/veto layer: silence cannot erase a valid candidate, and it
+ * cannot create a trade when the primary engine has no candidate.
+ */
+export function resolvePrimaryDirection(primarySignal, vwapConsensus) {
+  if (!["BUY", "SELL"].includes(primarySignal)) {
+    return { signal: "HOLD", reason: "Primary technical engine did not approve a direction" };
+  }
+  const opposite = primarySignal === "BUY" ? "SELL" : "BUY";
+  const oppositeVotes = opposite === "BUY"
+    ? Number(vwapConsensus?.buys ?? 0)
+    : Number(vwapConsensus?.sells ?? 0);
+  if (vwapConsensus?.signal === opposite && oppositeVotes >= 2) {
+    return {
+      signal: "HOLD",
+      reason: `VWAP independently confirmed the opposing direction (${oppositeVotes} votes)`
+    };
+  }
+  return {
+    signal: primarySignal,
+    reason: vwapConsensus?.signal === primarySignal
+      ? `Primary technical direction confirmed by VWAP (${primarySignal})`
+      : "VWAP did not reach an opposing consensus; primary technical candidate retained"
+  };
+}
