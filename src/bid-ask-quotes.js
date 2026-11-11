@@ -15,7 +15,7 @@ export function normalizeOandaPrice(instrument, payload, receivedAt = Date.now()
   return {
     market, symbol: instrument.replace("_", "/"), bid, ask, price: (bid + ask) / 2,
     timestamp, receivedAt, source: "OANDA pricing API",
-    venue: "OANDA", tradeable: payload.tradeable === true,
+    venue: "OANDA", tradeable: payload.tradeable === true || payload.status === "tradeable",
     timestampQuality: "PROVIDER_TIMESTAMP"
   };
 }
@@ -121,7 +121,7 @@ export async function fetchBidAskQuotes({
   if (kraken.quote) quotes.BTCUSD = kraken.quote;
   const errors = [oanda.error, kraken.error].filter(Boolean);
   return {
-    status: Object.keys(quotes).length === 3 ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
+    status: markets.every(market => Boolean(quotes[market])) ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
     provider: "OANDA + Kraken",
     quotes,
     errors,
