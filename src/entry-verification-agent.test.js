@@ -55,7 +55,8 @@ test("rejects invalid live-side stop/target geometry and insufficient effective 
 
 test("rejects when either independent upstream agent disagrees", () => {
   const result = runEntryVerificationAgent({
-    ...base, marketReview: { approved: false, direction: "SELL" }
+    ...base, marketReview: { approved: false, direction: "SELL" },
+    approval: { approved: false, decision: "SELL" }
   });
   assert.equal(result.approved, false);
   assert.ok(result.blockers.some(x => x.includes("market-intelligence")));
