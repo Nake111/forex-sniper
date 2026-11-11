@@ -127,6 +127,8 @@ function brainSnapshot() {
   return {
     service: "forex-sniper-24x7-brain",
     process: "RUNNING",
+    status: freshMarkets === MARKETS.length ? "ONLINE" : "DEGRADED",
+    statusCheckedAt: Date.now(),
     uptimeSeconds: Math.floor(process.uptime()),
     startedAt,
     heartbeatAt: Date.now(),
@@ -146,7 +148,7 @@ const server = http.createServer((request, response) => {
   response.setHeader("Access-Control-Allow-Origin", "*");
   response.setHeader("Cache-Control", "no-store");
   response.setHeader("content-type", "application/json");
-  if (url.pathname === "/" || url.pathname === "/health" || url.pathname === "/brain") {
+  if (url.pathname === "/" || url.pathname === "/health" || url.pathname === "/brain" || url.pathname === "/status") {
     const snapshot = brainSnapshot();
     response.writeHead(200);
     response.end(JSON.stringify({ ...snapshot, dataStatus: snapshot.coverage.freshMarkets === MARKETS.length ? "ALL_MARKETS_FRESH" : "PARTIAL_OR_STALE" }));
@@ -188,7 +190,7 @@ watchdogTimer = setInterval(() => {
   if (Date.now() - lastHeartbeatLog >= HEARTBEAT_LOG_MS) {
     lastHeartbeatLog = Date.now();
     const snapshot = brainSnapshot();
-    console.log("BRAIN_HEARTBEAT", JSON.stringify({ uptimeSeconds: snapshot.uptimeSeconds, coverage: snapshot.coverage, providers: snapshot.providers, markets: snapshot.markets }));
+    console.log("BRAIN_STATUS", JSON.stringify({ status: snapshot.status, checkedAt: new Date(snapshot.statusCheckedAt).toISOString(), uptimeSeconds: snapshot.uptimeSeconds, coverage: snapshot.coverage, providers: snapshot.providers, markets: snapshot.markets, counters: snapshot.counters }));
   }
 }, WATCHDOG_MS);
 
