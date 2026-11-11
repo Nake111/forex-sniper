@@ -74,10 +74,11 @@ async function fetchJson(url, options = {}, fetchImpl = fetch) {
   }
 }
 
-async function fetchOandaQuotes({ token, accountId, environment = "practice", fetchImpl = fetch }) {
+async function fetchOandaQuotes({ token, accountId, environment = "practice", fetchImpl = fetch, markets = Object.keys(OANDA_INSTRUMENTS) }) {
+  if (!markets.some(market => OANDA_INSTRUMENTS[market])) return { quotes: {}, error: null };
   if (!token || !accountId) return { quotes: {}, error: "OANDA_API_TOKEN and OANDA_ACCOUNT_ID are not both configured" };
   const host = environment === "live" ? "https://api-fxtrade.oanda.com" : "https://api-fxpractice.oanda.com";
-  const instruments = Object.values(OANDA_INSTRUMENTS).join(",");
+  const instruments = markets.map(market => OANDA_INSTRUMENTS[market]).filter(Boolean).join(",");
   try {
     const data = await fetchJson(
       host + "/v3/accounts/" + encodeURIComponent(accountId) + "/pricing?instruments=" + encodeURIComponent(instruments),
@@ -109,11 +110,12 @@ export async function fetchBidAskQuotes({
   oandaToken = process.env.OANDA_API_TOKEN,
   oandaAccountId = process.env.OANDA_ACCOUNT_ID,
   oandaEnvironment = process.env.OANDA_ENVIRONMENT ?? "practice",
-  fetchImpl = fetch
+  fetchImpl = fetch,
+  markets = ["EURUSD", "BTCUSD", "XAUUSD"]
 } = {}) {
   const [oanda, kraken] = await Promise.all([
-    fetchOandaQuotes({ token: oandaToken, accountId: oandaAccountId, environment: oandaEnvironment, fetchImpl }),
-    fetchKrakenQuote({ fetchImpl })
+    fetchOandaQuotes({ token: oandaToken, accountId: oandaAccountId, environment: oandaEnvironment, fetchImpl, markets }),
+    markets.includes("BTCUSD") ? fetchKrakenQuote({ fetchImpl }) : Promise.resolve({ quote: null, error: null })
   ]);
   const quotes = { ...oanda.quotes };
   if (kraken.quote) quotes.BTCUSD = kraken.quote;
