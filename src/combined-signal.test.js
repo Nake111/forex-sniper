@@ -54,3 +54,25 @@ test("SELL continuation accepts a recent M15 BOS without a fresh Donchian breako
   f.donchian.M15.previousChannelLow20 = 65;
   assert.equal(evaluateCombinedSignal(f).signal, "SELL");
 });
+
+test("SELL continuation recognizes a recent internal SMC BOS when swing structure is neutral", () => {
+  const f = fixture("BEARISH");
+  f.results.M15.structure = { bos: "NONE", bosBarsAgo: null };
+  f.results.M15.smartMoney = {
+    swing: { direction: "BULLISH", type: "CHoCH", barsAgo: 28 },
+    internal: { direction: "BEARISH", type: "BOS", barsAgo: 2 }
+  };
+  f.donchian.M15.channelLow20 = 70;
+  f.donchian.M15.previousChannelLow20 = 65;
+  const result = evaluateCombinedSignal(f);
+  assert.equal(result.signal, "SELL");
+  assert.equal(result.blockers.includes("No fresh M15 breakout or structure break"), false);
+});
+
+test("recent BOS age is normalized when supplied as a numeric string", () => {
+  const f = fixture("BEARISH");
+  f.results.M15.structure.bosBarsAgo = "5";
+  f.donchian.M15.channelLow20 = 70;
+  f.donchian.M15.previousChannelLow20 = 65;
+  assert.equal(evaluateCombinedSignal(f).signal, "SELL");
+});
