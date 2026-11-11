@@ -80,3 +80,23 @@ test("Gold retains headline veto when H1 volatility baseline is unavailable", ()
   assert.equal(review.eventRisk.blocksNewEntry, true);
   assert.match(review.eventRisk.reason, /volatility ratio is unavailable/);
 });
+
+
+test("Gold secondary-calendar outage is disclosed but does not veto verified normal primary calendar with low volatility", () => {
+  const frames = {
+    M5: frame("SELL", candle(100, 101, 98, 98.2)),
+    H1: frame("SELL"),
+    M15: frame("SELL")
+  };
+  const macro = {
+    calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [], nextEvents: [] } },
+    goldMacro: { calendar: { unavailable: "Secondary source parser unavailable" } },
+    headlines: [{ title: "Recent headline", date: new Date(Date.now() - 60_000).toISOString() }]
+  };
+  const review = runMarketIntelligenceAgent({
+    market: "XAUUSD", frames, quote: { spread: 0.05 }, macro
+  });
+  assert.equal(review.eventRisk.status, "HEADLINE_CAUTION");
+  assert.equal(review.eventRisk.blocksNewEntry, false);
+  assert.match(review.eventRisk.reason, /primary economic calendar is verified/);
+});
