@@ -498,8 +498,10 @@ async function analyseMarket(market, macroContext) {
   executionBlockers.push("Execution venue/account is not connected and verified; market-data quotes alone cannot authorize an order");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
   if (!marketReview.approved) executionBlockers.push(...(marketReview.blockers ?? ["Market-intelligence agent rejected the setup"]));
+  // Manual paper-signal approval must not depend on a broker account.
+  // Broker connectivity is retained only as a separate execution-status blocker;
+  // calendar, stale-data, spread and live-feed safety blockers still veto approval.
   const approvalBlockers = executionBlockers.filter(reason =>
-    reason.startsWith("Execution venue/account is not connected") ||
     /calendar|economic|news window|stale|bid\/ask|spread|BTC 10-second|Coinbase/i.test(reason)
   );
   const approval = runSignalApprovalAgent({
