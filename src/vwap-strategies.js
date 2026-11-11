@@ -117,3 +117,24 @@ export function evaluateVWAPStrategies({ candles, M5, M15, H1, market = "UNKNOWN
     strategies: [reclaimResult, pullbackResult, meanResult, sweepResult, breakoutResult]
   };
 }
+
+
+/**
+ * VWAP is the primary directional provider. Require at least two independent
+ * strategy confirmations and a two-vote margin; disagreement or thin evidence
+ * returns HOLD. The caller retains all existing data/news/agent safety gates.
+ */
+export function selectVWAPConsensus(report) {
+  const strategies = report?.strategies ?? [];
+  const buys = strategies.filter(item => item.signal === "BUY").length;
+  const sells = strategies.filter(item => item.signal === "SELL").length;
+  const gap = Math.abs(buys - sells);
+  const signal = buys >= 2 && buys - sells >= 2 ? "BUY"
+    : sells >= 2 && sells - buys >= 2 ? "SELL" : "HOLD";
+  return {
+    signal, buys, sells, gap, requiredVotes: 2,
+    reason: signal === "HOLD"
+      ? "VWAP consensus not reached: need at least two strategy confirmations and a two-vote directional margin"
+      : `${signal} confirmed by ${signal === "BUY" ? buys : sells} of five VWAP strategies`
+  };
+}
