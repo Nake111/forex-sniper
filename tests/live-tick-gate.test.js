@@ -11,16 +11,16 @@ const fresh = {
   source: "test-feed"
 };
 
-test("accepts a correctly identified tick within the 500 ms receive-age limit", () => {
+test("accepts a correctly identified tick within the 800 ms receive-age limit", () => {
   const result = evaluateLiveTick(fresh, "EURUSD", now);
   assert.equal(result.ok, true);
   assert.equal(result.ageMs, 100);
-  assert.equal(result.maxAgeMs, 500);
-  assert.equal(LIVE_TICK_MAX_AGE_MS, 500);
+  assert.equal(result.maxAgeMs, 800);
+  assert.equal(LIVE_TICK_MAX_AGE_MS, 800);
 });
 
-test("rejects a tick older than 500 ms", () => {
-  const result = evaluateLiveTick({ ...fresh, receivedAt: now - 501 }, "EURUSD", now);
+test("rejects a tick older than 800 ms", () => {
+  const result = evaluateLiveTick({ ...fresh, receivedAt: now - 801 }, "EURUSD", now);
   assert.equal(result.ok, false);
   assert.equal(result.reason, "LIVE_TICK_STALE");
 });
