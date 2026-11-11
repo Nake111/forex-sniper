@@ -50,11 +50,17 @@ export function evaluateDeterministicFallback(direction, market, frames, macro =
     : candle.close < candle.open && closePosition <= 0.40);
   if (!candleAligned) reasons.push("M5 trigger candle is not confirmed in the candidate direction");
 
+  const spread = Number.isFinite(M5.spread) ? M5.spread
+    : Number.isFinite(M5.lastCandle?.spread) ? M5.lastCandle.spread : null;
+  const spreadAtr = spread !== null && Number.isFinite(M5.atr14) && M5.atr14 > 0 ? spread / M5.atr14 : null;
+  if (spreadAtr !== null && spreadAtr > profile.maxSpreadAtr) {
+    blockers.push("Spread/ATR " + spreadAtr.toFixed(3) + " exceeds " + profile.maxSpreadAtr.toFixed(3));
+  }
   const approved = DIRECTIONS.has(direction) && reasons.length === 0 && blockers.length === 0;
   return {
     market, direction, approved, profile,
-    trendVotes, opposingTrendVotes, momentumVotes, atrRatio,
-    spreadStatus: "UNAVAILABLE — broker bid/ask spread is not connected",
+    trendVotes, opposingTrendVotes, momentumVotes, atrRatio, spreadAtr,
+    spreadStatus: spreadAtr === null ? "UNAVAILABLE — broker bid/ask spread is not connected" : "AVAILABLE",
     reasons: [...blockers, ...reasons],
     reason: approved ? "Deterministic fallback passed market-specific trend, momentum, volatility and candle checks"
       : [...blockers, ...reasons].join("; ") || "Deterministic fallback not approved"
