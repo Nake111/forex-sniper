@@ -27,7 +27,7 @@ test("EUR/USD agent requires HTF majority and a confirming M5 close", () => {
 test("BTC/USD agent blocks an active H1 squeeze and accepts directional release", () => {
   const frames = { M5: frame(), M15: frame(), H1: frame() };
   frames.H1.squeeze = { state: "SQUEEZE_ON", momentum: 0.1, direction: "BULLISH_STRENGTHENING" };
-  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, false);
+  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames, quote: { bid: 100, ask: 100.01 } }).approved, false);
   frames.H1.squeeze = { state: "SQUEEZE_RELEASED", momentum: 0.5, direction: "BULLISH_STRENGTHENING" };
   const released = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
   assert.equal(released.approved, true);
