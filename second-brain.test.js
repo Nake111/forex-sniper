@@ -1,0 +1,35 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { updateSecondBrain } from "./src/second-brain.js";
+
+test("Second Brain records an executable signal and resolves its target from later candles", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "sniper-brain-"));
+  const path = join(dir, "ledger.jsonl");
+  try {
+    const first = [{ timestamp: 1000, open: 99, high: 101, low: 98.5, close: 100 }];
+    await updateSecondBrain({ path, market: "EURUSD", signal: "BUY", plan: { entry: 100, stopLoss: 98, takeProfit: 104, riskReward: "1:2" }, candles: first, now: 2000 });
+    const result = await updateSecondBrain({ path, market: "EURUSD", signal: "HOLD", candles: [...first, { timestamp: 5000, open: 100, high: 105, low: 99, close: 104 }], now: 8000 });
+    assert.equal(result.wins, 1);
+    const saved = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
+    assert.equal(saved[0].outcome, "WIN");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("same-candle stop and target touch is marked ambiguous, not a win", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "sniper-brain-"));
+  const path = join(dir, "ledger.jsonl");
+  try {
+    const first = [{ timestamp: 1000, open: 100, high: 101, low: 99, close: 100 }];
+    await updateSecondBrain({ path, market: "BTCUSD", signal: "SELL", plan: { entry: 100, stopLoss: 102, takeProfit: 96, riskReward: "1:2" }, candles: first, now: 2000 });
+    const result = await updateSecondBrain({ path, market: "BTCUSD", signal: "HOLD", candles: [...first, { timestamp: 5000, open: 100, high: 103, low: 95, close: 99 }], now: 8000 });
+    assert.equal(result.ambiguous, 1);
+    assert.equal(result.wins, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
