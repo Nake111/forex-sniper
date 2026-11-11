@@ -76,6 +76,9 @@ async function connectBiquote() {
       counters.biquoteMessages++;
       ingestBiquotePayload(payload, "SignalR");
     });
+    connection.on("ReceiveSubscriptionState", state => {
+      console.log("Biquote subscription state:", JSON.stringify(state));
+    });
     connection.onreconnecting(error => {
       biquoteConnectedAt = null;
       console.warn("Biquote stream reconnecting:", error?.message ?? "connection lost");
@@ -103,6 +106,7 @@ async function connectBiquote() {
 
 function ingestBiquotePayload(payload, source) {
   const records = Array.isArray(payload) ? payload : [payload];
+  let accepted = 0;
   for (const record of records) {
     const quote = normalizeBiquoteStreamTick(record);
     if (!quote) { counters.rejectedTicks++; continue; }
@@ -111,8 +115,10 @@ function ingestBiquotePayload(payload, source) {
       publish(quote.market, { ...quote, source: source === "REST"
         ? "Biquote /api/latest live bid-ask"
         : "Biquote SignalR live tick stream" });
+      accepted++;
     } else counters.rejectedTicks++;
   }
+  return accepted;
 }
 
 // SignalR is the preferred tick transport. The documented batch REST endpoint
@@ -134,13 +140,7 @@ async function pollBiquoteRest() {
       : Array.isArray(payload?.items) ? payload.items
       : Object.values(payload ?? {});
     let accepted = 0;
-    for (const record of records) {
-      const before = quotes[String(record?.symbol ?? "").toUpperCase().replace("/", "")];
-      ingestBiquotePayload(record, "REST");
-      const symbol = String(record?.symbol ?? "").toUpperCase().replace("/", "");
-      if (["EURUSD", "XAUUSD"].includes(symbol) && quotes[symbol] !== before &&
-          quotes[symbol]?.receivedAt === Date.now()) accepted++;
-    }
+    for (const record of records) accepted += ingestBiquotePayload(record, "REST");
     biquoteRestConnected = true;
     lastBiquoteRestAt = Date.now();
     counters.biquoteRestTicks += accepted;
