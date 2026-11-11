@@ -1,0 +1,178 @@
+const DIRECTIONS = new Set(["BUY", "SELL"]);
+const directionOf = value => value === "BULLISH" || value === "BUY" ? "BUY"
+  : value === "BEARISH" || value === "SELL" ? "SELL" : null;
+
+function candlePressure(frame) {
+  const candle = frame?.lastCandle;
+  if (!candle) return { direction: "UNKNOWN", strength: 0, source: "unavailable" };
+  const range = Number(candle.high) - Number(candle.low);
+  if (!(range > 0)) return { direction: "NEUTRAL", strength: 0, source: "closed-candle location" };
+  const closeLocation = (Number(candle.close) - Number(candle.low)) / range;
+  const cvd = frame.cvd?.direction;
+  const obv = frame.obv?.direction;
+  const mfi = Number(frame.mfi14);
+  let buy = 0, sell = 0;
+  if (closeLocation >= 0.65) buy += 1;
+  if (closeLocation <= 0.35) sell += 1;
+  if (cvd === "BUYING") buy += 1;
+  if (cvd === "SELLING") sell += 1;
+  if (obv === "BUYING") buy += 1;
+  if (obv === "SELLING") sell += 1;
+  if (Number.isFinite(mfi) && mfi >= 55) buy += 1;
+  if (Number.isFinite(mfi) && mfi <= 45) sell += 1;
+  return {
+    direction: buy > sell ? "BUY" : sell > buy ? "SELL" : "NEUTRAL",
+    strength: Math.max(buy, sell),
+    buyEvidence: buy,
+    sellEvidence: sell,
+    closeLocation: Number(closeLocation.toFixed(3)),
+    source: "closed-candle location + CVD/OBV/MFI proxies (not exchange-wide executed volume)"
+  };
+}
+
+function trendDirection(frame) {
+  if (!frame) return null;
+  if (frame.regime === "BULL_TREND" || frame.close > frame.ema50 && frame.ema20 > frame.ema50) return "BUY";
+  if (frame.regime === "BEAR_TREND" || frame.close < frame.ema50 && frame.ema20 < frame.ema50) return "SELL";
+  return null;
+}
+
+function eurUsdReview(frames, quote) {
+  const M5 = frames.M5 ?? {}, M15 = frames.M15 ?? {}, H1 = frames.H1 ?? {}, H4 = frames.H4 ?? {};
+  const votes = [trendDirection(H4), trendDirection(H1), trendDirection(M15)].filter(Boolean);
+  const buyVotes = votes.filter(v => v === "BUY").length;
+  const sellVotes = votes.filter(v => v === "SELL").length;
+  const alignedDirection = buyVotes >= 2 ? "BUY" : sellVotes >= 2 ? "SELL" : null;
+  const candle = M5.lastCandle;
+  const range = candle ? candle.high - candle.low : 0;
+  const location = range > 0 ? (candle.close - candle.low) / range : null;
+  const triggerDirection = candle && candle.close > candle.open && location >= 0.65 ? "BUY"
+    : candle && candle.close < candle.open && location <= 0.35 ? "SELL" : null;
+  const pressure = candlePressure(M5);
+  const spreadAtr = Number.isFinite(quote?.spread) && Number.isFinite(M5.atr14) && M5.atr14 > 0
+    ? quote.spread / M5.atr14 : null;
+  const passed = alignedDirection !== null && triggerDirection === alignedDirection &&
+    (pressure.direction === alignedDirection || pressure.strength < 2) &&
+    (spreadAtr === null || spreadAtr <= 0.12);
+  return {
+    market: "EURUSD", direction: passed ? alignedDirection : alignedDirection,
+    approved: passed,
+    trend: { direction: alignedDirection ?? "MIXED", htfBuyVotes: buyVotes, htfSellVotes: sellVotes, frames: { M15: trendDirection(M15), H1: trendDirection(H1), H4: trendDirection(H4) } },
+    m5: { triggerDirection, closeLocation: location, confirmed: triggerDirection !== null && triggerDirection === alignedDirection },
+    orderFlow: pressure, spreadAtr,
+    blockers: [
+      ...(alignedDirection ? [] : ["M15/H1/H4 do not provide a two-frame directional majority"]),
+      ...(triggerDirection === alignedDirection && alignedDirection ? [] : ["M5 closed candle does not confirm the higher-timeframe direction"]),
+      ...(pressure.direction !== alignedDirection && pressure.strength >= 2 ? ["M5 buyer/seller pressure proxy conflicts with trend"] : []),
+      ...(spreadAtr !== null && spreadAtr > 0.12 ? ["EUR/USD spread exceeds 0.12 ATR"] : [])
+    ]
+  };
+}
+
+function btcUsdReview(frames) {
+  const H1 = frames.H1 ?? {}, M15 = frames.M15 ?? {};
+  const squeeze = H1.squeeze ?? {};
+  const previousState = squeeze.previousState ?? null;
+  const released = squeeze.state === "SQUEEZE_RELEASED" ||
+    (previousState === "SQUEEZE_ON" && squeeze.state === "NO_SQUEEZE");
+  const momentum = Number(squeeze.momentum);
+  const direction = Number.isFinite(momentum) && momentum > 0 && String(squeeze.direction).startsWith("BULLISH") ? "BUY"
+    : Number.isFinite(momentum) && momentum < 0 && String(squeeze.direction).startsWith("BEARISH") ? "SELL" : null;
+  const pressure = candlePressure(M15);
+  const confirmed = released && direction !== null &&
+    (pressure.direction === direction || pressure.strength < 2);
+  const blockers = [];
+  if (squeeze.state === "SQUEEZE_ON") blockers.push("H1 volatility squeeze is still active; wait for a closed-bar release");
+  else if (!released) blockers.push("No confirmed H1 squeeze release transition");
+  if (!direction) blockers.push("H1 squeeze momentum has no directional sign and slope confirmation");
+  if (direction && pressure.direction !== direction && pressure.strength >= 2) blockers.push("M15 buyer/seller pressure proxy conflicts with H1 release");
+  return {
+    market: "BTCUSD", direction, approved: confirmed,
+    squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released },
+    orderFlow: pressure, blockers
+  };
+}
+
+function goldEventRisk(macro, now) {
+  const calendar = macro.calendar ?? {};
+  const risk = calendar.risk ?? {};
+  const active = Array.isArray(risk.activeEvents) ? risk.activeEvents : [];
+  const upcoming = Array.isArray(risk.nextEvents) ? risk.nextEvents : [];
+  const highActive = active.filter(e => String(e.impact).toUpperCase() === "HIGH");
+  const mediumActive = active.filter(e => String(e.impact).toUpperCase() === "MEDIUM");
+  const verifiedUpcomingHigh = upcoming.filter(e => String(e.impact).toUpperCase() === "HIGH" &&
+    Number.isFinite(Date.parse(e.scheduledAt ?? "")) && Date.parse(e.scheduledAt) > now);
+  const headlines = Array.isArray(macro.headlines) ? macro.headlines : [];
+  const recentHeadlineRisk = headlines.filter(item => {
+    const t = Date.parse(item.date ?? "");
+    return Number.isFinite(t) && now - t >= 0 && now - t <= 90 * 60_000;
+  });
+  let status = "NORMAL";
+  let reason = "No active high-impact event in the verified release protection window.";
+  if (calendar.status !== "AVAILABLE" || risk.status === "UNKNOWN" || risk.status === "STALE_SOURCE_DATA" || risk.status === "UNKNOWN_TIME_HIGH_IMPACT") {
+    status = "UNKNOWN";
+    reason = "Calendar unavailable, stale, or a high-impact event has no verified release time.";
+  } else if (highActive.length) {
+    status = "HIGH";
+    reason = "A high-impact event is inside the active protection window.";
+  } else if (mediumActive.length) {
+    status = "MEDIUM";
+    reason = "A medium-impact event is inside the active protection window.";
+  } else if (recentHeadlineRisk.length) {
+    status = "HEADLINE_CAUTION";
+    reason = "Recent high-impact headlines require volatility review; this is not classified as an upcoming scheduled event.";
+  }
+  return {
+    status, reason,
+    activeHighImpactEvents: highActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+    activeMediumImpactEvents: mediumActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+    upcomingHighImpactEvents: verifiedUpcomingHigh.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+    recentHighImpactHeadlines: recentHeadlineRisk.map(e => ({ title: e.title, date: e.date })),
+    upcomingEventIsActive: false,
+    blocksNewEntry: status === "HIGH" || status === "MEDIUM" || status === "UNKNOWN"
+  };
+}
+
+function goldReview(frames, macro, now) {
+  const risk = goldEventRisk(macro, now);
+  const H1 = frames.H1 ?? {}, M15 = frames.M15 ?? {}, M5 = frames.M5 ?? {};
+  const h1 = trendDirection(H1), m15 = trendDirection(M15);
+  const candle = M5.lastCandle;
+  const range = candle ? candle.high - candle.low : 0;
+  const loc = range > 0 ? (candle.close - candle.low) / range : null;
+  const trigger = candle && candle.close > candle.open && loc >= 0.65 ? "BUY"
+    : candle && candle.close < candle.open && loc <= 0.35 ? "SELL" : null;
+  const direction = h1 && h1 === m15 ? h1 : null;
+  const pressure = candlePressure(M5);
+  const approved = direction !== null && trigger === direction &&
+    !risk.blocksNewEntry && (pressure.direction === direction || pressure.strength < 2);
+  return {
+    market: "XAUUSD", direction, approved, eventRisk: risk,
+    m5: { triggerDirection: trigger, closeLocation: loc, confirmed: trigger === direction && direction !== null },
+    orderFlow: pressure,
+    blockers: [
+      ...(risk.blocksNewEntry ? [risk.reason] : []),
+      ...(direction ? [] : ["Gold H1 and M15 trend do not align"]),
+      ...(trigger === direction && direction ? [] : ["Gold M5 trigger candle does not confirm H1/M15 direction"]),
+      ...(pressure.direction !== direction && pressure.strength >= 2 ? ["Gold buyer/seller pressure proxy conflicts with trend"] : [])
+    ]
+  };
+}
+
+export function runMarketIntelligenceAgent({ market, frames, macro = {}, quote = null, now = Date.now() }) {
+  if (!frames || !frames.M5 || !frames.H1) return {
+    agent: "MARKET_INTELLIGENCE_AGENT", market, approved: false,
+    direction: null, blockers: ["Required M5/H1 frames are unavailable"]
+  };
+  let review;
+  if (market === "EURUSD") review = eurUsdReview(frames, quote);
+  else if (market === "BTCUSD") review = btcUsdReview(frames);
+  else if (market === "XAUUSD") review = goldReview(frames, macro, now);
+  else review = { market, approved: false, direction: null, blockers: ["Unsupported market"] };
+  return {
+    agent: "MARKET_INTELLIGENCE_AGENT",
+    version: "1.0.0",
+    ...review,
+    note: "Buyer/seller pressure is inferred from available candle and tick-volume proxies. Best bid/ask alone is not full order-book depth or verified executed buy/sell volume."
+  };
+}
