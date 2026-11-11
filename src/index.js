@@ -292,6 +292,7 @@ async function analyseMarket(market, macroContext) {
     console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", reason);
   }
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
+    executionBlockers.push("Scheduled high-impact gold news window");
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
   }
   if (market.symbol === "XAUUSD" && goldMacroBlocked) {
@@ -310,6 +311,10 @@ async function analyseMarket(market, macroContext) {
   console.log("MULTI-AGENT CONFIRMATION QUALITY:", JSON.stringify({ tier: agentGate.quality ?? "WEAK", approved: agentGate.approved ?? false, supporting: agentGate.supporting ?? 0, opposing: agentGate.opposing ?? 0, agreementPct: agentGate.agreementPct ?? 0, coreSupport: agentGate.coreSupport ?? 0, higherTimeframe: agentGate.higherTimeframe ?? "UNKNOWN", volatility: agentGate.volatility ?? "UNKNOWN", reasons: agentGate.reasons ?? [] }));
   console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
   candidate = agentGate.signal;
+  if (deterministicFallback.blockers?.length) {
+    executionBlockers.push(...deterministicFallback.blockers);
+    candidate = "HOLD";
+  }
   if (candidate === "HOLD" && deterministicFallback.approved && executionBlockers.length === 0) {
     candidate = directionalCandidate;
     console.log("DETERMINISTIC FALLBACK: APPROVED — cloud agent availability and strict panel agreement are not required.");
@@ -318,7 +323,7 @@ async function analyseMarket(market, macroContext) {
     if (!deterministicFallback.approved) executionBlockers.push(...deterministicFallback.reasons);
   }
   console.log("AGENT-REVIEWED EXECUTION CANDIDATE:", candidate);
-  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
+  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale || goldNewsWindow?.blockNewEntries) {
     console.log("EXECUTION CANDIDATE: HOLD — directional bias remains visible, but a mandatory safety gate is not clear.");
     candidate = "HOLD";
   } else {
