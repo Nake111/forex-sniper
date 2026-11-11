@@ -157,3 +157,17 @@ BTC/USD uses Coinbase Exchange BTC-USD ticker WebSocket data. EUR/USD and XAU/US
 The GitHub Actions analysis pipeline remains a separate scheduled worker with a five-minute target cadence. GitHub scheduling can be delayed and is not a tick-by-tick strategy engine. The 24/7 Railway brain supervises the quote feed and reports data readiness; it does not place orders or guarantee a BUY/SELL signal. The reference feeds are not Vantage broker execution prices and no broker order route is connected.
 
 Set `REALTIME_FEED_URL=https://btc-10-second-feed-production.up.railway.app` in the signal workflow. The analysis engine may prefer fresh feed quotes and must reject quotes older than 15 seconds. A service liveness response is not proof of market readiness: check `/brain` and `/ready` before relying on the feed.
+
+## Manual execution mode (user executes)
+
+Forex Sniper is configured for **manual execution by the user**. No broker connection, API trading key, wallet, or automatic order-placement adapter is required or enabled.
+
+- The engine's job is to monitor reference market data, analyse the three markets, verify candidates and publish a paper/research trade plan.
+- When every hard gate passes, the report may publish an approved **BUY** or **SELL** plan with direction, reference entry, stop-loss, take-profit, risk/reward, quote source and timestamp.
+- When any required check fails, data is stale, or independent approval is missing, the final result must remain **NO APPROVED TRADE**. A directional candidate must never be presented as an approved trade.
+- The user independently checks the current price, spread, instrument/contract specification and execution conditions at their chosen platform, then decides whether to place the order.
+- The user's actual fill can differ from the reference entry because of broker pricing, spread, latency, slippage and market movement. The published levels are planning references, not guaranteed fills.
+- No order is sent by Forex Sniper. The system must not imply that a trade was executed or that a broker position exists.
+- Keep all existing signal, quote-freshness, calendar, entry-confirmation and risk gates unchanged. Manual execution is not permission to bypass a rejected signal or force a BUY/SELL.
+
+This is the intended operating mode until the user explicitly requests and separately configures a broker integration.
