@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 const file = process.argv[2] ?? "market-snapshot.txt";
 const maxQuoteAgeMs = Number(process.env.MAX_SNAPSHOT_QUOTE_AGE_MS ?? 15000);
 const log = await readFile(file, "utf8");
-const markets = ["EURUSD", "BTCUSD", "XAUUSD"];
+const markets = ["EURUSD", "BTCUSD", "XAUUSD"];\nconst headers = { EURUSD: "EUR/USD SNIPER AI", BTCUSD: "BTC/USD SNIPER AI", XAUUSD: "XAU/USD (Gold) SNIPER AI" };
 const labels = [
   ["AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:", "market"],
   ["AGENT 2 — INDEPENDENT SIGNAL APPROVAL:", "approval"],
