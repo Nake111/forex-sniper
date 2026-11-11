@@ -1,4 +1,3 @@
-const DIRECTIONS = new Set(["BUY", "SELL"]);
 const directionOf = value => value === "BULLISH" || value === "BUY" ? "BUY"
   : value === "BEARISH" || value === "SELL" ? "SELL" : null;
 
@@ -51,9 +50,10 @@ function eurUsdReview(frames, quote) {
   const pressure = candlePressure(M5);
   const spreadAtr = Number.isFinite(quote?.spread) && Number.isFinite(M5.atr14) && M5.atr14 > 0
     ? quote.spread / M5.atr14 : null;
+  const spreadAvailable = spreadAtr !== null && Number.isFinite(spreadAtr);
   const passed = alignedDirection !== null && triggerDirection === alignedDirection &&
     (pressure.direction === alignedDirection || pressure.strength < 2) &&
-    (spreadAtr === null || spreadAtr <= 0.12);
+    spreadAvailable && spreadAtr <= 0.12;
   return {
     market: "EURUSD", direction: passed ? alignedDirection : alignedDirection,
     approved: passed,
@@ -64,7 +64,8 @@ function eurUsdReview(frames, quote) {
       ...(alignedDirection ? [] : ["M15/H1/H4 do not provide a two-frame directional majority"]),
       ...(triggerDirection === alignedDirection && alignedDirection ? [] : ["M5 closed candle does not confirm the higher-timeframe direction"]),
       ...(pressure.direction !== alignedDirection && pressure.strength >= 2 ? ["M5 buyer/seller pressure proxy conflicts with trend"] : []),
-      ...(spreadAtr !== null && spreadAtr > 0.12 ? ["EUR/USD spread exceeds 0.12 ATR"] : [])
+      ...(!spreadAvailable ? ["EUR/USD spread/ATR cannot be verified from a fresh valid bid/ask quote"] : []),
+      ...(spreadAvailable && spreadAtr > 0.12 ? ["EUR/USD spread exceeds 0.12 ATR"] : [])
     ]
   };
 }
@@ -75,24 +76,26 @@ function btcUsdReview(frames) {
   const previousState = squeeze.previousState ?? null;
   const released = squeeze.state === "SQUEEZE_RELEASED" ||
     (previousState === "SQUEEZE_ON" && squeeze.state === "NO_SQUEEZE");
-  const noActiveSqueeze = squeeze.state === "NO_SQUEEZE";
+  const noActiveSqueeze = squeeze.state === "NO_SQUEEZE" && previousState === "NO_SQUEEZE";
+  const squeezeStateKnown = ["SQUEEZE_ON", "SQUEEZE_RELEASED", "NO_SQUEEZE"].includes(squeeze.state);
   const momentum = Number(squeeze.momentum);
   const squeezeDirection = String(squeeze.direction ?? "");
   const direction = Number.isFinite(momentum) && momentum > 0 && squeezeDirection === "BULLISH_STRENGTHENING" ? "BUY"
     : Number.isFinite(momentum) && momentum < 0 && squeezeDirection === "BEARISH_STRENGTHENING" ? "SELL" : null;
   const h1Trend = trendDirection(H1);
   const pressure = candlePressure(M15);
-  const confirmed = squeeze.state !== "SQUEEZE_ON" && direction !== null &&
+  const confirmed = squeezeStateKnown && released && direction !== null &&
     h1Trend === direction && (pressure.direction === direction || pressure.strength < 2);
   const blockers = [];
   if (squeeze.state === "SQUEEZE_ON") blockers.push("H1 volatility squeeze is still active; wait for a closed-bar release");
-  if (!released && !noActiveSqueeze) blockers.push("H1 squeeze state is unavailable or not released");
+  if (!squeezeStateKnown) blockers.push("H1 squeeze state is unavailable; fail-closed until valid H1 squeeze data arrives");
+  else if (!released) blockers.push("H1 squeeze release is not confirmed by the latest closed H1 candle");
   if (!direction) blockers.push("H1 squeeze momentum is not strengthening in a clear direction");
   if (direction && h1Trend !== direction) blockers.push("H1 EMA/regime trend does not agree with squeeze momentum");
   if (direction && pressure.direction !== direction && pressure.strength >= 2) blockers.push("M15 buyer/seller pressure proxy conflicts with H1 release");
   return {
     market: "BTCUSD", direction, approved: confirmed,
-    squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released, noActiveSqueeze, h1Trend },
+    squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, stateKnown: squeezeStateKnown, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released, noActiveSqueeze, h1Trend },
     orderFlow: pressure, blockers
   };
 }
@@ -160,7 +163,19 @@ function goldEventRisk(macro, now) {
 
 function goldReview(frames, macro, now) {
   const risk = goldEventRisk(macro, now);
-  const H1 = frames.H1 ?? {}, M15 = frames.M15 ?? {}, M5 = frames.M5 ?? {};
+  const H1 = frames.H1 ?? {};
+  const atrRatio = Number.isFinite(H1.atr14) && Number.isFinite(H1.atrBaseline) && H1.atrBaseline > 0
+    ? H1.atr14 / H1.atrBaseline : null;
+  const volatilityElevated = atrRatio !== null && atrRatio >= 1.5;
+  if (risk.status === "HEADLINE_CAUTION" && !volatilityElevated) {
+    risk.blocksNewEntry = false;
+    risk.reason = "Recent high-impact headlines are present, but H1 volatility is not elevated (ATR ratio below 1.5); caution is informational, not an automatic veto.";
+  } else if (risk.status === "HEADLINE_CAUTION" && volatilityElevated) {
+    risk.blocksNewEntry = true;
+    risk.reason = "Recent high-impact headlines coincide with elevated H1 volatility (ATR14/baseline " + atrRatio.toFixed(2) + "); risk veto remains active.";
+  }
+  risk.volatility = { h1Atr14: H1.atr14 ?? null, h1AtrBaseline: H1.atrBaseline ?? null, atrRatio, elevated: volatilityElevated, threshold: 1.5 };
+  const M15 = frames.M15 ?? {}, M5 = frames.M5 ?? {};
   const h1 = trendDirection(H1), m15 = trendDirection(M15);
   const candle = M5.lastCandle;
   const range = candle ? candle.high - candle.low : 0;
