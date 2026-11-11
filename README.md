@@ -14,11 +14,18 @@ Safety: this project is analysis-only. It does not connect to Vantage or place l
 
 ## Economic calendar status
 
-The Finance Calendar API integration and FINANCE_CALENDAR_API_KEY dependency have been removed because the provider rejected the configured key with HTTP 401.
+The automated economic calendar uses the public, no-key ShowMyTrades calendar endpoint:
+https://showmytrades.com/api/public/calendar/v1
 
-Forex Factory remains a manual reference only: https://www.forexfactory.com/calendar. The project does not scrape, copy or redistribute its schedule. There is currently no automated structured economic-calendar provider.
+The integration requests EUR and USD high/medium-impact events for a seven-day window. It validates the provider's documented JSON schema, event count, UTC server clock, generated-at freshness, coverage window, each event's Unix/ISO timestamp agreement, currency, impact, status and confidence. The provider documents a 15-minute response cache and recommends polling every 15 minutes; the five-minute signal workflow may therefore receive the same cached calendar several times.
 
-Important safety behavior: with no verified automated calendar, event risk is UNKNOWN and the execution engine keeps new entries blocked (HOLD). Headline news is context only and does not replace a scheduled-event calendar. Do not interpret technical directional bias as permission to trade. A future provider must pass authentication, freshness, coverage, pagination and event-normalization checks before it can clear the calendar gate.
+Only events with an unambiguous schedule (official or sources_agree) are assigned a precise release time. Tentative, conflicting-source or single-source high-impact events have their time treated as unverified; if one is scheduled for today, the affected market remains blocked for the day. Missing, stale, malformed, clock-inconsistent or insufficient-coverage responses remain UNKNOWN and block new entries. A valid zero-event response is accepted only when its clock, count and coverage checks pass.
+
+Market mapping: EUR/USD watches EUR and USD events; BTC/USD and XAU/USD watch USD events. The configured protection window is 15 minutes before and after high-impact releases and 5 minutes before and after medium-impact releases. This is a conservative timing filter, not a forecast of price direction. The feed is an aggregated third-party schedule, not an official government source; unexpected announcements and provider mistakes remain possible.
+
+Credit: [Economic calendar by ShowMyTrades](https://showmytrades.com/tools/economic-calendar). Provider documentation: https://showmytrades.com/docs/api/economic-calendar. Forex Factory remains a manual secondary reference only: https://www.forexfactory.com/calendar; the project does not scrape it.
+
+Headline news remains supplemental and cannot override the calendar gate. A clear calendar window is only one risk check; it does not by itself authorize a BUY/SELL signal or broker order.
 
 ## Multi-agent decision layer
 
@@ -107,7 +114,7 @@ GitHub Actions is polling, not continuous streaming. The five-minute cadence is 
 
 The primary pipeline stops before signal publication when tests fail, any market is missing from the report, the independent agent review is incomplete, a bid/ask quote is stale/invalid, or the closed-candle dashboard snapshot fails validation. The latest output is available under Actions → Forex Sniper Live Candle Refresh → latest run → Artifacts.
 
-**Important current limitation:** there is no verified automated structured economic-calendar provider configured. The engine therefore treats scheduled-event risk as UNKNOWN and blocks new entries. Automation does not bypass that safety gate. No live orders are placed.
+**Economic-calendar safety:** the ShowMyTrades structured feed is now integrated with schema, clock, freshness, coverage and event-confidence checks. If any validation fails, event risk stays UNKNOWN and new entries remain blocked. The provider is third-party and is not an official agency feed; automation does not bypass the fail-closed checks. No live orders are placed.
 
 ## Tests
 
