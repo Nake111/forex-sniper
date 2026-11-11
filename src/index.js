@@ -259,7 +259,7 @@ async function analyseMarket(market, macroContext) {
   console.log("DIRECTIONAL BIAS (technical only):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
   let candidate = directionalBias;
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale || macroContext.liveTickBlocked) {
-    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
+    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.liveTickBlocked ? `Live tick gate: ${macroContext.liveTickGate?.reason ?? "blocked"}` : (macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance.")));
   }
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
