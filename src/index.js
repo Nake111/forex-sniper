@@ -19,6 +19,7 @@ import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
+import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -283,6 +284,8 @@ async function analyseMarket(market, macroContext) {
     }
   }
   const directionalCandidate = candidate;
+  const discoveryLayer = buildDiscoveryLayer({ market: market.symbol, candidate: directionalCandidate, frames: results, source: SIGNAL_PROFILE });
+  console.log("LAYER 1 — SIGNAL DISCOVERY:", JSON.stringify(discoveryLayer));
   const executionBlockers = [];
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
     const reason = macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance.");
@@ -464,8 +467,19 @@ async function analyseMarket(market, macroContext) {
     marketReview, approval, dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0
   });
   console.log("AGENT 3 — INDEPENDENT LIVE ENTRY VERIFICATION:", JSON.stringify(verification));
+  const verificationLayer = buildVerificationLayer({
+    discovery: discoveryLayer, marketReview, deterministicFallback, agentGate, llmReport,
+    staleTimeframes, macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
+    spreadVerified
+  });
+  console.log("LAYER 2 — INDEPENDENT VERIFICATION:", JSON.stringify(verificationLayer));
   const riskClear = approval.approved && verification.approved && !calendarBlocked && !goldMacroBlocked &&
     !macroContext.dataStale && !goldNewsWindow?.blockNewEntries;
+  const executionLayer = buildExecutionLayer({
+    discovery: discoveryLayer, verification: verificationLayer, plan, quote: spreadQuote,
+    quoteValidation, approval, entryVerification: verification, executionVenueConnected: false
+  });
+  console.log("LAYER 3 — EXECUTION APPROVAL:", JSON.stringify(executionLayer));
   // Approved results are paper signals only; no broker execution venue is connected.
   const action = riskClear ? approval.decision : "NO TRADE";
   const executionStatus = action === "BUY" || action === "SELL"
@@ -484,6 +498,7 @@ async function analyseMarket(market, macroContext) {
       macro: macroContext,
       frames: results,
       marketIntelligence: marketReview,
+      decisionLayers: { discovery: discoveryLayer, verification: verificationLayer, execution: executionLayer },
       approval,
       verification
     });
@@ -497,6 +512,9 @@ async function analyseMarket(market, macroContext) {
   console.log("======================================");
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
+  console.log("LAYER 1 DISCOVERED CANDIDATE:", discoveryLayer.candidate);
+  console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
+  console.log("LAYER 3 EXECUTION:", executionLayer.decision, "| broker executable:", executionLayer.executable);
   console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
   console.log("EXECUTION CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
