@@ -106,6 +106,7 @@ function goldEventRisk(macro, now) {
   const mediumActive = active.filter(e => String(e.impact).toUpperCase() === "MEDIUM");
   const verifiedUpcomingHigh = upcoming.filter(e => String(e.impact).toUpperCase() === "HIGH" &&
     Number.isFinite(Date.parse(e.scheduledAt ?? "")) && Date.parse(e.scheduledAt) > now);
+  const primaryUpcomingLock = verifiedUpcomingHigh.filter(e => Date.parse(e.scheduledAt) - now <= 30 * 60_000);
   const headlines = Array.isArray(macro.headlines) ? macro.headlines : [];
   const recentHeadlineRisk = headlines.filter(item => {
     const t = Date.parse(item.date ?? "");
@@ -127,9 +128,9 @@ function goldEventRisk(macro, now) {
   } else if (highActive.length || officialActive.length) {
     status = "HIGH";
     reason = "A high-impact release is active or inside its post-release protection window.";
-  } else if (officialUpcomingLock.length) {
+  } else if (officialUpcomingLock.length || primaryUpcomingLock.length) {
     status = "UPCOMING_HIGH";
-    reason = "A verified high-impact release is approaching within 30 minutes; pre-release entries are locked.";
+    reason = "A verified high-impact release from the primary or secondary calendar is approaching within 30 minutes; pre-release entries are locked.";
   } else if (mediumActive.length) {
     status = "MEDIUM";
     reason = "A medium-impact event is inside the active protection window.";
@@ -147,12 +148,12 @@ function goldEventRisk(macro, now) {
     ],
     activeMediumImpactEvents: mediumActive.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
     upcomingHighImpactEvents: [
-      ...verifiedUpcomingHigh.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact })),
+      ...verifiedUpcomingHigh.map(e => ({ name: e.name, scheduledAt: e.scheduledAt, impact: e.impact, withinProtectionWindow: primaryUpcomingLock.includes(e) })),
       ...officialUpcomingLock.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH", withinProtectionWindow: true })),
       ...officialUpcoming.map(e => ({ name: e.name, scheduledAt: new Date(e.timestamp).toISOString(), impact: "HIGH", withinProtectionWindow: false }))
     ],
     recentHighImpactHeadlines: recentHeadlineRisk.map(e => ({ title: e.title, date: e.date })),
-    upcomingEventIsActive: officialUpcomingLock.length > 0,
+    upcomingEventIsActive: officialUpcomingLock.length > 0 || primaryUpcomingLock.length > 0,
     blocksNewEntry: ["HIGH", "UPCOMING_HIGH", "MEDIUM", "UNKNOWN", "HEADLINE_CAUTION"].includes(status)
   };
 }
