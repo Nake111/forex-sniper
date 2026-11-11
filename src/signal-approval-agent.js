@@ -1,6 +1,6 @@
 export function runSignalApprovalAgent({
   candidate, marketReview, plan, quoteValidation, quote,
-  dataStale = false, executionBlockers = [], now = Date.now()
+  dataStale = false, executionBlockers = [], entryAtr = null, now = Date.now()
 }) {
   const blockers = [...executionBlockers];
   if (!["BUY", "SELL"].includes(candidate)) blockers.push("No directional candidate");
@@ -35,6 +35,8 @@ export function runSignalApprovalAgent({
     bid: quote?.bid ?? null,
     ask: quote?.ask ?? null,
     spread: quoteValidation?.spread ?? null,
+    quoteEntry: Number.isFinite(quoteEntry) ? quoteEntry : null,
+    entryDeviationAtr,
     entry: plan?.entry ?? null,
     stopLoss: plan?.stopLoss ?? null,
     takeProfit: plan?.takeProfit ?? null,
