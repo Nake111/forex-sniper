@@ -174,7 +174,9 @@ function goldReview(frames, macro, now) {
     risk.blocksNewEntry = true;
     const volatilityReason = atrRatio === null
       ? "H1 volatility ratio is unavailable"
-      : "H1 ATR14/baseline is " + atrRatio.toFixed(2) + (volatilityElevated ? " (elevated)" : " (below threshold)");
+      : volatilityElevated
+        ? "elevated H1 volatility (ATR14/baseline " + atrRatio.toFixed(2) + ")"
+        : "H1 ATR14/baseline is " + atrRatio.toFixed(2) + " (below threshold)";
     const calendarReason = risk.secondaryCalendarWarning ? "; secondary calendar is unavailable" : "";
     risk.reason = "Recent high-impact headlines require caution; " + volatilityReason + calendarReason + "; risk veto remains active until both checks are clear.";
   }
