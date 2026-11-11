@@ -18,7 +18,16 @@ export function runSignalApprovalAgent({
   }
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Fresh bid/ask quote is not validated");
   if (!quote || !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask)) blockers.push("Bid/ask quote missing");
-  else if (candidate === "BUY" && plan && quote.ask <= 0 || candidate === "SELL" && plan && quote.bid <= 0) blockers.push("Executable-side quote is invalid");
+  else if ((candidate === "BUY" && plan && quote.ask <= 0) || (candidate === "SELL" && plan && quote.bid <= 0)) blockers.push("Executable-side quote is invalid");
+  const quoteEntry = candidate === "BUY" ? quote?.ask : candidate === "SELL" ? quote?.bid : null;
+  const maxEntryDeviationAtr = marketReview?.market === "BTCUSD" ? 0.25 : 0.2;
+  const entryDeviationAtr = Number.isFinite(quoteEntry) && Number.isFinite(plan?.entry) &&
+    Number.isFinite(entryAtr) && entryAtr > 0
+      ? Math.abs(quoteEntry - plan.entry) / entryAtr : null;
+  if (plan && entryDeviationAtr === null) blockers.push("Cannot verify entry distance against the live bid/ask and ATR");
+  else if (entryDeviationAtr !== null && entryDeviationAtr > maxEntryDeviationAtr) {
+    blockers.push("Current executable-side quote has moved more than " + maxEntryDeviationAtr + " ATR from the planned entry");
+  }
   if (dataStale) blockers.push("One or more required candle timeframes are stale");
   const unique = [...new Set(blockers.filter(Boolean))];
   const approved = unique.length === 0 && marketReview?.approved === true &&
