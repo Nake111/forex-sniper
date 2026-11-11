@@ -217,12 +217,18 @@ export function evaluateEconomicRisk(calendar, market, now = Date.now()) {
     reason: "A relevant high-impact release is listed for today without a verified release time.",
     activeEvents: [], nextEvents: nextEvents.slice(0, 5)
   };
-  if (activeEvents.length) return {
-    status: "HIGH", blocked: true,
-    reason: "Inside the pre/post-release protection window for a relevant high- or medium-impact event.",
-    activeEvents: activeEvents.sort((a, b) => a.timestamp - b.timestamp),
-    nextEvents: nextEvents.slice(0, 5)
-  };
+  if (activeEvents.length) {
+    const highActive = activeEvents.some(event => event.impact === "HIGH");
+    const status = highActive ? "HIGH" : "MEDIUM";
+    return {
+      status, blocked: true,
+      reason: highActive
+        ? "Inside the configured high-impact release protection window."
+        : "Inside the shorter configured medium-impact release caution window.",
+      activeEvents: activeEvents.sort((a, b) => a.timestamp - b.timestamp),
+      nextEvents: nextEvents.slice(0, 5)
+    };
+  }
   return {
     status: "NORMAL", blocked: false,
     reason: "Calendar feed is available; no relevant event is inside the configured protection window.",
