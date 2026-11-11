@@ -22,6 +22,7 @@
     "backtest:holdout:institutional": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=BTCUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=XAUUSD node src/backtest.js",
     "live:btc": "node src/live-feed.js",
     "live:gold": "node src/gold-live-feed.js",
+    "live:feeds": "node src/live-feed.js & node src/gold-live-feed.js & wait",
     "backtest:gold": "MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:gold:holdout": "BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:polymarket": "node src/polymarket-backtest.js",
