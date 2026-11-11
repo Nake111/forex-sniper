@@ -537,7 +537,8 @@ async function analyseMarket(market, macroContext) {
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
   console.log("LAYER 1 DISCOVERED CANDIDATE:", discoveryLayer.candidate);
-  console.log("WEIGHTED SCORE / COVERAGE:", weightedScore.score + "/100", "/", weightedScore.coverage + "%");\n  console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
+  console.log("WEIGHTED SCORE / COVERAGE:", weightedScore.score + "/100", "/", weightedScore.coverage + "%");
+  console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
   console.log("LAYER 3 EXECUTION:", executionLayer.decision, "| broker executable:", executionLayer.executable);
   console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
   console.log("EXECUTION CANDIDATE:", candidate);
