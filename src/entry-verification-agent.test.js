@@ -5,7 +5,7 @@ import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 const base = {
   market: "EURUSD",
   candidate: "BUY",
-  plan: { direction: "BUY", entry: 1.10000, stopLoss: 1.09900, takeProfit: 1.10200, entryTriggerConfirmed: true },
+  plan: { direction: "BUY", entry: 1.10000, stopLoss: 1.09900, takeProfit: 1.10210, entryTriggerConfirmed: true },
   quote: { bid: 1.10000, ask: 1.10002, source: "test", venue: "reference" },
   quoteValidation: { valid: true, ageMs: 100, spread: 0.00002 },
   entryAtr: 0.001,
@@ -65,7 +65,7 @@ test("rejects when either independent upstream agent disagrees", () => {
 test("uses BTC-specific spread and entry deviation limits", () => {
   const result = runEntryVerificationAgent({
     ...base, market: "BTCUSD", candidate: "BUY",
-    plan: { direction: "BUY", entry: 100, stopLoss: 98, takeProfit: 104, entryTriggerConfirmed: true },
+    plan: { direction: "BUY", entry: 100, stopLoss: 98, takeProfit: 105, entryTriggerConfirmed: true },
     quote: { bid: 100, ask: 100.1 }, quoteValidation: { valid: true, ageMs: 100 },
     entryAtr: 1
   });
