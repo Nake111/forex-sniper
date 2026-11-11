@@ -50,6 +50,12 @@ export function tradePlan(signal, result, confirmation) {
     return distance >= result.atr14 * 0.8 && distance <= result.atr14 * 2.5 &&
       (bullish ? stop < entry : stop > entry);
   });
+  const validStops = structureStops.filter(stop => {
+    const distance = Math.abs(entry - stop);
+    return distance >= result.atr14 * settings.minStopAtr &&
+      distance <= result.atr14 * settings.maxStopAtr &&
+      (bullish ? stop < entry : stop > entry);
+  });
   const stopLoss = validStops.length
     ? (bullish ? Math.max(...validStops) : Math.min(...validStops))
     : (bullish ? entry - atrRisk : entry + atrRisk);
@@ -107,12 +113,7 @@ export function buildIndicativeTradePlan(signal, result, market) {
     }
   }
 
-  const validStops = structureStops.filter(stop => {
-    const distance = Math.abs(entry - stop);
-    return distance >= result.atr14 * settings.minStopAtr &&
-      distance <= result.atr14 * settings.maxStopAtr &&
-      (bullish ? stop < entry : stop > entry);
-  });
+
   const stopLoss = validStops.length
     ? (bullish ? Math.max(...validStops) : Math.min(...validStops))
     : (bullish ? entry - result.atr14 * settings.stopAtr : entry + result.atr14 * settings.stopAtr);
