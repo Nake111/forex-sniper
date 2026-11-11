@@ -13,6 +13,7 @@ import { runTradingAgents, gateSignalWithAgents, evaluateAPlusFallback } from ".
 import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
+import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -341,6 +342,25 @@ async function analyseMarket(market, macroContext) {
     }
   } else if (llmReport.status === "TIMEOUT" || llmReport.status === "ERROR") {
     console.log("GEMINI REVIEW:", llmReport.status, "— continuing with the local five-specialist decision; cloud review did not complete within its timeout budget.");
+  }
+
+  // Coinbase 10-second spot tape is a final BTC entry-timing veto only.
+  // It cannot create/promote a signal or replace the validated M5-H4 analysis.
+  if (market.symbol === "BTCUSD") {
+    const micro = await getBtcLiveMicrostructure();
+    console.log("COINBASE BTC 10-SECOND MICROSTRUCTURE:", JSON.stringify({
+      status: micro.status, direction: micro.direction, ageMs: micro.ageMs,
+      netChange: micro.netChange, upCandles: micro.upCandles,
+      downCandles: micro.downCandles, source: micro.source, reason: micro.reason
+    }));
+    if (candidate !== "HOLD" && micro.status !== "LIVE") {
+      console.log("BTC LIVE-FEED SAFETY GATE: HOLD —", micro.reason ?? "10-second feed is not live.");
+      candidate = "HOLD";
+    } else if (candidate !== "HOLD" && micro.direction !== "NEUTRAL" &&
+               micro.direction !== candidate) {
+      console.log("BTC MICROSTRUCTURE VETO: HOLD — 10-second Coinbase tape opposes", candidate);
+      candidate = "HOLD";
+    }
   }
 
   if (tieredReport) console.log("TIERED SETUP:", JSON.stringify(tieredReport));
