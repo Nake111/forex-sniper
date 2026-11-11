@@ -68,6 +68,19 @@ export function buildVerificationLayer({
   ];
   const required = checks.filter(check => !["optional_llm_review", "multi_agent_confluence"].includes(check.name));
   const failed = required.filter(check => check.status === "FAIL" || check.status === "UNAVAILABLE");
+  if (weightedScore) {
+    const hard = [...(weightedScore.hardBlockers ?? []), ...(macroBlocked ? ["Macro/event-risk hard gate is active"] : []), ...(staleTimeframes.length ? ["Stale timeframe data: " + staleTimeframes.join(", ")] : [])];
+    return {
+      layer: 2, name: "INDEPENDENT_VERIFICATION",
+      market: discovery?.market ?? marketReview?.market ?? "UNKNOWN",
+      candidate,
+      status: weightedScore.status === "ELIGIBLE_FOR_RISK_GATE" && hard.length === 0 ? "PASSED" : "REJECTED",
+      score: weightedScore.score, coverage: weightedScore.coverage,
+      components: weightedScore.components, checks,
+      blockers: [...new Set([...hard, ...(weightedScore.status === "WATCHLIST" ? ["Weighted score below 75-point approval threshold"] : [])])],
+      candidatePreserved: true
+    };
+  }
   return {
     layer: 2,
     name: "INDEPENDENT_VERIFICATION",
