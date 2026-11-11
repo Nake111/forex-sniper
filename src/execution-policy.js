@@ -61,7 +61,7 @@ export function evaluateDeterministicFallback(direction, market, frames, macro =
     market, direction, approved, profile,
     trendVotes, opposingTrendVotes, momentumVotes, atrRatio, spreadAtr,
     spreadStatus: spreadAtr === null ? "UNAVAILABLE — broker bid/ask spread is not connected" : "AVAILABLE",
-    reasons: [...blockers, ...reasons],
+    blockers, reasons,
     reason: approved ? "Deterministic fallback passed market-specific trend, momentum, volatility and candle checks"
       : [...blockers, ...reasons].join("; ") || "Deterministic fallback not approved"
   };
