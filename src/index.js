@@ -3,7 +3,7 @@ import { analyseTimeframe } from "./market.js";
 import { tradePlan, finalAction } from "./trade-plan.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { evaluateTieredSignal } from "./tiered-signal.js";
-import { evaluateVWAPStrategies } from "./vwap-strategies.js";
+import { evaluateVWAPStrategies, selectVWAPConsensus } from "./vwap-strategies.js";
 import { getForexNews } from "./news.js";
 import { buildMacroContext } from "./macro.js";
 import { getEconomicCalendar, evaluateEconomicRisk } from "./economic-calendar.js";
@@ -256,9 +256,20 @@ async function analyseMarket(market, macroContext) {
   // Directional bias is technical research only; it cannot authorize an order.
   const directionalContext = { ...macroContext, eventRisk: "NORMAL" };
   const directionalTieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, directionalContext) : null;
-  const directionalBias = directionalTieredReport ? directionalTieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, directionalContext);
+  const legacyDirectionalBias = directionalTieredReport ? directionalTieredReport.signal : evaluateSignal(results, SIGNAL_PROFILE, directionalContext);
+  const vwapDecision = selectVWAPConsensus(vwapReport);
+  // VWAP is now the primary signal provider. The legacy technical engine is an
+  // independent conflict check only; it cannot create a trade without VWAP votes.
+  let directionalBias = vwapDecision.signal;
+  if (directionalBias !== "HOLD" && legacyDirectionalBias !== "HOLD" && legacyDirectionalBias !== directionalBias) {
+    console.log("VWAP / LEGACY ENGINE CONFLICT: HOLD — independent technical engine disagrees.");
+    directionalBias = "HOLD";
+  }
   const tieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, macroContext) : null;
-  console.log("DIRECTIONAL BIAS (technical only):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
+  console.log("PRIMARY SIGNAL PROVIDER: FIVE-STRATEGY VWAP");
+  console.log("VWAP CONSENSUS:", JSON.stringify(vwapDecision));
+  console.log("LEGACY TECHNICAL CHECK:", legacyDirectionalBias);
+  console.log("DIRECTIONAL BIAS (VWAP primary):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
   let candidate = directionalBias;
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
     console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
