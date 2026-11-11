@@ -22,6 +22,7 @@ import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
 import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
+import { evaluateA1Heart } from "./a1-heart.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -443,6 +444,8 @@ async function analyseMarket(market, macroContext) {
     validation: quoteValidation
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
+  const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
+  console.log("A1 HEART — NEW YORK OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
   const weightedScore = scoreCandidate({
     market: market.symbol,
     direction: directionalCandidate,
@@ -451,7 +454,8 @@ async function analyseMarket(market, macroContext) {
     quoteValidation,
     spreadVerified,
     macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
-    staleTimeframes: staleTimeframes.map(tf => tf.key)
+    staleTimeframes: staleTimeframes.map(tf => tf.key),
+    a1Heart
   });
   console.log("WEIGHTED VERIFICATION SCORE:", JSON.stringify(weightedScore));
 
