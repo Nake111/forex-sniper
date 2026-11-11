@@ -45,6 +45,31 @@ The buyer/seller panel uses candle close location, CVD, OBV and MFI as *pressure
 
 An approved BUY/SELL is a **paper research signal only**. The current providers are reference market-data feeds and no verified brokerage account/order route is connected, so the engine never claims that these prices are broker-executable and never places live orders. When gates fail, the final result is NO APPROVED TRADE.
 
+### Signal-engine decision graph
+
+```mermaid
+flowchart TD
+  A[Market feeds and candle history] --> B[Bid/ask freshness and spread validation]
+  A --> C[Technical indicators and market structure]
+  C --> D[Directional candidate and entry SL TP plan]
+  B --> E[Agent 1: market intelligence]
+  C --> E
+  F[Macro calendar and news] --> E
+  E --> G[Buyer/seller pressure proxies]
+  E --> H[Market-specific confirmation]
+  D --> I[Agent 2: independent signal approval]
+  B --> I
+  E --> I
+  H --> I
+  F --> I
+  I --> J{All approval gates pass?}
+  J -->|Yes| K[BUY or SELL paper signal]
+  J -->|No| L[NO APPROVED TRADE + exact blockers]
+  K --> M[Second Brain: persist evidence and outcome]
+  L --> M
+  M --> N[Future calibration and regression tests]
+```
+
 ## Persistent Second Brain
 
 The signal engine records an append-only research journal at `data/second-brain.jsonl`. Each market snapshot stores VWAP strategy votes, deterministic-agent votes, independent LLM review status, event-risk state and M5/M15/H1/H4 context. Executable paper BUY/SELL plans are tracked against later closed M5 candles; target hits are labelled wins, stop hits losses, and same-candle stop/target touches ambiguous rather than guessing the order. It reports observed outcomes, not a promise of future accuracy. The live refresh workflow commits this journal so it survives scheduled runs. No live orders are placed.
