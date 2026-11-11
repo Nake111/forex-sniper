@@ -21,6 +21,7 @@ import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
 import { scoreCandidate } from "./weighted-score.js";
+import { discoverSetups } from "./setup-discovery.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -272,7 +273,9 @@ async function analyseMarket(market, macroContext) {
   console.log("VWAP DIRECTIONAL REVIEW:", directionalReview.reason);
   console.log("TECHNICAL CANDIDATE:", legacyDirectionalBias);
   console.log("DIRECTIONAL BIAS:", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
-  let candidate = directionalBias;
+  const setupDiscovery = discoverSetups(results);
+  console.log("MULTI-PATTERN SETUP DISCOVERY:", JSON.stringify(setupDiscovery));
+  let candidate = directionalBias === "HOLD" ? setupDiscovery.candidate : directionalBias;
   let aPlusFallback = null;
   if (candidate === "HOLD" && tieredReport && ["BUY", "SELL"].includes(tieredReport.signal)) {
     aPlusFallback = evaluateAPlusFallback(
@@ -285,7 +288,7 @@ async function analyseMarket(market, macroContext) {
     }
   }
   const directionalCandidate = candidate;
-  const discoveryLayer = buildDiscoveryLayer({ market: market.symbol, candidate: directionalCandidate, frames: results, source: SIGNAL_PROFILE });
+  const discoveryLayer = buildDiscoveryLayer({ market: market.symbol, candidate: directionalCandidate, frames: results, source: directionalBias === "HOLD" && setupDiscovery.candidate !== "HOLD" ? "multi-pattern-setup-discovery" : SIGNAL_PROFILE });
   console.log("LAYER 1 — SIGNAL DISCOVERY:", JSON.stringify(discoveryLayer));
   const executionBlockers = [];
   if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
