@@ -461,7 +461,9 @@ async function analyseMarket(market, macroContext) {
       agents: agentReport,
       llm: llmReport,
       macro: macroContext,
-      frames: results
+      frames: results,
+      marketIntelligence: marketReview,
+      approval
     });
     console.log("SECOND BRAIN MEMORY:", JSON.stringify(brain));
   } catch (error) {
