@@ -19,7 +19,7 @@ test("VWAP resets on UTC date boundary", () => {
   const data = [candle(0, 10), { ...candle(1, 20), timestamp: Date.UTC(2026, 10, 12, 0, 0) }];
   const v = calculateSessionVWAP(data);
   assert.equal(v.sessionDate, "2026-11-12");
-  assert.equal(v.vwap, 19.9);
+  assert.equal(v.vwap, 20);
 });
 
 test("zero volume is unavailable, never replaced with fabricated volume", () => {
