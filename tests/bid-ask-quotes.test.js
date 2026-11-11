@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  normalizeKrakenTicker, validateBidAskQuote
+  fetchBidAskQuotes, normalizeKrakenTicker, validateBidAskQuote
 } from "../src/bid-ask-quotes.js";
 
 const now = Date.now();
