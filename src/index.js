@@ -451,6 +451,30 @@ async function analyseMarket(market, macroContext) {
     staleTimeframes: staleTimeframes.map(tf => tf.key)
   });
   console.log("WEIGHTED VERIFICATION SCORE:", JSON.stringify(weightedScore));
+
+  // Publish the research candidate as soon as deterministic market scoring is
+  // available. This is deliberately before independent approval agents and
+  // never changes the candidate or relaxes any downstream hard gate.
+  const latestClosedM5 = frames.find(frame => frame.key === "M5").candles.at(-1);
+  const candidateSnapshot = {
+    generatedAt: new Date().toISOString(),
+    market: market.symbol,
+    direction: directionalCandidate,
+    score: weightedScore.score,
+    coverage: weightedScore.coverage,
+    scoreStatus: weightedScore.status,
+    closedM5At: new Date(latestClosedM5.timestamp + 5 * 60 * 1000).toISOString(),
+    m5Close: results.M5.close,
+    bid: spreadQuote?.bid ?? null,
+    ask: spreadQuote?.ask ?? null,
+    quoteSource: spreadQuote?.source ?? "unavailable",
+    quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
+    hardBlockers: weightedScore.hardBlockers ?? [],
+    approvalStatus: "PENDING_INDEPENDENT_VERIFICATION"
+  };
+  console.log("EARLY DIRECTIONAL CANDIDATE — RESEARCH ONLY:", JSON.stringify(candidateSnapshot));
+  console.log("IMPORTANT: this candidate is not an approved trade. Layer 2 and Layer 3 remain mandatory.");
+
   // Agents and specialist vote counts are advisory. Restore the discovered
   // direction only when the weighted evidence passes and all hard safety gates clear.
   if (weightedScore.status === "ELIGIBLE_FOR_RISK_GATE") {

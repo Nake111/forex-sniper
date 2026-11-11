@@ -41,6 +41,12 @@ Each forecaster reports BUY, SELL or HOLD, estimated probability of an upward mo
 
 These agents cannot override stale candle checks, calendar risk, entry validation or portfolio risk controls. A technical HOLD cannot be promoted into a trade.
 
+## Immediate directional candidate output
+
+As soon as closed M5/M15/H1/H4 candle analysis, the reference bid/ask check and deterministic weighted scoring are available, the run prints an **EARLY DIRECTIONAL CANDIDATE — RESEARCH ONLY** snapshot. It includes the market, BUY/SELL/NO SETUP direction, weighted score and evidence coverage, generation time, latest closed M5 timestamp, M5 close, available bid/ask and quote source, quote-validation state, and hard blockers. This output is emitted before the independent signal-approval and entry-verification agents finish, so a user can see the market's current directional hypothesis without waiting for the entire review chain.
+
+The early candidate is immutable research context. A score is not a probability of profit and is not trade approval. Layer 2 must independently pass its verification checks, and Layer 3 must pass entry, quote, spread, event-risk and risk controls. A failed or unavailable hard gate keeps the result **NO APPROVED TRADE**, while the earlier directional candidate remains visible with its exact blockers. The engine must never force a BUY/SELL merely to avoid HOLD, and it must never present indicative entry/SL/TP levels as executable when approval fails.
+
 ## Two-agent decision engine
 
 Every market run now uses two independent local agents connected in sequence:
