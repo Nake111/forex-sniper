@@ -16,6 +16,7 @@ import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
 import { fetchTwelveDataQuotes, validateTwelveDataQuote } from "./twelve-data-quotes.js";
+import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -417,24 +418,37 @@ async function analyseMarket(market, macroContext, marketQuotes = {}) {
   const confirmation = confirmSignal(directionalCandidate, results.H1);
   const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
-  // A strategy candidate is not an executable order. The current data adapters
-  // do not provide a verified, timestamped broker bid/ask quote for all three
-  // markets, so spreadVerified remains false until a supported quote feed is wired.
-  const spreadQuote = marketQuotes[market.symbol] ?? null;
-  const quoteValidation = validateTwelveDataQuote(spreadQuote);
+  // Fetch the active market's bid/ask immediately before final validation so
+  // long-running agent reviews do not age the quote before the execution gate.
+  const bidAskFeed = await fetchBidAskQuotes({ markets: [market.symbol] });
+  const providerQuote = bidAskFeed.quotes[market.symbol] ?? null;
+  const twelveDataQuote = marketQuotes[market.symbol] ?? null;
+  const twelveDataValidation = validateTwelveDataQuote(twelveDataQuote);
+  const spreadQuote = providerQuote ?? (twelveDataValidation.valid ? twelveDataQuote : null);
+  const quoteValidation = providerQuote
+    ? validateBidAskQuote(providerQuote)
+    : validateTwelveDataQuote(spreadQuote);
   const spreadVerified = Boolean(quoteValidation.valid &&
     Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
     quoteValidation.spread / results.M5.atr14 <=
       (market.symbol === "EURUSD" ? 0.12 : market.symbol === "BTCUSD" ? 0.18 : 0.15));
-  console.log("TWELVE DATA REFERENCE QUOTE:", JSON.stringify({
-    symbol: spreadQuote?.symbol ?? null, price: spreadQuote?.price ?? null,
-    bid: spreadQuote?.bid ?? null, ask: spreadQuote?.ask ?? null,
-    exchange: spreadQuote?.exchange ?? null, timestamp: spreadQuote?.timestamp ?? null,
-    source: spreadQuote?.source ?? "unavailable", validation: quoteValidation
+  console.log("BID/ASK PROVIDER STATUS:", JSON.stringify({
+    status: bidAskFeed.status, provider: bidAskFeed.provider,
+    errors: bidAskFeed.errors
   }));
-  if (!spreadVerified) executionBlockers.push("Twelve Data bid/ask unavailable, stale, invalid or outside the market-specific spread/ATR limit");
-  // Third-party reference quotes are not execution-venue quotes and cannot authorize an order.
-  executionBlockers.push("Execution-venue quote is not connected; Twelve Data is reference data only");
+  console.log("BID/ASK MARKET QUOTE:", JSON.stringify({
+    market: market.symbol, symbol: spreadQuote?.symbol ?? null,
+    bid: spreadQuote?.bid ?? null, ask: spreadQuote?.ask ?? null,
+    spread: quoteValidation.spread ?? null,
+    timestamp: spreadQuote?.timestamp ?? null, receivedAt: spreadQuote?.receivedAt ?? null,
+    timestampQuality: spreadQuote?.timestampQuality ?? "PROVIDER_TIMESTAMP",
+    source: spreadQuote?.source ?? "unavailable", venue: spreadQuote?.venue ?? "reference-only",
+    validation: quoteValidation
+  }));
+  if (!spreadVerified) executionBlockers.push("No fresh, valid bid/ask quote within the market-specific spread/ATR limit");
+  // Quote validation is not proof of the user's brokerage account or order route.
+  // Keep finalAction closed until the actual execution venue is explicitly connected.
+  executionBlockers.push("Execution venue/account is not connected and verified; market-data quotes alone cannot authorize an order");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
   const riskClear = executionBlockers.length === 0 &&
     !calendarBlocked && !goldMacroBlocked && !macroContext.dataStale &&
