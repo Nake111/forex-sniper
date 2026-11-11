@@ -18,7 +18,8 @@ test("weighted score admits strong candidate to risk gate, not direct execution"
   const result = scoreCandidate({
     market: "EURUSD", direction: "BUY", frames: bullish,
     marketReview: { m5: { confirmed: true }, orderFlow: { direction: "BUY", strength: 3 } },
-    quoteValidation: { valid: true, spread: 0.0001 }, spreadVerified: true
+    quoteValidation: { valid: true, spread: 0.0001 }, spreadVerified: true,
+    a1Heart: { status: "READY", direction: "BUY" }
   });
   assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
   assert.ok(result.score >= 75);
