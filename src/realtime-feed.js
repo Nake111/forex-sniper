@@ -72,7 +72,13 @@ const server = http.createServer((request, response) => {
     response.end(JSON.stringify({ service: "forex-sniper-realtime-feed", status: healthy ? "LIVE" : "PARTIAL", ready: healthy, cadenceMs: POLL_MS, markets, updatedAt: Date.now() }));
     return;
   }
-  if (url.pathname === "/ready") {\n    const ready = ["EURUSD", "BTCUSD", "XAUUSD"].every(market => marketStatus(market).status === "FRESH");\n    response.writeHead(ready ? 200 : 503, { "content-type": "application/json" });\n    response.end(JSON.stringify({ ready, markets: Object.fromEntries(["EURUSD", "BTCUSD", "XAUUSD"].map(market => [market, marketStatus(market)])) }));\n    return;\n  }\n  if (url.pathname === "/quotes") {
+  if (url.pathname === "/ready") {
+    const ready = ["EURUSD", "BTCUSD", "XAUUSD"].every(market => marketStatus(market).status === "FRESH");
+    response.writeHead(ready ? 200 : 503, { "content-type": "application/json" });
+    response.end(JSON.stringify({ ready, markets: Object.fromEntries(["EURUSD", "BTCUSD", "XAUUSD"].map(market => [market, marketStatus(market)])) }));
+    return;
+  }
+  if (url.pathname === "/quotes") {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ quotes, updatedAt: Date.now(), maxAgeMs: MAX_AGE_MS }));
     return;
