@@ -36,7 +36,7 @@ export function evaluateCombinedSignal({ results, donchian, legacySignal = "HOLD
   add(bullBreak ? "BULLISH" : bearBreak ? "BEARISH" : "NONE", 2, "M15 20-bar Donchian breakout");
 
   const bosDirection = m15.structure?.bos;
-  const bosRecent = finite(m15.structure?.bosBarsAgo) && m15.structure.bosBarsAgo <= 4;
+  const bosRecent = finite(m15.structure?.bosBarsAgo) && m15.structure.bosBarsAgo <= 6;
   add(bosRecent && bosDirection === "BULLISH" ? "BULLISH" : bosRecent && bosDirection === "BEARISH" ? "BEARISH" : "NONE", 2, "M15 market-structure BOS");
   const smc = m15.smartMoney?.swing;
   if (smc && finite(smc.barsAgo) && smc.barsAgo <= 4 && smc.type === "BOS") add(smc.direction, 1, "M15 SMC swing BOS");
