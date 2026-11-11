@@ -15,7 +15,7 @@ import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
-import { fetchTwelveDataQuotes, validateTwelveDataQuote } from "./twelve-data-quotes.js";
+import { validateTwelveDataQuote } from "./twelve-data-quotes.js";
 import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
 
 const WINDOW = 240;
@@ -521,13 +521,11 @@ async function main() {
     "| provider:", economicCalendar.provider, "| events:", economicCalendar.count ?? 0,
     "| fetched:", economicCalendar.fetchedAt ?? "never", "| cache hit:", economicCalendar.cacheHit ?? false, "| cache age ms:", economicCalendar.cacheAgeMs ?? "n/a", "| error:", economicCalendar.error ?? "none");
 
-  // One multiplexed Twelve Data session requests reference quotes for all markets.
-  // Missing/stale/bid-ask-less quotes fail closed; this feed is not an execution venue.
-  const quoteFeed = await fetchTwelveDataQuotes();
-  console.log("TWELVE DATA MARKET-DATA STATUS:", JSON.stringify({
-    status: quoteFeed.status, provider: quoteFeed.provider,
-    marketsReceived: Object.keys(quoteFeed.quotes), errors: quoteFeed.errors
-  }));
+  // Do not open a redundant startup WebSocket: each market fetches its own
+  // fresh bid/ask immediately before its execution gate. Earlier quotes can go
+  // stale while news/agent analysis runs and must never be used to authorize entry.
+  const quoteFeed = { quotes: {} };
+  console.log("TWELVE DATA STARTUP QUOTE:", "SKIPPED — fresh market-specific bid/ask is fetched at the execution gate");
   // Sequential market execution keeps asynchronous Gemini/news output grouped
   // under the correct instrument in the saved report.
   let failed = false;
