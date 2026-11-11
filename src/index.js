@@ -11,6 +11,7 @@ import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.
 import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
 import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
+import { getLiveTickGate } from "./live-tick-gate.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -180,6 +181,15 @@ async function analyseMarket(market, macroContext) {
     console.log("DATA SAFETY GATE: HOLD — stale candle data on", staleTimeframes.map(tf => tf.key).join(", "));
   }
 
+  const liveTickGate = await getLiveTickGate(market.symbol);
+  console.log("LIVE TICK FRESHNESS:", JSON.stringify(liveTickGate),
+    "| required maximum local receive age: 150 ms");
+  if (!liveTickGate.ok) {
+    macroContext = { ...macroContext, liveTickBlocked: true, liveTickGate };
+    console.log("LIVE TICK SAFETY GATE: HOLD —", liveTickGate.reason,
+      "| no BUY/SELL is permitted until a valid tick snapshot is received.");
+  }
+
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
     [key, analyseTimeframe(candles)]
   ));
@@ -248,8 +258,8 @@ async function analyseMarket(market, macroContext) {
   const tieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, macroContext) : null;
   console.log("DIRECTIONAL BIAS (technical only):", directionalBias, "| calendar:", macroContext.eventRisk, "| stale data:", Boolean(macroContext.dataStale));
   let candidate = directionalBias;
-  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
-    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance."));
+  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale || macroContext.liveTickBlocked) {
+    console.log("EXECUTION SAFETY GATE: BLOCKED —", macroContext.eventRisk, "|", macroContext.liveTickBlocked ? `Live tick gate: ${macroContext.liveTickGate?.reason ?? "blocked"}` : (macroContext.calendar?.risk?.reason ?? (macroContext.dataStale ? "Stale candle data." : "No verified event-risk clearance.")));
   }
   if (market.symbol === "XAUUSD" && goldNewsWindow?.blockNewEntries) {
     console.log("GOLD NEWS EVENT GATE: HOLD — scheduled high-impact release window; the candle setup is informational until broker spread and execution conditions can be verified.");
@@ -263,7 +273,7 @@ async function analyseMarket(market, macroContext) {
   console.log("MULTI-AGENT DIRECTIONAL REVIEW:", agentGate.reason);
   candidate = agentGate.signal;
   console.log("AGENT-REVIEWED DIRECTIONAL CANDIDATE:", candidate);
-  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale) {
+  if (calendarBlocked || goldMacroBlocked || macroContext.dataStale || macroContext.liveTickBlocked) {
     console.log("EXECUTION CANDIDATE: HOLD — directional bias is visible, but a mandatory safety gate is not clear.");
     candidate = "HOLD";
   } else {
@@ -286,9 +296,9 @@ async function analyseMarket(market, macroContext) {
   // The eleven local deterministic specialists are the fast primary decision path.
   // Gemini is an additional cloud review with a 5-second budget; only a complete,
   // schema-valid six-role response may veto. Timeout/error falls back to local agents.
-  if (staleTimeframes.length) {
+  if (staleTimeframes.length || macroContext.liveTickBlocked) {
     candidate = "HOLD";
-    console.log("HARD DATA SAFETY GATE: HOLD — stale candle data cannot be overridden by local agents or cloud review.");
+    console.log("HARD DATA SAFETY GATE: HOLD — stale candles or a missing/old live tick cannot be overridden by local agents or cloud review.");
   }
 
   if (llmReport.status === "COMPLETE" && candidate !== "HOLD" && llmReport.decision !== candidate) {
@@ -316,6 +326,16 @@ async function analyseMarket(market, macroContext) {
       "|", event.scheduledAt ?? "time unknown",
       "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
   }
+  // Re-check immediately before producing the final signal: agent/news analysis may
+  // take longer than the 150 ms freshness budget after the initial market snapshot.
+  const finalLiveTickGate = await getLiveTickGate(market.symbol);
+  console.log("FINAL LIVE TICK CHECK:", JSON.stringify(finalLiveTickGate));
+  if (!finalLiveTickGate.ok) {
+    candidate = "HOLD";
+    console.log("FINAL LIVE TICK SAFETY GATE: HOLD —", finalLiveTickGate.reason,
+      "| the tick must still be <= 150 ms old at final decision time.");
+  }
+
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);

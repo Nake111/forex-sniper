@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 
 const SYMBOL = "BTCUSDT";
 const STREAM_URL = "wss://stream.binance.com:9443/ws/btcusdt@kline_1m";
+const TRADE_STREAM_URL = "wss://stream.binance.com:9443/ws/btcusdt@trade";
 const DATA_DIR = "data";
 const MAX_1M_CANDLES = 20_000;
 const RECONNECT_BASE_MS = 1_000;
@@ -17,6 +18,9 @@ const TIMEFRAMES = [
 let candles = [];
 let stopping = false;
 let socket;
+let tradeSocket;
+let tradeReconnectTimer;
+let tradeReconnectAttempt = 0;
 let reconnectAttempt = 0;
 let heartbeatTimer;
 let reconnectTimer;
@@ -136,6 +140,56 @@ function acceptKline(message) {
   }).catch(error => console.error("Persist error:", error.message));
 }
 
+async function persistBtcTradeTick(payload) {
+  const price = Number(payload.p);
+  const timestamp = Number(payload.T);
+  if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(timestamp)) return;
+  const record = {
+    symbol: "BTCUSD",
+    price,
+    timestamp,
+    receivedAt: Date.now(),
+    source: "Binance spot BTCUSDT trade stream (BTC/USD proxy; not broker CFD)"
+  };
+  const directory = "data/live-ticks";
+  await mkdir(directory, { recursive: true });
+  const path = directory + "/BTCUSD.json";
+  const temporary = path + ".tmp";
+  await writeFile(temporary, JSON.stringify(record));
+  await rename(temporary, path);
+  console.log("BTC LIVE TRADE TICK:", JSON.stringify({ ...record, ageAtWriteMs: Date.now() - record.receivedAt }));
+}
+
+function connectTradeStream() {
+  if (stopping) return;
+  console.log("Connecting to Binance BTCUSDT trade stream for live tick snapshots...");
+  tradeSocket = new WebSocket(TRADE_STREAM_URL, { handshakeTimeout: 15_000 });
+  tradeSocket.on("open", () => {
+    tradeReconnectAttempt = 0;
+    clearTimeout(tradeReconnectTimer);
+    tradeReconnectTimer = undefined;
+    console.log("BTC trade stream connected. Tick snapshots are reference spot prices, not broker CFD quotes.");
+  });
+  tradeSocket.on("message", raw => {
+    let payload;
+    try { payload = JSON.parse(raw.toString()); } catch { return; }
+    if (payload.e !== "trade" || payload.s !== SYMBOL) return;
+    void persistBtcTradeTick(payload).catch(error => console.error("BTC tick persistence error:", error.message));
+  });
+  tradeSocket.on("error", error => console.error("BTC trade stream error:", error.message));
+  tradeSocket.on("close", (code, reason) => {
+    if (stopping) return;
+    const delay = Math.min(RECONNECT_BASE_MS * (2 ** tradeReconnectAttempt), RECONNECT_MAX_MS);
+    tradeReconnectAttempt += 1;
+    console.error(`BTC trade stream closed (${code}: ${reason.toString()}). Reconnecting in ${delay}ms.`);
+    clearTimeout(tradeReconnectTimer);
+    tradeReconnectTimer = setTimeout(() => {
+      tradeReconnectTimer = undefined;
+      connectTradeStream();
+    }, delay);
+  });
+}
+
 function connect() {
   if (stopping) return;
   console.log("Connecting to Binance public BTCUSDT 1m WebSocket...");
@@ -170,7 +224,10 @@ async function shutdown() {
   stopping = true;
   clearInterval(heartbeatTimer);
   clearTimeout(reconnectTimer);
+  clearTimeout(tradeReconnectTimer);
   reconnectTimer = undefined;
+  tradeReconnectTimer = undefined;
+  if (tradeSocket && tradeSocket.readyState < WebSocket.CLOSING) tradeSocket.close(1000, "Service shutdown");
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close(1000, "Service shutdown");
   await persistTimeframes().catch(error => console.error("Final persistence error:", error.message));
   process.exit(0);
@@ -182,6 +239,7 @@ process.on("SIGTERM", shutdown);
 try {
   await bootstrap();
   connect();
+  connectTradeStream();
 } catch (error) {
   console.error("Live feed startup failed:", error);
   process.exitCode = 1;

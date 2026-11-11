@@ -1,0 +1,32 @@
+name: Live Tick Gate Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/live-tick-gate.js"
+      - "tests/live-tick-gate.test.js"
+      - "src/index.js"
+      - "package.json"
+      - ".github/workflows/live-tick-gate-tests.yml"
+  push:
+    branches: [feature/150ms-live-tick-safety]
+    paths:
+      - "src/live-tick-gate.js"
+      - "tests/live-tick-gate.test.js"
+      - "src/index.js"
+      - "package.json"
+      - ".github/workflows/live-tick-gate-tests.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check JavaScript syntax
+        run: node --check src/live-tick-gate.js && node --check src/index.js && node --check src/live-feed.js && node --check src/gold-live-feed.js
+      - name: Test 150 ms freshness gate
+        run: node --test tests/live-tick-gate.test.js

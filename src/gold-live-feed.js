@@ -3,7 +3,7 @@ import { mkdir, appendFile, writeFile, readFile, rename } from "node:fs/promises
 
 const apiKey = process.env.TWELVE_DATA_API_KEY;
 if (!apiKey) throw new Error("Set TWELVE_DATA_API_KEY in the hosting environment; never commit API keys.");
-const symbols = (process.env.GOLD_LIVE_SYMBOLS || "XAU/USD,DXY").split(",").map(s => s.trim()).filter(Boolean);
+const symbols = (process.env.GOLD_LIVE_SYMBOLS || "EUR/USD,XAU/USD").split(",").map(s => s.trim()).filter(Boolean);
 const url = "wss://ws.twelvedata.com/v1/quotes/price?apikey=" + encodeURIComponent(apiKey);
 const directory = process.env.GOLD_LIVE_DATA_DIR || "data";
 const reconnectMax = 30_000;
@@ -13,15 +13,23 @@ async function persistQuote(message) {
   const timestamp = Number(message.timestamp) * 1000;
   const price = Number(message.price);
   if (!message.symbol || !Number.isFinite(timestamp) || !Number.isFinite(price) || price <= 0) return;
-  const quote = { symbol: String(message.symbol).toUpperCase(), timestamp, receivedAt: Date.now(), price, bid: Number.isFinite(Number(message.bid)) ? Number(message.bid) : null, ask: Number.isFinite(Number(message.ask)) ? Number(message.ask) : null, source: "Twelve Data WebSocket reference feed" };
+  const providerSymbol = String(message.symbol).toUpperCase();
+  const marketSymbol = providerSymbol.replaceAll("/", "");
+  if (!["EURUSD", "XAUUSD"].includes(marketSymbol)) return;
+  const quote = { symbol: marketSymbol, providerSymbol, timestamp, receivedAt: Date.now(), price, bid: Number.isFinite(Number(message.bid)) ? Number(message.bid) : null, ask: Number.isFinite(Number(message.ask)) ? Number(message.ask) : null, source: "Twelve Data WebSocket reference feed; not broker execution quotes" };
   await mkdir(directory, { recursive: true });
   await appendFile(directory + "/gold-live-ticks.jsonl", JSON.stringify(quote) + "\n");
+  const tickDirectory = directory + "/live-ticks";
+  await mkdir(tickDirectory, { recursive: true });
+  const tickPath = tickDirectory + "/" + marketSymbol + ".json";
+  await writeFile(tickPath + ".tmp", JSON.stringify(quote));
+  await rename(tickPath + ".tmp", tickPath);
   let previous = {};
   try { previous = JSON.parse(await readFile(directory + "/gold-live-quotes.json", "utf8")); } catch {}
-  previous[quote.symbol] = quote;
+  previous[providerSymbol] = quote;
   await writeFile(directory + "/gold-live-quotes.json.tmp", JSON.stringify(previous, null, 2));
   await rename(directory + "/gold-live-quotes.json.tmp", directory + "/gold-live-quotes.json");
-  console.log("GOLD LIVE TICK:", JSON.stringify(quote));
+  console.log("LIVE MARKET TICK SNAPSHOT:", JSON.stringify({ ...quote, localAgeMsAtWrite: Date.now() - quote.receivedAt }));
 }
 function scheduleReconnect() {
   if (stopping || reconnectTimer) return;

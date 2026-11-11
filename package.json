@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "check": "node --check src/index.js && node --check src/news.js && node --check src/economic-calendar.js && node --check src/options-flow.js && node --check src/market-regime.js && node --check src/macro.js && node --check src/market.js && node --check src/sessions.js && node --check src/signal.js && node --check src/tiered-signal.js && node --check src/trade-plan.js && node --check src/download.js && node --check src/backtest.js && node --check src/session-performance.js && node --check src/live-feed.js && node --check src/gold-news.js && node --check src/gold-macro.js && node --check src/gold-live-feed.js && node --check src/gold-news-strategy.js && node --check src/trading-agents.js && node --check src/forecast-agents.js && node --check src/llm-agents.js && node --check src/polymarket-quant.js && node --check src/polymarket-backtest.js && node --check src/performance-audit.js && node --check src/publish-dashboard-data.js",
+    "check": "node --check src/index.js && node --check src/live-tick-gate.js && node --check src/news.js && node --check src/economic-calendar.js && node --check src/options-flow.js && node --check src/market-regime.js && node --check src/macro.js && node --check src/market.js && node --check src/sessions.js && node --check src/signal.js && node --check src/tiered-signal.js && node --check src/trade-plan.js && node --check src/download.js && node --check src/backtest.js && node --check src/session-performance.js && node --check src/live-feed.js && node --check src/gold-news.js && node --check src/gold-macro.js && node --check src/gold-live-feed.js && node --check src/gold-news-strategy.js && node --check src/trading-agents.js && node --check src/forecast-agents.js && node --check src/llm-agents.js && node --check src/polymarket-quant.js && node --check src/polymarket-backtest.js && node --check src/performance-audit.js && node --check src/publish-dashboard-data.js",
     "test": "node --test",
     "start": "node src/index.js",
     "download": "node src/download.js",
@@ -22,6 +22,7 @@
     "backtest:holdout:institutional": "BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=EURUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=BTCUSD node src/backtest.js && BACKTEST_START_RATIO=0.7 SIGNAL_PROFILE=institutional MARKET=XAUUSD node src/backtest.js",
     "live:btc": "node src/live-feed.js",
     "live:gold": "node src/gold-live-feed.js",
+    "live:feeds": "node src/live-feed.js & node src/gold-live-feed.js & wait",
     "backtest:gold": "MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:gold:holdout": "BACKTEST_START_RATIO=0.7 MARKET=XAUUSD SIGNAL_PROFILE=gold node src/backtest.js",
     "backtest:polymarket": "node src/polymarket-backtest.js",
