@@ -45,7 +45,7 @@ export function buildVerificationLayer({
   spreadVerified = null
 }) {
   const candidate = discovery?.candidate;
-  const higherTimeframeDirection = marketReview?.trend?.direction ?? marketReview?.squeeze?.h1Trend ?? null;
+  const higherTimeframeDirection = marketReview?.trend?.direction ?? marketReview?.squeeze?.h1Trend ?? marketReview?.direction ?? null;
   const trendStatus = !higherTimeframeDirection || higherTimeframeDirection === "MIXED"
     ? "UNAVAILABLE" : higherTimeframeDirection === candidate ? "PASS" : "FAIL";
   const triggerConfirmed = marketReview?.m5?.confirmed;
