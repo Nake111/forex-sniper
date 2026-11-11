@@ -19,7 +19,8 @@ const counters = { coinbaseMessages: 0, biquoteMessages: 0, biquoteRestPolls: 0,
 const startedAt = Date.now();
 let socket, coinbaseRetry, biquoteRetry, heartbeatTimer, watchdogTimer, biquotePollTimer, stopping = false;
 let biquoteConnection, lastHeartbeatLog = 0, lastWatchdogAt = Date.now();
-let coinbaseConnectedAt = null, biquoteConnectedAt = null, lastCoinbaseMessageAt = null, lastBiquoteMessageAt = null;\nlet biquoteRestConnected = false, lastBiquoteRestAt = null, biquotePollInFlight = false;
+let coinbaseConnectedAt = null, biquoteConnectedAt = null, lastCoinbaseMessageAt = null, lastBiquoteMessageAt = null;
+let biquoteRestConnected = false, lastBiquoteRestAt = null, biquotePollInFlight = false;
 
 function scheduleCoinbaseReconnect(reason) {
   if (stopping || coinbaseRetry) return;
@@ -229,6 +230,8 @@ const server = http.createServer((request, response) => {
 server.listen(PORT, "0.0.0.0", () => console.log("Forex Sniper 24/7 brain listening on", PORT));
 connectCoinbase();
 void connectBiquote();
+void pollBiquoteRest();
+biquotePollTimer = setInterval(() => void pollBiquoteRest(), BIQUOTE_POLL_MS);
 
 watchdogTimer = setInterval(() => {
   lastWatchdogAt = Date.now();
@@ -252,6 +255,7 @@ function shutdown(signal) {
   console.warn("Graceful shutdown:", signal);
   clearInterval(watchdogTimer);
   clearInterval(heartbeatTimer);
+  clearInterval(biquotePollTimer);
   clearTimeout(coinbaseRetry);
   clearTimeout(biquoteRetry);
   socket?.close(1000, "service shutdown");
