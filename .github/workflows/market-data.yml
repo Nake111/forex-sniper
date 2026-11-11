@@ -10,11 +10,11 @@ on:
       - ".github/workflows/market-data.yml"
       - "src/**"
       - "tests/**"
-      - "package.json"
+      - "package.json"\n      - "scripts/**"
 
 concurrency:
   group: forex-sniper-candle-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -60,13 +60,13 @@ jobs:
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
 
       - name: Generate multi-market signal report
-        run: npm start 2>&1 | tee market-snapshot.txt
+        run: set -o pipefail; npm start 2>&1 | tee market-snapshot.txt
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           LLM_TIMEOUT_MS: "2000"
 
-      - name: Upload multi-market snapshot and candles
+      - name: Require fresh quotes and complete three-agent verification\n        run: npm run verify:snapshot\n\n      - name: Upload multi-market snapshot and candles
         if: always()
         uses: actions/upload-artifact@v4
         with:
