@@ -1,13 +1,11 @@
 name: Forex Sniper Automatic Signals
 
 on:
-  schedule:
-    # GitHub Actions may start a few minutes late; this is a 5-minute refresh target, not a tick feed.
-    - cron: "*/5 * * * *"
+  # Manual diagnostic only; the live-candle-refresh workflow owns the automatic cadence.
   workflow_dispatch:
 
 concurrency:
-  group: forex-sniper-candle-refresh
+  group: forex-sniper-market-pipeline
   cancel-in-progress: false
 
 permissions:

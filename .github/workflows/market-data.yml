@@ -1,21 +1,12 @@
 name: Scheduled Multi-Market Snapshot
 
 on:
+  # Manual diagnostic only; automatic refresh and publication run in live-candle-refresh.yml.
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *"
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/market-data.yml"
-      - "src/**"
-      - "tests/**"
-      - "package.json"
-      - "scripts/**"
 
 concurrency:
-  group: forex-sniper-candle-refresh
-  cancel-in-progress: true
+  group: forex-sniper-market-pipeline
+  cancel-in-progress: false
 
 permissions:
   contents: read

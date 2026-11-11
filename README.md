@@ -91,11 +91,23 @@ npm run check
 npm test
 ```
 
-## Scheduled market data
+## Automatic operation
 
-The GitHub Actions workflow refreshes candles every five minutes, generates timestamped reports and publishes validated closed candles to the dashboard. GitHub Actions is polling, not continuous streaming; a run may be delayed. BTC/USD candles and bid/ask quotes use Kraken spot reference data, not a broker CFD quote. EUR/USD and XAU/USD bid/ask use Biquote's aggregated MT5 feed, with Twelve Data as a secondary fallback. These are market-data reference feeds, not a connected brokerage execution venue. Freshness, spread and risk gates remain mandatory.
+The repository uses one primary multi-market pipeline to avoid duplicate scheduled jobs:
 
-The latest output is available under Actions → Forex Sniper Live Candle Refresh → latest run → Artifacts. No live orders are placed.
+- **Every 5 minutes (target):** Forex Sniper Live Candle Refresh downloads EUR/USD, BTC/USD and XAU/USD M5/M15/H1/H4 data, runs mandatory syntax and regression tests, generates the three-market signal report, verifies all three independent review agents and fresh bid/ask quotes, validates closed candles, then publishes the dashboard snapshot and Second Brain journal.
+- **Every 15 minutes:** BTCUSD Branch Live Refresh independently refreshes the BTC branch as a secondary diagnostic feed.
+- **Daily at 15:00 UTC:** Gold-specific validation and backtests.
+- **Weekly Sunday at 02:00 UTC:** Multi-market strategy and chronological holdout backtests.
+- **Every 5 minutes:** Actions Queue Watchdog checks stale queued test workflows. It only cancels a run after it has been queued for at least 60 seconds and still has no jobs; it dispatches at most one replacement check and enforces a 15-minute cooldown.
+- **On pushes and pull requests:** syntax, regression, provider and quant validation workflows run automatically.
+- The older Automatic Signals and Scheduled Multi-Market Snapshot workflows remain available for manual diagnostics and no longer compete with the primary schedule.
+
+GitHub Actions is polling, not continuous streaming. The five-minute cadence is a target, not a guarantee; GitHub may delay scheduled runs, and a watchdog also needs an available runner. BTC/USD candles and bid/ask quotes use Kraken spot reference data, not a broker CFD quote. EUR/USD and XAU/USD bid/ask use Biquote's aggregated MT5 feed, with Twelve Data as a secondary fallback. These are reference feeds, not a connected brokerage execution venue.
+
+The primary pipeline stops before signal publication when tests fail, any market is missing from the report, the independent agent review is incomplete, a bid/ask quote is stale/invalid, or the closed-candle dashboard snapshot fails validation. The latest output is available under Actions → Forex Sniper Live Candle Refresh → latest run → Artifacts.
+
+**Important current limitation:** there is no verified automated structured economic-calendar provider configured. The engine therefore treats scheduled-event risk as UNKNOWN and blocks new entries. Automation does not bypass that safety gate. No live orders are placed.
 
 ## Tests
 
