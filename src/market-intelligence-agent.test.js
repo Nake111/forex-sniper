@@ -53,7 +53,7 @@ test("BTCUSD does not treat an unconfirmed NO_SQUEEZE state as a release", () =>
 });
 
 test("Gold headline caution is not an automatic veto without elevated volatility", () => {
-  const frames = { M5: frame("SELL", candle(100, 101, 98, 98.2)), H1: frame("SELL"), M15: frame("SELL") };
+  const frames = { M5: frame("SELL", candle(100, 101, 98, 98.2)), H1: { ...frame("SELL"), atrBaseline: null }, M15: frame("SELL") };
   const macro = { calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [], nextEvents: [] } },
     headlines: [{ title: "Recent headline", date: new Date( Date.now() - 60_000).toISOString() }] };
   const review = runMarketIntelligenceAgent({ market: "XAUUSD", frames, macro });
