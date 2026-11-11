@@ -36,7 +36,29 @@ function trendDirection(frame) {
   return null;
 }
 
+const SPREAD_ATR_LIMITS = { EURUSD: 0.12, BTCUSD: 0.18, XAUUSD: 0.15 };
+
+function quoteSpreadReview(market, frames, quote) {
+  const atr = Number(frames.M5?.atr14);
+  const bid = Number(quote?.bid), ask = Number(quote?.ask);
+  const suppliedSpread = Number(quote?.spread);
+  const spread = Number.isFinite(bid) && Number.isFinite(ask) && ask > bid
+    ? ask - bid : Number.isFinite(suppliedSpread) && suppliedSpread >= 0 ? suppliedSpread : null;
+  const limit = SPREAD_ATR_LIMITS[market];
+  const ratio = spread !== null && Number.isFinite(atr) && atr > 0 ? spread / atr : null;
+  return {
+    spread, atr: Number.isFinite(atr) ? atr : null, ratio, limit,
+    valid: ratio !== null && Number.isFinite(limit) && ratio <= limit,
+    blocker: ratio === null
+      ? market + " spread/ATR cannot be verified from a valid quote and M5 ATR"
+      : ratio > limit
+        ? market + " spread/ATR " + ratio.toFixed(4) + " exceeds the " + limit.toFixed(2) + " limit"
+        : null
+  };
+}
+
 function eurUsdReview(frames, quote) {
+  const spreadReview = quoteSpreadReview("EURUSD", frames, quote);
   const M5 = frames.M5 ?? {}, M15 = frames.M15 ?? {}, H1 = frames.H1 ?? {}, H4 = frames.H4 ?? {};
   const votes = [trendDirection(H4), trendDirection(H1), trendDirection(M15)].filter(Boolean);
   const buyVotes = votes.filter(v => v === "BUY").length;
@@ -48,29 +70,27 @@ function eurUsdReview(frames, quote) {
   const triggerDirection = candle && candle.close > candle.open && location >= 0.65 ? "BUY"
     : candle && candle.close < candle.open && location <= 0.35 ? "SELL" : null;
   const pressure = candlePressure(M5);
-  const spreadAtr = Number.isFinite(quote?.spread) && Number.isFinite(M5.atr14) && M5.atr14 > 0
-    ? quote.spread / M5.atr14 : null;
-  const spreadAvailable = spreadAtr !== null && Number.isFinite(spreadAtr);
+  const spreadAtr = spreadReview.ratio;
+  const spreadAvailable = spreadReview.valid;
   const passed = alignedDirection !== null && triggerDirection === alignedDirection &&
-    (pressure.direction === alignedDirection || pressure.strength < 2) &&
-    spreadAvailable && spreadAtr <= 0.12;
+    (pressure.direction === alignedDirection || pressure.strength < 2) && spreadAvailable;
   return {
     market: "EURUSD", direction: passed ? alignedDirection : alignedDirection,
     approved: passed,
     trend: { direction: alignedDirection ?? "MIXED", htfBuyVotes: buyVotes, htfSellVotes: sellVotes, frames: { M15: trendDirection(M15), H1: trendDirection(H1), H4: trendDirection(H4) } },
     m5: { triggerDirection, closeLocation: location, confirmed: triggerDirection !== null && triggerDirection === alignedDirection },
-    orderFlow: pressure, spreadAtr,
+    orderFlow: pressure, spreadAtr, spread: spreadReview,
     blockers: [
       ...(alignedDirection ? [] : ["M15/H1/H4 do not provide a two-frame directional majority"]),
       ...(triggerDirection === alignedDirection && alignedDirection ? [] : ["M5 closed candle does not confirm the higher-timeframe direction"]),
       ...(pressure.direction !== alignedDirection && pressure.strength >= 2 ? ["M5 buyer/seller pressure proxy conflicts with trend"] : []),
-      ...(!spreadAvailable ? ["EUR/USD spread/ATR cannot be verified from a fresh valid bid/ask quote"] : []),
-      ...(spreadAvailable && spreadAtr > 0.12 ? ["EUR/USD spread exceeds 0.12 ATR"] : [])
+      ...(spreadReview.blocker ? [spreadReview.blocker] : [])
     ]
   };
 }
 
-function btcUsdReview(frames) {
+function btcUsdReview(frames, quote) {
+  const spreadReview = quoteSpreadReview("BTCUSD", frames, quote);
   const H1 = frames.H1 ?? {}, M15 = frames.M15 ?? {};
   const squeeze = H1.squeeze ?? {};
   const previousState = squeeze.previousState ?? null;
@@ -85,7 +105,8 @@ function btcUsdReview(frames) {
   const h1Trend = trendDirection(H1);
   const pressure = candlePressure(M15);
   const confirmed = squeezeStateKnown && released && direction !== null &&
-    h1Trend === direction && (pressure.direction === direction || pressure.strength < 2);
+    h1Trend === direction && (pressure.direction === direction || pressure.strength < 2) &&
+    spreadReview.valid;
   const blockers = [];
   if (squeeze.state === "SQUEEZE_ON") blockers.push("H1 volatility squeeze is still active; wait for a closed-bar release");
   if (!squeezeStateKnown) blockers.push("H1 squeeze state is unavailable; fail-closed until valid H1 squeeze data arrives");
@@ -93,10 +114,11 @@ function btcUsdReview(frames) {
   if (!direction) blockers.push("H1 squeeze momentum is not strengthening in a clear direction");
   if (direction && h1Trend !== direction) blockers.push("H1 EMA/regime trend does not agree with squeeze momentum");
   if (direction && pressure.direction !== direction && pressure.strength >= 2) blockers.push("M15 buyer/seller pressure proxy conflicts with H1 release");
+  if (spreadReview.blocker) blockers.push(spreadReview.blocker);
   return {
     market: "BTCUSD", direction, approved: confirmed,
     squeeze: { state: squeeze.state ?? "UNKNOWN", previousState, stateKnown: squeezeStateKnown, momentum: Number.isFinite(momentum) ? momentum : null, direction: squeeze.direction ?? "UNKNOWN", released, noActiveSqueeze, h1Trend },
-    orderFlow: pressure, blockers
+    orderFlow: pressure, spread: spreadReview, blockers
   };
 }
 
@@ -161,15 +183,17 @@ function goldEventRisk(macro, now) {
   };
 }
 
-function goldReview(frames, macro, now) {
+function goldReview(frames, macro, now, quote) {
+  const spreadReview = quoteSpreadReview("XAUUSD", frames, quote);
   const risk = goldEventRisk(macro, now);
   const H1 = frames.H1 ?? {};
   const atrRatio = Number.isFinite(H1.atr14) && Number.isFinite(H1.atrBaseline) && H1.atrBaseline > 0
     ? H1.atr14 / H1.atrBaseline : null;
   const volatilityElevated = atrRatio !== null && atrRatio >= 1.5;
-  if (risk.status === "HEADLINE_CAUTION" && atrRatio !== null && !volatilityElevated && !risk.secondaryCalendarWarning) {
+  if (risk.status === "HEADLINE_CAUTION" && atrRatio !== null && !volatilityElevated &&
+      macro.calendar?.status === "AVAILABLE" && macro.calendar?.risk?.status === "NORMAL") {
     risk.blocksNewEntry = false;
-    risk.reason = "Recent high-impact headlines are present, but the verified H1 ATR ratio is below 1.5 and the secondary calendar is available; caution is informational, not an automatic veto.";
+    risk.reason = "Recent high-impact headlines are present, but the primary economic calendar is verified and H1 ATR ratio is below 1.5; secondary-calendar outage is disclosed but does not independently veto the setup.";
   } else if (risk.status === "HEADLINE_CAUTION") {
     risk.blocksNewEntry = true;
     const volatilityReason = atrRatio === null
@@ -191,16 +215,18 @@ function goldReview(frames, macro, now) {
   const direction = h1 && h1 === m15 ? h1 : null;
   const pressure = candlePressure(M5);
   const approved = direction !== null && trigger === direction &&
-    !risk.blocksNewEntry && (pressure.direction === direction || pressure.strength < 2);
+    !risk.blocksNewEntry && (pressure.direction === direction || pressure.strength < 2) &&
+    spreadReview.valid;
   return {
-    market: "XAUUSD", direction, approved, eventRisk: risk,
+    market: "XAUUSD", direction, approved, eventRisk: risk, spread: spreadReview,
     m5: { triggerDirection: trigger, closeLocation: loc, confirmed: trigger === direction && direction !== null },
     orderFlow: pressure,
     blockers: [
       ...(risk.blocksNewEntry ? [risk.reason] : []),
       ...(direction ? [] : ["Gold H1 and M15 trend do not align"]),
       ...(trigger === direction && direction ? [] : ["Gold M5 trigger candle does not confirm H1/M15 direction"]),
-      ...(pressure.direction !== direction && pressure.strength >= 2 ? ["Gold buyer/seller pressure proxy conflicts with trend"] : [])
+      ...(pressure.direction !== direction && pressure.strength >= 2 ? ["Gold buyer/seller pressure proxy conflicts with trend"] : []),
+      ...(spreadReview.blocker ? [spreadReview.blocker] : [])
     ]
   };
 }
@@ -212,8 +238,8 @@ export function runMarketIntelligenceAgent({ market, frames, macro = {}, quote =
   };
   let review;
   if (market === "EURUSD") review = eurUsdReview(frames, quote);
-  else if (market === "BTCUSD") review = btcUsdReview(frames);
-  else if (market === "XAUUSD") review = goldReview(frames, macro, now);
+  else if (market === "BTCUSD") review = btcUsdReview(frames, quote);
+  else if (market === "XAUUSD") review = goldReview(frames, macro, now, quote);
   else review = { market, approved: false, direction: null, blockers: ["Unsupported market"] };
   return {
     agent: "MARKET_INTELLIGENCE_AGENT",
