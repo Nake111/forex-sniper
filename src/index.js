@@ -409,11 +409,32 @@ async function analyseMarket(market, macroContext) {
   const confirmation = confirmSignal(directionalCandidate, results.H1);
   const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
-  if (plan) executionBlockers.push("Broker bid/ask spread is unavailable; levels are not broker-verified");
-  const action = finalAction(candidate, plan);
+  // A strategy candidate is not an executable order. The current data adapters
+  // do not provide a verified, timestamped broker bid/ask quote for all three
+  // markets, so spreadVerified remains false until a supported quote feed is wired.
+  const spreadQuote = results.M5.spreadQuote ?? null;
+  const spreadVerified = Boolean(spreadQuote &&
+    Number.isFinite(spreadQuote.bid) && Number.isFinite(spreadQuote.ask) &&
+    spreadQuote.bid > 0 && spreadQuote.ask > spreadQuote.bid &&
+    Number.isFinite(spreadQuote.timestamp) &&
+    Date.now() - spreadQuote.timestamp >= 0 &&
+    Date.now() - spreadQuote.timestamp <= 15_000 &&
+    Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
+    (spreadQuote.ask - spreadQuote.bid) / results.M5.atr14 <=
+      (market.symbol === "EURUSD" ? 0.12 : market.symbol === "BTCUSD" ? 0.18 : 0.15));
+  if (!spreadVerified) executionBlockers.push("Fresh validated bid/ask spread unavailable or outside market-specific limit");
+  if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
+  const riskClear = executionBlockers.length === 0 &&
+    !calendarBlocked && !goldMacroBlocked && !macroContext.dataStale &&
+    !goldNewsWindow?.blockNewEntries;
+  const action = finalAction(candidate, plan, {
+    confirmationStatus: confirmation.status,
+    riskClear,
+    spreadVerified
+  });
   const executionStatus = action === "BUY" || action === "SELL"
-    ? "STRATEGY APPROVED — broker spread/execution still unverified"
-    : "NOT APPROVED — directional candidate or confirmation gates did not pass; levels are indicative only";
+    ? "EXECUTABLE SIGNAL — fresh quote, M5 trigger, H1 confirmation and risk gates passed"
+    : "NOT EXECUTABLE — levels are research-only until every mandatory execution gate passes";
 
   try {
     const brain = await updateSecondBrain({
