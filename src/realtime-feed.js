@@ -1,6 +1,7 @@
 import http from "node:http";
 import WebSocket from "ws";
 import { fetchBiquoteQuote, validateBiquoteTick } from "./biquote-quotes.js";
+import { normalizeBinanceBookTicker } from "./realtime-feed-core.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const POLL_MS = Math.max(1_000, Number(process.env.REALTIME_FX_POLL_MS ?? 2_000));
@@ -9,17 +10,6 @@ const BINANCE_STREAM = "wss://stream.binance.com:9443/ws/btcusdt@bookTicker";
 const quotes = {};
 const clients = new Set();
 let socket, reconnectTimer, reconnectAttempt = 0, pollTimer, polling = false, stopping = false;
-
-export function normalizeBinanceBookTicker(message, receivedAt = Date.now()) {
-  if (String(message?.s ?? "").toUpperCase() !== "BTCUSDT") return null;
-  const bid = Number(message.b), ask = Number(message.a);
-  if (!(Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > bid)) return null;
-  return {
-    market: "BTCUSD", symbol: "BTC/USD", bid, ask, price: (bid + ask) / 2,
-    timestamp: receivedAt, receivedAt, timestampQuality: "RECEIVED_AT_ONLY",
-    source: "Binance spot bookTicker WebSocket", venue: "Binance", tradeable: true
-  };
-}
 
 function publish(market, quote) {
   quotes[market] = quote;
