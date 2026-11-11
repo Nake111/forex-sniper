@@ -32,7 +32,9 @@ test("BTC/USD agent blocks an active H1 squeeze and accepts directional release"
   const released = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
   assert.equal(released.approved, true);
   assert.equal(released.direction, "BUY");
-  frames.H1.squeeze = { state: "NO_SQUEEZE", momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
+  frames.H1.squeeze = { state: "NO_SQUEEZE", previousState: null, momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
+  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, false);
+  frames.H1.squeeze = { state: "NO_SQUEEZE", previousState: "SQUEEZE_ON", momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
   assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, true);
 });
 
