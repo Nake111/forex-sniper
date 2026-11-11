@@ -36,7 +36,7 @@ on:
     - cron: "*/5 * * * *"
 
 concurrency:
-  group: forex-sniper-live-data
+  group: forex-sniper-market-pipeline
   cancel-in-progress: false
 
 permissions:
@@ -45,7 +45,7 @@ permissions:
 jobs:
   refresh-and-signal:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       DATA_DAYS_BACK: "30"
       DATA_OVERLAP_DAYS: "1"
@@ -70,19 +70,12 @@ jobs:
           restore-keys: |
             forex-sniper-candles-
       - name: Install dependencies
-        run: npm install
-      - name: Validate code (diagnostic; do not block market analysis)
-        id: validation
-        continue-on-error: true
+        run: npm ci
+      - name: Mandatory code and regression checks
         run: |
           npm run check
           npm test
-      - name: Report validation status
-        if: steps.validation.outcome == 'failure'
-        run: |
-          echo "::warning::Code validation or tests failed. Continuing candle refresh and analysis for diagnostics; trade safety gates in the signal engine remain mandatory."
-          echo "Validation failed; candle refresh and analysis will still run. Any BUY/SELL remains subject to data freshness, calendar, multi-agent, confirmation and risk gates." >> "$GITHUB_STEP_SUMMARY"
-      - name: Refresh latest candles (incremental + overlap + deduplication)
+      - name: Refresh EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
           DATA_DAYS_BACK: "30"
@@ -95,21 +88,34 @@ jobs:
           DUKASCOPY_REQUEST_INTERVAL_MS: "120"
           DUKASCOPY_RETRY_COUNT: "3"
           DUKASCOPY_RATE_LIMIT_RETRIES: "4"
-      - name: Generate timestamped multi-market signal report
+      - name: Generate timestamped three-market signal report
+        id: signal_report
         run: |
           mkdir -p reports
           set -o pipefail
-          npm start 2>&1 | tee "reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
+          REPORT_PATH="reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
+          echo "REPORT_PATH=$REPORT_PATH" >> "$GITHUB_ENV"
+          {
+            echo "FOREX SNIPER AUTOMATIC SIGNAL REPORT"
+            echo "Generated UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
+            echo "Target cadence: 5 minutes; GitHub scheduling can be delayed."
+            npm start
+          } 2>&1 | tee "$REPORT_PATH"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
-      - name: Validate and publish closed candles for the dashboard
+      - name: Require fresh quotes and complete three-agent verification
+        run: npm run verify:snapshot -- "$REPORT_PATH"
+        env:
+          MAX_SNAPSHOT_QUOTE_AGE_MS: "15000"
+      - name: Validate and publish closed dashboard candles
         shell: bash
         run: |
           set -euo pipefail
           npm run publish:data
+          node --input-type=module -e 'import { readFile } from "node:fs/promises"; const s = JSON.parse(await readFile("dashboard/data/latest.json", "utf8")); if (s.validation?.status !== "PASS") throw new Error("Dashboard candle snapshot is not PASS: " + s.validation?.status);'
           snapshot="$(mktemp)"
           brain_snapshot="$(mktemp)"
           cp dashboard/data/latest.json "$snapshot"
@@ -130,13 +136,13 @@ jobs:
               pushed=true
               break
             fi
-            git commit -m "Publish validated latest market candles"
+            git commit -m "Publish verified multi-market snapshot"
             if git push origin "HEAD:$GITHUB_REF_NAME"; then
               pushed=true
-              echo "Dashboard candle snapshot published."
+              echo "Verified dashboard snapshot and Second Brain journal published."
               break
             fi
-            echo "Branch advanced during publish; retrying on the latest branch."
+            echo "Branch advanced during publish; retrying on latest branch."
           done
           rm -f "$snapshot" "$brain_snapshot"
           if [ "$pushed" != true ]; then
@@ -153,7 +159,7 @@ jobs:
             data
             .cache
           key: forex-sniper-candles-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: Upload latest candles and signal report
+      - name: Upload signal report and candle evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -162,4 +168,4 @@ jobs:
             data/*.json
             reports/*.txt
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 14
