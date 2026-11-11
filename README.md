@@ -141,8 +141,19 @@ The browser dashboard is available in dashboard/. Its supplemental BTC quant vie
 The dashboard includes manual links to Investing.com for EUR/USD, Bitcoin and gold as an independent visual cross-check. This is not an automated data feed: Investing.com states it does not offer a public API. The project does not scrape its pages or feed displayed quotes into agent calculations. A reviewer should compare the same instrument, quote type and timestamp; any discrepancy is a data-quality warning only. Existing validated candle providers remain the engine's source of market data. Do not use this reference panel to override candle freshness, economic-calendar, consensus or risk gates.
 
 
-## Continuous multi-market quote feed
+## 24/7 Forex Sniper brain and live quote service
 
-A persistent Railway service exposes read-only live quote snapshots at `/quotes`, health at `/health`, and server-sent updates at `/stream`. BTC/USD uses Binance spot book-ticker WebSocket updates. EUR/USD and XAU/USD use the Biquote aggregated MT5 quote endpoint polled every two seconds; this is near-real-time polling, not a provider WebSocket. The service stamps receive times, validates bid/ask direction and market state, reconnects BTC automatically, and never sends orders.
+A persistent Railway service runs continuously (not as a cron job), with sleeping disabled and an always-restart policy. It exposes:
+- `/health`: process liveness and runtime telemetry. HTTP 200 means the service process is alive, not that all market data is fresh.
+- `/brain`: provider connection state, process uptime, watchdog heartbeat, per-market quote age, source, bid/ask and rejected-tick counters.
+- `/ready`: readiness gate; returns HTTP 200 only when all three market quotes are fresh, otherwise HTTP 503.
+- `/quotes`: latest read-only quote snapshot.
+- `/stream`: server-sent quote and 15-second heartbeat events.
 
-Set `REALTIME_FEED_URL=https://btc-10-second-feed-production.up.railway.app` in the signal workflow to let the analysis engine prefer fresh feed quotes, with the existing provider path as fallback. Quotes older than 15 seconds are rejected. The feed is reference pricing, not Vantage broker execution pricing. Continuous quote delivery does not make the five-minute analysis workflow itself tick-by-tick; candle/strategy evaluation remains on its configured schedule.
+The watchdog checks provider state every five seconds, attempts recovery for disconnected streams, emits a structured heartbeat to runtime logs every minute, and shuts down cleanly on SIGTERM/SIGINT. Fatal unhandled process errors exit non-zero so Railway's always-restart policy can recover the worker. Quote freshness is capped at 15 seconds; stale or missing data never becomes a valid execution quote.
+
+BTC/USD uses Coinbase Exchange BTC-USD ticker WebSocket data. EUR/USD and XAU/USD are configured for the Biquote SignalR tick stream. Provider payload/schema, market availability and real-world quote freshness must be observed in production before the corresponding market is treated as live. Weekends, market closures and provider outages can legitimately leave a market unavailable; the brain remains running and reports that condition rather than manufacturing a quote.
+
+The GitHub Actions analysis pipeline remains a separate scheduled worker with a five-minute target cadence. GitHub scheduling can be delayed and is not a tick-by-tick strategy engine. The 24/7 Railway brain supervises the quote feed and reports data readiness; it does not place orders or guarantee a BUY/SELL signal. The reference feeds are not Vantage broker execution prices and no broker order route is connected.
+
+Set `REALTIME_FEED_URL=https://btc-10-second-feed-production.up.railway.app` in the signal workflow. The analysis engine may prefer fresh feed quotes and must reject quotes older than 15 seconds. A service liveness response is not proof of market readiness: check `/brain` and `/ready` before relying on the feed.
