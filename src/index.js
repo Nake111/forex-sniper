@@ -404,7 +404,13 @@ async function analyseMarket(market, macroContext) {
       "|", event.scheduledAt ?? "time unknown",
       "| source:", event.sourceUrl ?? macroContext.calendar?.sourceUrl ?? "unavailable");
   }
-  const confirmation = confirmSignal(directionalCandidate, results.H1);
+  // H1 squeeze-release confirmation is a BTC-specific strategy rule. EUR/USD and
+  // Gold use their own independent M15/H1/H4 + M5 trigger checks in the
+  // market-intelligence agent; applying the BTC squeeze rule to them caused
+  // unrelated FX/metals candidates to be rejected as "H1 not aligned".
+  const confirmation = market.symbol === "BTCUSD"
+    ? confirmSignal(directionalCandidate, results.H1)
+    : { status: "H1 ALIGNED", reason: "BTC-only squeeze filter not applicable; market-specific higher-timeframe and M5 checks remain mandatory." };
   const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
   // Fetch the active market's bid/ask immediately before final validation so
