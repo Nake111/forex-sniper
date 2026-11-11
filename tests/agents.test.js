@@ -58,6 +58,23 @@ test("Gold upcoming event is labelled separately from active high-impact risk", 
   assert.equal(active.eventRisk.activeHighImpactEvents.length, 1);
 });
 
+test("Gold distinguishes recent headline caution from an unavailable secondary calendar", () => {
+  const now = Date.parse("2026-11-11T12:00:00Z");
+  const frames = { M5: frame(), M15: frame(), H1: frame() };
+  const review = runMarketIntelligenceAgent({
+    market: "XAUUSD", frames, now,
+    macro: {
+      calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [], nextEvents: [] } },
+      goldMacro: { calendar: { unavailable: "Official calendar parser found no events" } },
+      headlines: [{ title: "High impact inflation report", date: new Date(now - 5 * 60_000).toISOString() }]
+    }
+  });
+  assert.equal(review.eventRisk.status, "HEADLINE_CAUTION");
+  assert.equal(review.eventRisk.secondaryCalendarStatus, "UNAVAILABLE — primary ShowMyTrades calendar still evaluated");
+  assert.equal(review.eventRisk.activeHighImpactEvents.length, 0);
+  assert.equal(review.eventRisk.blocksNewEntry, true);
+});
+
 test("approval agent rejects missing quote and accepts only complete paper checks", () => {
   const marketReview = { market: "EURUSD", direction: "BUY", approved: true, blockers: [] };
   const plan = { entry: 1.1, stopLoss: 1.099, takeProfit: 1.102, riskRewardValue: 2, entryTriggerConfirmed: true };
