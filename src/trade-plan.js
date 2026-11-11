@@ -64,8 +64,18 @@ export function tradePlan(signal, result, confirmation) {
   return { entry, stopLoss, takeProfit, riskReward: "1:2", riskRewardValue, stopType, riskDistance: risk, entryTrigger: "M5_DIRECTIONAL_CLOSE" };
 }
 
-export function finalAction(signal, plan) {
-  return plan ? signal : "NO TRADE";
+/**
+ * Final order permission is deliberately stricter than directional analysis.
+ * A calculated plan is not executable until the trigger, H1 confirmation,
+ * risk clearance and a fresh positive bid/ask quote are all verified.
+ */
+export function finalAction(signal, plan, checks = {}) {
+  const executable = ["BUY", "SELL"].includes(signal) &&
+    plan?.entryTriggerConfirmed === true &&
+    checks.confirmationStatus === "H1 ALIGNED" &&
+    checks.riskClear === true &&
+    checks.spreadVerified === true;
+  return executable ? signal : "NO TRADE";
 }
 
 
