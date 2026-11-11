@@ -29,13 +29,13 @@ test("BTC/USD agent blocks an active H1 squeeze and accepts directional release"
   frames.H1.squeeze = { state: "SQUEEZE_ON", momentum: 0.1, direction: "BULLISH_STRENGTHENING" };
   assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames, quote: { bid: 100, ask: 100.01 } }).approved, false);
   frames.H1.squeeze = { state: "SQUEEZE_RELEASED", momentum: 0.5, direction: "BULLISH_STRENGTHENING" };
-  const released = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
+  const released = runMarketIntelligenceAgent({ market: "BTCUSD", frames, quote: { bid: 100, ask: 100.01 } });
   assert.equal(released.approved, true);
   assert.equal(released.direction, "BUY");
   frames.H1.squeeze = { state: "NO_SQUEEZE", previousState: null, momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
-  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, false);
+  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames, quote: { bid: 100, ask: 100.01 } }).approved, false);
   frames.H1.squeeze = { state: "NO_SQUEEZE", previousState: "SQUEEZE_ON", momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
-  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, true);
+  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames, quote: { bid: 100, ask: 100.01 } }).approved, true);
 });
 
 test("Gold upcoming event is labelled separately from active high-impact risk", () => {
