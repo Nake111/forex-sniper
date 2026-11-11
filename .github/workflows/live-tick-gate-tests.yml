@@ -27,6 +27,6 @@ jobs:
         with:
           node-version: "20"
       - name: Check JavaScript syntax
-        run: node --check src/live-tick-gate.js && node --check src/index.js
+        run: node --check src/live-tick-gate.js && node --check src/index.js && node --check src/live-feed.js && node --check src/gold-live-feed.js
       - name: Test 150 ms freshness gate
         run: node --test tests/live-tick-gate.test.js
