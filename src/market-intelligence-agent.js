@@ -167,12 +167,16 @@ function goldReview(frames, macro, now) {
   const atrRatio = Number.isFinite(H1.atr14) && Number.isFinite(H1.atrBaseline) && H1.atrBaseline > 0
     ? H1.atr14 / H1.atrBaseline : null;
   const volatilityElevated = atrRatio !== null && atrRatio >= 1.5;
-  if (risk.status === "HEADLINE_CAUTION" && !volatilityElevated) {
+  if (risk.status === "HEADLINE_CAUTION" && atrRatio !== null && !volatilityElevated && !risk.secondaryCalendarWarning) {
     risk.blocksNewEntry = false;
-    risk.reason = "Recent high-impact headlines are present, but H1 volatility is not elevated (ATR ratio below 1.5); caution is informational, not an automatic veto.";
-  } else if (risk.status === "HEADLINE_CAUTION" && volatilityElevated) {
+    risk.reason = "Recent high-impact headlines are present, but the verified H1 ATR ratio is below 1.5 and the secondary calendar is available; caution is informational, not an automatic veto.";
+  } else if (risk.status === "HEADLINE_CAUTION") {
     risk.blocksNewEntry = true;
-    risk.reason = "Recent high-impact headlines coincide with elevated H1 volatility (ATR14/baseline " + atrRatio.toFixed(2) + "); risk veto remains active.";
+    const volatilityReason = atrRatio === null
+      ? "H1 volatility ratio is unavailable"
+      : "H1 ATR14/baseline is " + atrRatio.toFixed(2) + (volatilityElevated ? " (elevated)" : " (below threshold)");
+    const calendarReason = risk.secondaryCalendarWarning ? "; secondary calendar is unavailable" : "";
+    risk.reason = "Recent high-impact headlines require caution; " + volatilityReason + calendarReason + "; risk veto remains active until both checks are clear.";
   }
   risk.volatility = { h1Atr14: H1.atr14 ?? null, h1AtrBaseline: H1.atrBaseline ?? null, atrRatio, elevated: volatilityElevated, threshold: 1.5 };
   const M15 = frames.M15 ?? {}, M5 = frames.M5 ?? {};
