@@ -52,3 +52,16 @@ test("Invalid ATR or missing confirmation blocks a plan", () => {
     null
   );
 });
+
+test("BUY with combined engine confirmation creates a valid plan", () => {
+  const plan = tradePlan("BUY", market, { status: "ALL FILTERS ALIGNED" });
+  assert.ok(plan);
+  assert.ok(plan.stopLoss < plan.entry);
+  assert.ok(plan.takeProfit > plan.entry);
+});
+test("SELL with combined engine confirmation creates a valid plan", () => {
+  const plan = tradePlan("SELL", market, { status: "ALL FILTERS ALIGNED" });
+  assert.ok(plan);
+  assert.ok(plan.stopLoss > plan.entry);
+  assert.ok(plan.takeProfit < plan.entry);
+});
