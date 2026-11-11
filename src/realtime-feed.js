@@ -10,14 +10,16 @@ const WATCHDOG_MS = 5_000;
 const HEARTBEAT_LOG_MS = 60_000;
 const COINBASE_STREAM = "wss://ws-feed.exchange.coinbase.com";
 const BIQUOTE_HUB = "https://biquote.io/hubs/tick";
+const BIQUOTE_LATEST = "https://biquote.io/api/latest";
+const BIQUOTE_POLL_MS = 2_500;
 const MARKETS = ["EURUSD", "BTCUSD", "XAUUSD"];
 const quotes = {};
 const clients = new Set();
-const counters = { coinbaseMessages: 0, biquoteMessages: 0, rejectedTicks: 0, reconnects: 0 };
+const counters = { coinbaseMessages: 0, biquoteMessages: 0, biquoteRestPolls: 0, biquoteRestTicks: 0, biquoteRestErrors: 0, rejectedTicks: 0, reconnects: 0 };
 const startedAt = Date.now();
-let socket, coinbaseRetry, biquoteRetry, heartbeatTimer, watchdogTimer, stopping = false;
+let socket, coinbaseRetry, biquoteRetry, heartbeatTimer, watchdogTimer, biquotePollTimer, stopping = false;
 let biquoteConnection, lastHeartbeatLog = 0, lastWatchdogAt = Date.now();
-let coinbaseConnectedAt = null, biquoteConnectedAt = null, lastCoinbaseMessageAt = null, lastBiquoteMessageAt = null;
+let coinbaseConnectedAt = null, biquoteConnectedAt = null, lastCoinbaseMessageAt = null, lastBiquoteMessageAt = null;\nlet biquoteRestConnected = false, lastBiquoteRestAt = null, biquotePollInFlight = false;
 
 function scheduleCoinbaseReconnect(reason) {
   if (stopping || coinbaseRetry) return;
@@ -71,14 +73,7 @@ async function connectBiquote() {
     connection.on("ReceiveTick", payload => {
       lastBiquoteMessageAt = Date.now();
       counters.biquoteMessages++;
-      const records = Array.isArray(payload) ? payload : [payload];
-      for (const record of records) {
-        const quote = normalizeBiquoteStreamTick(record);
-        if (!quote) { counters.rejectedTicks++; continue; }
-        const validation = validateBiquoteTick(quote, { maxAgeMs: MAX_AGE_MS });
-        if (validation.valid) publish(quote.market, quote);
-        else counters.rejectedTicks++;
-      }
+      ingestBiquotePayload(payload, "SignalR");
     });
     connection.onreconnecting(error => {
       biquoteConnectedAt = null;
@@ -102,6 +97,58 @@ async function connectBiquote() {
     biquoteConnectedAt = null;
     console.error("Biquote stream connection failed:", error.message);
     scheduleBiquoteReconnect("start or subscribe failed");
+  }
+}
+
+function ingestBiquotePayload(payload, source) {
+  const records = Array.isArray(payload) ? payload : [payload];
+  for (const record of records) {
+    const quote = normalizeBiquoteStreamTick(record);
+    if (!quote) { counters.rejectedTicks++; continue; }
+    const validation = validateBiquoteTick(quote, { maxAgeMs: MAX_AGE_MS });
+    if (validation.valid) {
+      publish(quote.market, { ...quote, source: source === "REST"
+        ? "Biquote /api/latest live bid-ask"
+        : "Biquote SignalR live tick stream" });
+    } else counters.rejectedTicks++;
+  }
+}
+
+// SignalR is the preferred tick transport. The documented batch REST endpoint
+// is a resilient fallback so a connected-but-silent hub cannot masquerade as
+// a working market-data feed.
+async function pollBiquoteRest() {
+  if (stopping || biquotePollInFlight) return;
+  biquotePollInFlight = true;
+  counters.biquoteRestPolls++;
+  try {
+    const url = new URL(BIQUOTE_LATEST);
+    url.searchParams.append("symbols", "EURUSD");
+    url.searchParams.append("symbols", "XAUUSD");
+    const response = await fetch(url, { signal: AbortSignal.timeout(5_000), headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const payload = await response.json();
+    const records = Array.isArray(payload) ? payload
+      : Array.isArray(payload?.ticks) ? payload.ticks
+      : Array.isArray(payload?.items) ? payload.items
+      : Object.values(payload ?? {});
+    let accepted = 0;
+    for (const record of records) {
+      const before = quotes[String(record?.symbol ?? "").toUpperCase().replace("/", "")];
+      ingestBiquotePayload(record, "REST");
+      const symbol = String(record?.symbol ?? "").toUpperCase().replace("/", "");
+      if (["EURUSD", "XAUUSD"].includes(symbol) && quotes[symbol] !== before &&
+          quotes[symbol]?.receivedAt === Date.now()) accepted++;
+    }
+    biquoteRestConnected = true;
+    lastBiquoteRestAt = Date.now();
+    counters.biquoteRestTicks += accepted;
+  } catch (error) {
+    biquoteRestConnected = false;
+    counters.biquoteRestErrors++;
+    console.warn("Biquote REST fallback poll failed:", error.message);
+  } finally {
+    biquotePollInFlight = false;
   }
 }
 
@@ -135,7 +182,7 @@ function brainSnapshot() {
     watchdog: { intervalMs: WATCHDOG_MS, lastCheckAt: lastWatchdogAt },
     providers: {
       coinbase: { connected: Boolean(socket && socket.readyState === WebSocket.OPEN), connectedAt: coinbaseConnectedAt, lastMessageAt: lastCoinbaseMessageAt },
-      biquote: { connected: biquoteConnection?.state === HubConnectionState.Connected, state: biquoteConnection?.state ?? "DISCONNECTED", connectedAt: biquoteConnectedAt, lastMessageAt: lastBiquoteMessageAt }
+      biquote: { connected: biquoteConnection?.state === HubConnectionState.Connected, state: biquoteConnection?.state ?? "DISCONNECTED", connectedAt: biquoteConnectedAt, lastMessageAt: lastBiquoteMessageAt, restFallbackConnected: biquoteRestConnected, lastRestPollAt: lastBiquoteRestAt }
     },
     markets,
     coverage: { freshMarkets, totalMarkets: MARKETS.length },
