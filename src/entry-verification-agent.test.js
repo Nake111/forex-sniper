@@ -46,7 +46,7 @@ test("rejects missing or stale quote and an unconfirmed candle trigger", () => {
 
 test("rejects invalid live-side stop/target geometry and insufficient effective reward/risk", () => {
   const result = runEntryVerificationAgent({
-    ...base, plan: { ...base.plan, stopLoss: 1.10001, takeProfit: 1.10003 }
+    ...base, plan: { ...base.plan, stopLoss: 1.10003, takeProfit: 1.10001 }
   });
   assert.equal(result.approved, false);
   assert.ok(result.blockers.some(x => x.includes("correct sides")));
