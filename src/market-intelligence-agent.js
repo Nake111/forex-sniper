@@ -151,7 +151,7 @@ function goldEventRisk(macro, now) {
     ],
     recentHighImpactHeadlines: recentHeadlineRisk.map(e => ({ title: e.title, date: e.date })),
     upcomingEventIsActive: officialUpcomingLock.length > 0,
-    blocksNewEntry: ["HIGH", "UPCOMING_HIGH", "MEDIUM", "UNKNOWN"].includes(status)
+    blocksNewEntry: ["HIGH", "UPCOMING_HIGH", "MEDIUM", "UNKNOWN", "HEADLINE_CAUTION"].includes(status)
   };
 }
 
