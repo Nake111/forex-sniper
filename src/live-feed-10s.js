@@ -37,7 +37,7 @@ function closeCurrent() {
   lastClosedBucket = candle.timestamp;
   candles.push(candle);
   candles = candles.slice(-MAX_CANDLES);
-  console.log(`CLOSED BTCUSDT 10s | ${new Date(candle.timestamp).toISOString()} | O=${candle.open} H=${candle.high} L=${candle.low} C=${candle.close} | trades=${candle.trades}`);
+  console.log(`CLOSED BTC-USD 10s | ${new Date(candle.timestamp).toISOString()} | O=${candle.open} H=${candle.high} L=${candle.low} C=${candle.close} | trades=${candle.trades}`);
   current = null;
 }
 
@@ -79,7 +79,7 @@ function processTrade(price, quantity, timestamp) {
 
 function connect() {
   if (stopping) return;
-  console.log("Connecting to Binance BTCUSDT public trade stream...");
+  console.log("Connecting to Coinbase BTC-USD public trade stream...");
   socket = new WebSocket(STREAM_URL, { handshakeTimeout: 15_000 });
 
   socket.on("open", () => {
@@ -91,7 +91,7 @@ function connect() {
     reconnectAttempt = 0;
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
-    console.log("BTCUSDT trade stream connected. Read-only; no orders are sent.");
+    console.log("BTC-USD trade stream connected. Read-only; no orders are sent.");
     clearInterval(heartbeatTimer);
     heartbeatTimer = setInterval(() => {
       if (socket?.readyState === WebSocket.OPEN) socket.ping();
@@ -116,12 +116,12 @@ const server = createServer((req, res) => {
     const ageMs = lastTradeAt === null ? null : Date.now() - lastTradeAt;
     const healthy = socket?.readyState === WebSocket.OPEN && ageMs !== null && ageMs <= STALE_AFTER_MS;
     res.statusCode = healthy ? 200 : 503;
-    res.end(JSON.stringify({ status: healthy ? "live" : "stale_or_connecting", symbol: SYMBOL, intervalSeconds: 10, source: "Binance spot BTCUSDT trades", lastTradeAt, ageMs, candles: candles.length, gapCount }));
+    res.end(JSON.stringify({ status: healthy ? "live" : "stale_or_connecting", symbol: SYMBOL, intervalSeconds: 10, source: "Coinbase spot BTC-USD trades", lastTradeAt, ageMs, candles: candles.length, gapCount }));
     return;
   }
   if (req.url === "/latest") {
     const ageMs = lastTradeAt === null ? null : Date.now() - lastTradeAt;
-    res.end(JSON.stringify({ symbol: SYMBOL, intervalSeconds: 10, source: "Binance spot BTCUSDT trades", status: ageMs !== null && ageMs <= STALE_AFTER_MS ? "live" : "stale", lastTradeAt, ageMs, current, candles: candles.slice(-200), gapCount }));
+    res.end(JSON.stringify({ symbol: SYMBOL, intervalSeconds: 10, source: "Coinbase spot BTC-USD trades", status: ageMs !== null && ageMs <= STALE_AFTER_MS ? "live" : "stale", lastTradeAt, ageMs, current, candles: candles.slice(-200), gapCount }));
     return;
   }
   res.statusCode = 404;
