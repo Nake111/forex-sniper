@@ -1,4 +1,5 @@
 import { fetchTwelveDataQuotes } from "./twelve-data-quotes.js";
+import { fetchBiquoteQuote, validateBiquoteTick } from "./biquote-quotes.js";
 
 function finitePositive(value) {
   const number = Number(value);
@@ -85,18 +86,40 @@ export async function fetchBidAskQuotes({
 
   const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD");
   if (nonCryptoMarkets.length) {
-    const feed = await fetchTwelveDataQuotes({ markets: nonCryptoMarkets, requireBidAsk: true });
-    for (const symbol of nonCryptoMarkets) {
-      const quote = feed.quotes?.[symbol];
-      const validation = validateBidAskQuote(quote);
-      if (validation.valid) quotes[symbol] = {
-        ...quote,
-        venue: quote.exchange ?? "Twelve Data reference feed",
-        source: "Twelve Data WebSocket bid/ask"
-      };
-      else errors.push(symbol + ": " + (validation.reason ?? feed.errors?.join("; ") ?? "Twelve Data quote unavailable"));
+    const biquoteResults = await Promise.all(nonCryptoMarkets.map(async symbol => [
+      symbol, await fetchBiquoteQuote(symbol, { fetchImpl })
+    ]));
+    const missingMarkets = [];
+    for (const [symbol, result] of biquoteResults) {
+      const validation = validateBiquoteTick(result.quote);
+      if (validation.valid) {
+        quotes[symbol] = {
+          ...result.quote,
+          venue: result.quote.venue ?? "Biquote MT5 feed",
+          source: "Biquote live bid/ask"
+        };
+      } else {
+        errors.push(result.error ?? symbol + ": " + validation.reason);
+        missingMarkets.push(symbol);
+      }
     }
-    if (feed.errors?.length) errors.push(...feed.errors);
+
+    // Twelve Data remains a secondary fallback, but its price WebSocket does
+    // not guarantee bid/ask fields for every symbol or subscription tier.
+    if (missingMarkets.length) {
+      const feed = await fetchTwelveDataQuotes({ markets: missingMarkets, requireBidAsk: true });
+      for (const symbol of missingMarkets) {
+        const quote = feed.quotes?.[symbol];
+        const validation = validateBidAskQuote(quote);
+        if (validation.valid) quotes[symbol] = {
+          ...quote,
+          venue: quote.exchange ?? "Twelve Data reference feed",
+          source: "Twelve Data WebSocket bid/ask fallback"
+        };
+        else errors.push(symbol + ": " + (validation.reason ?? feed.errors?.join("; ") ?? "Twelve Data quote unavailable"));
+      }
+      if (feed.errors?.length) errors.push(...feed.errors);
+    }
   }
 
   if (requested.includes("BTCUSD")) {
@@ -123,7 +146,7 @@ export async function fetchBidAskQuotes({
   const complete = requested.length > 0 && requested.every(symbol => Boolean(quotes[symbol]));
   return {
     status: complete ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
-    provider: "Twelve Data + Kraken (no Capital.com)",
+    provider: "Biquote + Kraken (Twelve Data fallback; no Capital.com)",
     quotes,
     errors,
     receivedAt: Date.now()
