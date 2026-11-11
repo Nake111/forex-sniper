@@ -107,7 +107,7 @@ jobs:
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
       - name: Require fresh quotes and complete three-agent verification
-        run: npm run verify:snapshot -- "$REPORT_PATH"
+        run: node scripts/verify-snapshot.js "$REPORT_PATH"
         env:
           MAX_SNAPSHOT_QUOTE_AGE_MS: "15000"
       - name: Validate and publish closed dashboard candles
