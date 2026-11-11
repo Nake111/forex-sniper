@@ -32,7 +32,7 @@ function component(name, weight, passed, available, detail) {
  * Weighted technical score. Missing inputs never earn points. Hard safety
  * gates are evaluated separately and cannot be overridden by the score.
  */
-export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false }) {
+export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false, macroBlocked = false, staleTimeframes = [] }) {
   const side = SIDES.has(direction) ? direction : null;
   const h1 = sideOf(frames.H1), h4 = sideOf(frames.H4);
   const htfAvailable = h1 !== null || h4 !== null;
@@ -77,7 +77,7 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const availableWeight = components.filter(item => item.status !== "UNAVAILABLE").reduce((sum, item) => sum + item.weight, 0);
   const coverage = availableWeight;
   const hardBlockers = [];
-  if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
+  if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");\n  if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");\n  if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
   if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
   if (!triggerAvailable || !triggerPass) hardBlockers.push("Required closed M5 entry trigger is not confirmed");
   const status = hardBlockers.length ? "REJECTED"
