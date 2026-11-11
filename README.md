@@ -139,3 +139,10 @@ The browser dashboard is available in dashboard/. Its supplemental BTC quant vie
 ## Investing.com secondary reference
 
 The dashboard includes manual links to Investing.com for EUR/USD, Bitcoin and gold as an independent visual cross-check. This is not an automated data feed: Investing.com states it does not offer a public API. The project does not scrape its pages or feed displayed quotes into agent calculations. A reviewer should compare the same instrument, quote type and timestamp; any discrepancy is a data-quality warning only. Existing validated candle providers remain the engine's source of market data. Do not use this reference panel to override candle freshness, economic-calendar, consensus or risk gates.
+
+
+## Continuous multi-market quote feed
+
+A persistent Railway service exposes read-only live quote snapshots at `/quotes`, health at `/health`, and server-sent updates at `/stream`. BTC/USD uses Binance spot book-ticker WebSocket updates. EUR/USD and XAU/USD use the Biquote aggregated MT5 quote endpoint polled every two seconds; this is near-real-time polling, not a provider WebSocket. The service stamps receive times, validates bid/ask direction and market state, reconnects BTC automatically, and never sends orders.
+
+Set `REALTIME_FEED_URL=https://btc-10-second-feed-production.up.railway.app` in the signal workflow to let the analysis engine prefer fresh feed quotes, with the existing provider path as fallback. Quotes older than 15 seconds are rejected. The feed is reference pricing, not Vantage broker execution pricing. Continuous quote delivery does not make the five-minute analysis workflow itself tick-by-tick; candle/strategy evaluation remains on its configured schedule.
