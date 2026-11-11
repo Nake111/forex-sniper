@@ -429,7 +429,14 @@ async function analyseMarket(market, macroContext) {
     validation: quoteValidation
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
-  console.log("AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:", JSON.stringify({ direction: marketReview.direction, approved: marketReview.approved, orderFlow: marketReview.orderFlow, blockers: marketReview.blockers, eventRisk: marketReview.eventRisk ?? null }));
+  const spreadAtrRatio = Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 && Number.isFinite(quoteValidation.spread)
+    ? quoteValidation.spread / results.M5.atr14 : null;
+  console.log("MARKET SPREAD/ATR CHECK:", JSON.stringify({
+    market: market.symbol, spread: quoteValidation.spread ?? null, m5Atr: results.M5.atr14 ?? null,
+    ratio: spreadAtrRatio, limit: market.symbol === "EURUSD" ? 0.12 : market.symbol === "BTCUSD" ? 0.18 : 0.15,
+    passed: spreadVerified
+  }));
+  console.log("AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:", JSON.stringify({ direction: marketReview.direction, approved: marketReview.approved, spread: marketReview.spread ?? null, orderFlow: marketReview.orderFlow, blockers: marketReview.blockers, eventRisk: marketReview.eventRisk ?? null }));
   if (!spreadVerified) executionBlockers.push("No fresh, valid bid/ask quote within the market-specific spread/ATR limit");
   // Quote validation is not proof of the brokerage account or order route.
   // Keep finalAction closed until the actual execution venue is explicitly connected.
