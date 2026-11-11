@@ -74,7 +74,8 @@ export function finalAction(signal, plan, checks = {}) {
     plan?.entryTriggerConfirmed === true &&
     checks.confirmationStatus === "H1 ALIGNED" &&
     checks.riskClear === true &&
-    checks.spreadVerified === true;
+    checks.spreadVerified === true &&
+    checks.executionVenueVerified === true;
   return executable ? signal : "NO TRADE";
 }
 
