@@ -43,7 +43,9 @@ The signal engine records an append-only research journal at `data/second-brain.
 - Node.js 20+
 - npm
 - Optional GEMINI_API_KEY for the six-role cloud review
-- Optional TWELVE_DATA_API_KEY for supplementary reference quotes
+- Biquote public REST feed for EUR/USD and XAU/USD bid/ask quotes (no API key required)
+- Kraken public ticker for BTC/USD bid/ask quotes (no API key required)
+- Optional TWELVE_DATA_API_KEY as a secondary bid/ask fallback where the provider supplies both sides
 
 ## Setup
 
@@ -55,7 +57,7 @@ npm test
 
 ## Scheduled market data
 
-The GitHub Actions workflow refreshes candles every five minutes, generates timestamped reports and publishes validated closed candles to the dashboard. GitHub Actions is polling, not continuous streaming; a run may be delayed. BTC/USD candles use Kraken spot reference data, not a broker CFD quote. These are reference feeds, not Vantage bid/ask execution prices. Respect the candle-age safety gate.
+The GitHub Actions workflow refreshes candles every five minutes, generates timestamped reports and publishes validated closed candles to the dashboard. GitHub Actions is polling, not continuous streaming; a run may be delayed. BTC/USD candles and bid/ask quotes use Kraken spot reference data, not a broker CFD quote. EUR/USD and XAU/USD bid/ask use Biquote's aggregated MT5 feed, with Twelve Data as a secondary fallback. These are market-data reference feeds, not a connected brokerage execution venue. Freshness, spread and risk gates remain mandatory.
 
 The latest output is available under Actions → Forex Sniper Live Candle Refresh → latest run → Artifacts. No live orders are placed.
 
