@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeBinanceBookTicker } from "../src/realtime-feed.js";
+import { normalizeBinanceBookTicker } from "../src/realtime-feed-core.js";
 
 test("normalizes valid BTC book ticker and stamps receive time", () => {
   const now = 1_800_000_000_000;
