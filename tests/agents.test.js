@@ -58,6 +58,20 @@ test("Gold upcoming event is labelled separately from active high-impact risk", 
   assert.equal(active.eventRisk.activeHighImpactEvents.length, 1);
 });
 
+test("Gold locks a primary-calendar high-impact event within 30 minutes as upcoming, not active", () => {
+  const now = Date.parse("2026-11-11T12:00:00Z");
+  const frames = { M5: frame(), M15: frame(), H1: frame() };
+  const review = runMarketIntelligenceAgent({
+    market: "XAUUSD", frames, now,
+    macro: { calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [],
+      nextEvents: [{ name: "CPI", impact: "HIGH", scheduledAt: new Date(now + 10 * 60_000).toISOString() }] } } }
+  });
+  assert.equal(review.eventRisk.status, "UPCOMING_HIGH");
+  assert.equal(review.eventRisk.activeHighImpactEvents.length, 0);
+  assert.equal(review.eventRisk.upcomingHighImpactEvents[0].withinProtectionWindow, true);
+  assert.equal(review.eventRisk.blocksNewEntry, true);
+});
+
 test("Gold distinguishes recent headline caution from an unavailable secondary calendar", () => {
   const now = Date.parse("2026-11-11T12:00:00Z");
   const frames = { M5: frame(), M15: frame(), H1: frame() };
