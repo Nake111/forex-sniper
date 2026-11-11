@@ -45,8 +45,20 @@ export function buildVerificationLayer({
   spreadVerified = null
 }) {
   const candidate = discovery?.candidate;
+  const higherTimeframeDirection = marketReview?.trend?.direction ?? marketReview?.squeeze?.h1Trend ?? null;
+  const trendStatus = !higherTimeframeDirection || higherTimeframeDirection === "MIXED"
+    ? "UNAVAILABLE" : higherTimeframeDirection === candidate ? "PASS" : "FAIL";
+  const triggerConfirmed = marketReview?.m5?.confirmed;
+  const momentumStatus = typeof triggerConfirmed !== "boolean" ? "UNAVAILABLE" : triggerConfirmed ? "PASS" : "FAIL";
+  const pressure = marketReview?.orderFlow;
+  const liquidityStatus = !pressure || pressure.direction === "UNKNOWN" ? "ADVISORY"
+    : pressure.strength < 2 ? "ADVISORY"
+      : pressure.direction === candidate ? "PASS" : "FAIL";
   const checks = [
-    { name: "market_structure_and_momentum", status: marketReview?.approved ? "PASS" : marketReview ? "FAIL" : "UNAVAILABLE", reasons: marketReview?.blockers ?? [] },
+    { name: "higher_timeframe_trend_alignment", status: trendStatus, reasons: trendStatus === "FAIL" ? ["Higher-timeframe direction conflicts with discovery candidate"] : [] },
+    { name: "m5_momentum_and_trigger", status: momentumStatus, reasons: momentumStatus === "FAIL" ? ["M5 momentum/closed-candle trigger is not confirmed"] : [] },
+    { name: "market_structure_and_liquidity", status: marketReview?.approved ? "PASS" : marketReview ? "FAIL" : "UNAVAILABLE", reasons: marketReview?.blockers ?? [] },
+    { name: "buyer_seller_pressure", status: liquidityStatus, reasons: liquidityStatus === "FAIL" ? ["Buyer/seller pressure conflicts with candidate"] : [] },
     { name: "deterministic_market_rules", status: deterministicFallback?.approved ? "PASS" : deterministicFallback ? "FAIL" : "UNAVAILABLE", reasons: deterministicFallback?.reasons ?? deterministicFallback?.blockers ?? [] },
     { name: "multi_agent_confluence", status: agentGate?.approved ? "PASS" : deterministicFallback?.approved ? "ADVISORY" : agentGate ? "FAIL" : "UNAVAILABLE", reasons: agentGate?.reasons ?? (agentGate?.reason ? [agentGate.reason] : []) },
     { name: "candle_freshness", status: staleTimeframes.length ? "FAIL" : "PASS", reasons: staleTimeframes.length ? ["Stale timeframes: " + staleTimeframes.join(", ")] : [] },
