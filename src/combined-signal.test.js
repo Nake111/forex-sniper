@@ -46,3 +46,11 @@ test("no breakout or recent BOS means HOLD", () => {
   const f = fixture(); f.donchian.M15.channelHigh20 = 200; f.results.M15.structure.bosBarsAgo = 99;
   assert.equal(evaluateCombinedSignal(f).signal, "HOLD");
 });
+
+test("SELL continuation accepts a recent M15 BOS without a fresh Donchian breakout", () => {
+  const f = fixture("BEARISH");
+  f.results.M15.structure.bosBarsAgo = 5;
+  f.donchian.M15.channelLow20 = 70;
+  f.donchian.M15.previousChannelLow20 = 65;
+  assert.equal(evaluateCombinedSignal(f).signal, "SELL");
+});
