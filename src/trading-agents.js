@@ -222,6 +222,42 @@ export function evaluateConfirmationQuality(signal, agentReport) {
   };
 }
 
+/**
+ * A+ independent-confluence fallback.
+ * Allows the institutional score to lead when VWAP is silent, but only when
+ * the independent technical panel, higher-timeframe, volatility, risk and
+ * quantitative checks all independently support the same direction.
+ */
+export function evaluateAPlusFallback(direction, tieredReport, legacyDirection, agentReport, macro = {}) {
+  if (!["BUY", "SELL"].includes(direction) || tieredReport?.signal !== direction ||
+      tieredReport?.tier !== "A+" || legacyDirection !== direction ||
+      macro?.eventRisk !== "NORMAL" || macro?.dataStale === true) {
+    return { approved: false, reason: "A+ fallback prerequisites not met" };
+  }
+  const agents = Array.isArray(agentReport?.agents) ? agentReport.agents : [];
+  const technical = agents.filter(agent => !String(agent.name ?? "").startsWith("Quantitative agent"));
+  const forecasts = agents.filter(agent => String(agent.name ?? "").startsWith("Quantitative agent"));
+  const supporting = technical.filter(agent => agent.direction === direction).length;
+  const opposing = technical.filter(agent => agent.direction === (direction === "BUY" ? "SELL" : "BUY")).length;
+  const coreSupport = agents.slice(0, 5).filter(agent => agent.direction === direction).length;
+  const forecastSupport = forecasts.filter(agent => agent.direction === direction).length;
+  const forecastOpposing = forecasts.filter(agent => agent.direction === (direction === "BUY" ? "SELL" : "BUY")).length;
+  const higherTimeframe = agents.find(agent => agent.name === "Higher-timeframe confluence analyst")?.direction;
+  const volatility = agents.find(agent => agent.name === "Volatility and regime analyst")?.direction;
+  const riskClear = agentReport?.riskManager?.approved === true;
+  const approved = technical.length >= 11 && supporting >= 7 && opposing <= 1 &&
+    coreSupport >= 3 && forecastSupport >= 1 && forecastOpposing === 0 &&
+    higherTimeframe === direction && volatility === direction && riskClear;
+  return {
+    approved, quality: approved ? "A_PLUS_CONFLUENCE" : "WEAK",
+    supporting, opposing, coreSupport, forecastSupport, forecastOpposing,
+    higherTimeframe, volatility, riskClear,
+    reason: approved
+      ? `A+ fallback: ${supporting}/${technical.length} technical specialists, ${forecastSupport}/${forecasts.length} quantitative forecasters, HTF and volatility aligned; risk approved`
+      : "A+ fallback blocked: independent technical, forecast, higher-timeframe or risk requirements failed"
+  };
+}
+
 export function gateSignalWithAgents(signal, agentReport) {
   if (!["BUY", "SELL"].includes(signal)) {
     return { signal: "HOLD", quality: "WEAK", approved: false, reason: "Technical engine did not produce a trade candidate" };
