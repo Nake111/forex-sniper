@@ -151,7 +151,7 @@ export function squeezeMomentum(candles, length = 20, bbMult = 2, kcMult = 1.5) 
   let direction = "FLAT";
   if (current.momentum > 0) direction = current.momentum > previous.momentum ? "BULLISH_STRENGTHENING" : "BULLISH_WEAKENING";
   else if (current.momentum < 0) direction = current.momentum < previous.momentum ? "BEARISH_STRENGTHENING" : "BEARISH_WEAKENING";
-  return { ...current, previousMomentum: previous.momentum, direction };
+  return { ...current, previousState: previous.state, previousMomentum: previous.momentum, direction };
 }
 
 
