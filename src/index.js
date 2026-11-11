@@ -16,6 +16,8 @@ import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
 import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
+import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
+import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -245,8 +247,12 @@ async function analyseMarket(market, macroContext) {
     }
   }
 
-  const calendarBlocked = macroContext.eventRisk !== "NORMAL";
-  const goldMacroBlocked = market.symbol === "XAUUSD" && macroContext.eventRisk !== "NORMAL";
+  let marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext });
+  const calendarBlocked = market.symbol === "XAUUSD"
+    ? marketReview.eventRisk?.blocksNewEntry ?? true
+    : macroContext.eventRisk !== "NORMAL";
+  const goldMacroBlocked = market.symbol === "XAUUSD" && calendarBlocked;
+  console.log("AGENT 1 — MARKET INTELLIGENCE:", JSON.stringify(marketReview));
   // Directional bias is technical research only; it cannot authorize an order.
   const directionalContext = { ...macroContext, eventRisk: "NORMAL" };
   const directionalTieredReport = SIGNAL_PROFILE === "balanced" ? evaluateTieredSignal(results, directionalContext) : null;
@@ -422,23 +428,28 @@ async function analyseMarket(market, macroContext) {
     source: spreadQuote?.source ?? "unavailable", venue: spreadQuote?.venue ?? "reference-only",
     validation: quoteValidation
   }));
+  marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
+  console.log("AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:", JSON.stringify({ direction: marketReview.direction, approved: marketReview.approved, orderFlow: marketReview.orderFlow, blockers: marketReview.blockers, eventRisk: marketReview.eventRisk ?? null }));
   if (!spreadVerified) executionBlockers.push("No fresh, valid bid/ask quote within the market-specific spread/ATR limit");
-  // Quote validation is not proof of the user's brokerage account or order route.
+  // Quote validation is not proof of the brokerage account or order route.
   // Keep finalAction closed until the actual execution venue is explicitly connected.
   executionBlockers.push("Execution venue/account is not connected and verified; market-data quotes alone cannot authorize an order");
   if (confirmation.status !== "H1 ALIGNED") executionBlockers.push(confirmation.reason ?? "H1 confirmation not aligned");
-  const riskClear = executionBlockers.length === 0 &&
-    !calendarBlocked && !goldMacroBlocked && !macroContext.dataStale &&
-    !goldNewsWindow?.blockNewEntries;
-  const action = finalAction(candidate, plan, {
-    confirmationStatus: confirmation.status,
-    riskClear,
-    spreadVerified,
-    executionVenueVerified: false
+  if (!marketReview.approved) executionBlockers.push(...(marketReview.blockers ?? ["Market-intelligence agent rejected the setup"]));
+  const approvalBlockers = executionBlockers.filter(reason => !reason.startsWith("Execution venue/account is not connected"));
+  const approval = runSignalApprovalAgent({
+    candidate, marketReview, plan, quoteValidation, quote: spreadQuote,
+    dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
+    executionBlockers: approvalBlockers
   });
+  console.log("AGENT 2 — INDEPENDENT SIGNAL APPROVAL:", JSON.stringify(approval));
+  const riskClear = approval.approved && !calendarBlocked && !goldMacroBlocked &&
+    !macroContext.dataStale && !goldNewsWindow?.blockNewEntries;
+  // Approved results are paper signals only; no broker execution venue is connected.
+  const action = riskClear ? approval.decision : "NO TRADE";
   const executionStatus = action === "BUY" || action === "SELL"
-    ? "EXECUTABLE SIGNAL — fresh quote, M5 trigger, H1 confirmation and risk gates passed"
-    : "NOT EXECUTABLE — levels are research-only until every mandatory execution gate passes";
+    ? "PAPER SIGNAL APPROVED — reference quote and strategy gates passed; NOT broker-executable"
+    : "NO APPROVED TRADE — one or more confirmation, data, spread or risk gates failed";
 
   try {
     const brain = await updateSecondBrain({
@@ -465,6 +476,8 @@ async function analyseMarket(market, macroContext) {
   console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
   console.log("EXECUTION CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
+  console.log("AGENT 1 MARKET REVIEW:", marketReview.approved ? "CONFIRMED" : "REJECTED");
+  console.log("AGENT 2 FINAL REVIEW:", approval.decision, "| approved:", approval.approved);
   console.log("ENTRY STATUS:", plan?.status ?? "NO LEVELS — insufficient ATR/price data");
   console.log("EXECUTION STATUS:", executionStatus);
   console.log("REJECTION / UNVERIFIED CONDITIONS:", JSON.stringify([...new Set(executionBlockers)]));
