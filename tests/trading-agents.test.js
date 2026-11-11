@@ -87,3 +87,16 @@ test("risk manager vetoes stale market data", () => {
   assert.equal(report.portfolioManager.decision, "HOLD");
   assert.ok(report.riskManager.blocks.includes("STALE_MARKET_DATA"));
 });
+
+test("HOLD abstentions do not dilute directional confidence", () => {
+  const report = runTradingAgents({
+    market: "EURUSD",
+    frames: bullishFrames(),
+    macro: { eventRisk: "NORMAL" }
+  });
+  assert.equal(report.trader.bias, "BUY");
+  assert.equal(report.trader.confidencePct, 100);
+  assert.equal(report.portfolioManager.decision, "BUY");
+  // The full confirmation gate still requires quantitative forecast agreement.
+  assert.equal(gateSignalWithAgents("BUY", report).signal, "HOLD");
+});
