@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-export const LIVE_TICK_MAX_AGE_MS = 150;
+export const LIVE_TICK_MAX_AGE_MS = 500;
 
 function toTimestamp(value) {
   if (typeof value === "number" || (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value)))) {
