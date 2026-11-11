@@ -18,6 +18,7 @@ import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
 import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
+import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -451,7 +452,13 @@ async function analyseMarket(market, macroContext) {
     executionBlockers: approvalBlockers
   });
   console.log("AGENT 2 — INDEPENDENT SIGNAL APPROVAL:", JSON.stringify(approval));
-  const riskClear = approval.approved && !calendarBlocked && !goldMacroBlocked &&
+  const verification = runEntryVerificationAgent({
+    market: market.symbol, candidate, plan, quote: spreadQuote,
+    quoteValidation, entryAtr: results.M5.atr14,
+    marketReview, approval, dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0
+  });
+  console.log("AGENT 3 — INDEPENDENT LIVE ENTRY VERIFICATION:", JSON.stringify(verification));
+  const riskClear = approval.approved && verification.approved && !calendarBlocked && !goldMacroBlocked &&
     !macroContext.dataStale && !goldNewsWindow?.blockNewEntries;
   // Approved results are paper signals only; no broker execution venue is connected.
   const action = riskClear ? approval.decision : "NO TRADE";
@@ -471,7 +478,8 @@ async function analyseMarket(market, macroContext) {
       macro: macroContext,
       frames: results,
       marketIntelligence: marketReview,
-      approval
+      approval,
+      verification
     });
     console.log("SECOND BRAIN MEMORY:", JSON.stringify(brain));
   } catch (error) {
@@ -488,6 +496,8 @@ async function analyseMarket(market, macroContext) {
   console.log("CONFIRMATION:", confirmation.status);
   console.log("AGENT 1 MARKET REVIEW:", marketReview.approved ? "CONFIRMED" : "REJECTED");
   console.log("AGENT 2 FINAL REVIEW:", approval.decision, "| approved:", approval.approved);
+  console.log("AGENT 3 ENTRY VERIFICATION:", verification.decision, "| approved:", verification.approved);
+  if (!verification.approved) console.log("ENTRY VERIFICATION BLOCKERS:", JSON.stringify(verification.blockers));
   console.log("ENTRY STATUS:", plan?.status ?? "NO LEVELS — insufficient ATR/price data");
   console.log("EXECUTION STATUS:", executionStatus);
   console.log("REJECTION / UNVERIFIED CONDITIONS:", JSON.stringify([...new Set(executionBlockers)]));
