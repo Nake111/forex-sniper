@@ -15,7 +15,6 @@ import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
-import { validateTwelveDataQuote } from "./twelve-data-quotes.js";
 import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
 
 const WINDOW = 240;
@@ -143,7 +142,7 @@ ${name} ANALYSIS`);
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
-async function analyseMarket(market, macroContext, marketQuotes = {}) {
+async function analyseMarket(market, macroContext) {
   console.log("\n======================================");
   console.log(`       ${market.label} SNIPER AI`);
   console.log("     Multi-Timeframe Analysis");
@@ -421,13 +420,8 @@ async function analyseMarket(market, macroContext, marketQuotes = {}) {
   // Fetch the active market's bid/ask immediately before final validation so
   // long-running agent reviews do not age the quote before the execution gate.
   const bidAskFeed = await fetchBidAskQuotes({ markets: [market.symbol] });
-  const providerQuote = bidAskFeed.quotes[market.symbol] ?? null;
-  const twelveDataQuote = marketQuotes[market.symbol] ?? null;
-  const twelveDataValidation = validateTwelveDataQuote(twelveDataQuote);
-  const spreadQuote = providerQuote ?? (twelveDataValidation.valid ? twelveDataQuote : null);
-  const quoteValidation = providerQuote
-    ? validateBidAskQuote(providerQuote)
-    : validateTwelveDataQuote(spreadQuote);
+  const spreadQuote = bidAskFeed.quotes[market.symbol] ?? null;
+  const quoteValidation = validateBidAskQuote(spreadQuote);
   const spreadVerified = Boolean(quoteValidation.valid &&
     Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
     quoteValidation.spread / results.M5.atr14 <=
@@ -553,7 +547,7 @@ async function main() {
         console.log("GOLD MACRO BIAS:", goldMacroBias, "| Real-yield change (10Y):", goldMacro.yields?.change10Y, "| Real-yield age days:", yieldAgeDays, "| DXY 15m change %:", liveGoldContext.dxyChangePct);
       }
       if (market.symbol === "XAUUSD") console.log("GOLD NEWS CONTEXT:", JSON.stringify(context));
-      await analyseMarket(market, context, quoteFeed.quotes);
+      await analyseMarket(market, context);
     } catch (error) {
       failed = true;
       console.error(`\n${market.label} ANALYSIS ERROR:`, error);
