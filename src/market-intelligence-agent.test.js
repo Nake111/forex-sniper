@@ -34,8 +34,8 @@ test("EURUSD requires a verifiable spread/ATR and a closed bearish M5 candle for
 
 test("BTCUSD fails closed when H1 squeeze state is unavailable", () => {
   const frames = {
-    H1: { ...frame("BUY"), squeeze: { state: "INSUFFICIENT_DATA", momentum: null, direction: "N/A" } },
-    M15: frame("BUY")
+    M5: frame("BUY"), M15: frame("BUY"),
+    H1: { ...frame("BUY"), squeeze: { state: "INSUFFICIENT_DATA", momentum: null, direction: "N/A" } }
   };
   const review = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
   assert.equal(review.approved, false);
@@ -44,8 +44,8 @@ test("BTCUSD fails closed when H1 squeeze state is unavailable", () => {
 
 test("BTCUSD does not treat an unconfirmed NO_SQUEEZE state as a release", () => {
   const frames = {
-    H1: { ...frame("BUY"), squeeze: { state: "NO_SQUEEZE", previousState: null, momentum: 1, direction: "BULLISH_STRENGTHENING" } },
-    M15: frame("BUY")
+    M5: frame("BUY"), M15: frame("BUY"),
+    H1: { ...frame("BUY"), squeeze: { state: "NO_SQUEEZE", previousState: null, momentum: 1, direction: "BULLISH_STRENGTHENING" } }
   };
   const review = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
   assert.equal(review.approved, false);
@@ -68,4 +68,14 @@ test("Gold headline caution retains a veto when H1 volatility is elevated", () =
   const review = runMarketIntelligenceAgent({ market: "XAUUSD", frames, macro });
   assert.equal(review.eventRisk.blocksNewEntry, true);
   assert.match(review.eventRisk.reason, /elevated H1 volatility/);
+});
+
+
+test("Gold retains headline veto when H1 volatility baseline is unavailable", () => {
+  const frames = { M5: frame("SELL", candle(100, 101, 98, 98.2)), H1: frame("SELL"), M15: frame("SELL") };
+  const macro = { calendar: { status: "AVAILABLE", risk: { status: "NORMAL", activeEvents: [], nextEvents: [] } },
+    headlines: [{ title: "Recent headline", date: new Date(Date.now() - 60_000).toISOString() }] };
+  const review = runMarketIntelligenceAgent({ market: "XAUUSD", frames, macro });
+  assert.equal(review.eventRisk.blocksNewEntry, true);
+  assert.match(review.eventRisk.reason, /volatility ratio is unavailable/);
 });
