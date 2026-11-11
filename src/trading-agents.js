@@ -138,7 +138,11 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
     sum + (agent.direction === direction ? agent.weight : 0), 0);
   const bullScore = score("BUY");
   const bearScore = score("SELL");
-  const totalDirectionalWeight = agents.reduce((sum, agent) => sum + agent.weight, 0);
+  // HOLD is an abstention, not a vote against either direction. Exclude abstaining
+  // specialists from directional confidence; the separate agreement gate below still
+  // checks opposition, minimum support, forecast confirmation and hard risk vetoes.
+  const totalDirectionalWeight = agents.reduce((sum, agent) =>
+    sum + (agent.direction === "BUY" || agent.direction === "SELL" ? agent.weight : 0), 0);
   const strongest = Math.max(bullScore, bearScore);
   const rawBias = bullScore > bearScore ? "BUY" : bearScore > bullScore ? "SELL" : "HOLD";
   const confidence = totalDirectionalWeight ? Math.round(100 * strongest / totalDirectionalWeight) : 0;
