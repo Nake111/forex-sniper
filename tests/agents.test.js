@@ -32,6 +32,8 @@ test("BTC/USD agent blocks an active H1 squeeze and accepts directional release"
   const released = runMarketIntelligenceAgent({ market: "BTCUSD", frames });
   assert.equal(released.approved, true);
   assert.equal(released.direction, "BUY");
+  frames.H1.squeeze = { state: "NO_SQUEEZE", momentum: 0.6, direction: "BULLISH_STRENGTHENING" };
+  assert.equal(runMarketIntelligenceAgent({ market: "BTCUSD", frames }).approved, true);
 });
 
 test("Gold upcoming event is labelled separately from active high-impact risk", () => {
@@ -59,7 +61,7 @@ test("Gold upcoming event is labelled separately from active high-impact risk", 
 test("approval agent rejects missing quote and accepts only complete paper checks", () => {
   const marketReview = { market: "EURUSD", direction: "BUY", approved: true, blockers: [] };
   const plan = { entry: 1.1, stopLoss: 1.099, takeProfit: 1.102, riskRewardValue: 2, entryTriggerConfirmed: true };
-  const base = { candidate: "BUY", marketReview, plan, quote: { bid: 1.1, ask: 1.1001 }, quoteValidation: { valid: true, spread: 0.0001 } };
+  const base = { candidate: "BUY", marketReview, plan, quote: { bid: 1.1, ask: 1.1001 }, quoteValidation: { valid: true, spread: 0.0001 }, entryAtr: 0.01 };
   assert.equal(runSignalApprovalAgent({ ...base, quote: null }).approved, false);
   assert.equal(runSignalApprovalAgent(base).decision, "BUY");
 });
