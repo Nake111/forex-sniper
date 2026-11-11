@@ -53,6 +53,7 @@ export async function updateSecondBrain({
         record.outcome = "AMBIGUOUS";
         record.resolvedAt = candleTime(candle);
         record.resolutionNote = "Stop and target both touched in the same candle; sequence unknown";
+        break;
       } else if (stopHit || targetHit) {
         record.outcome = targetHit ? "WIN" : "LOSS";
         record.resolvedAt = candleTime(candle);
