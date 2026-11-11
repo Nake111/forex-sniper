@@ -12,6 +12,7 @@ import { getGoldNewsWindow, evaluateGoldNewsCandle } from "./gold-news-strategy.
 import { runTradingAgents, gateSignalWithAgents } from "./trading-agents.js";
 import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
+import { updateSecondBrain } from "./second-brain.js";
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -342,6 +343,23 @@ async function analyseMarket(market, macroContext) {
   const confirmation = confirmSignal(candidate, results.H1);
   const plan = tradePlan(candidate, results.M5, confirmation);
   const action = finalAction(candidate, plan);
+
+  try {
+    const brain = await updateSecondBrain({
+      market: market.symbol,
+      candles: frames.find(frame => frame.key === "M5").candles,
+      signal: action,
+      plan,
+      vwap: { ...vwapDecision, strategies: vwapReport.strategies },
+      agents: agentReport,
+      llm: llmReport,
+      macro: macroContext,
+      frames: results
+    });
+    console.log("SECOND BRAIN MEMORY:", JSON.stringify(brain));
+  } catch (error) {
+    console.error("SECOND BRAIN STORAGE WARNING:", error.message);
+  }
 
   console.log("\n======================================");
   console.log(`          FINAL ${market.symbol} SIGNAL`);
