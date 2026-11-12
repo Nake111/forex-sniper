@@ -1,4 +1,5 @@
 import { getHistoricalRates } from "dukascopy-node";
+import { fetchFdnM5Candles } from "./fdn-data.js";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 
 const DATA_DIR = process.env.DATA_DIR ?? "data";
@@ -233,32 +234,53 @@ async function downloadOne(market, timeframe) {
   console.log(`Downloading ${market.label} ${timeframe.toUpperCase()} candles from ${from} (cache: ${previous.length} rows; overlap: ${latestCached ? OVERLAP_DAYS + " days" : "cold start"})...`);
   let incoming;
   let provider = useKraken ? "Kraken" : "Dukascopy";
-  if (useKraken) {
-    incoming = await downloadKrakenCandles(timeframe);
-  } else if (process.env.TWELVE_DATA_API_KEY && TWELVE_DATA_SYMBOLS[market.prefix]) {
-    try {
-      const freshM5 = await downloadTwelveDataM5(market);
-      incoming = timeframe === "m5" ? freshM5 : resampleFiveMinuteCandles(freshM5, timeframe);
-      provider = "Twelve Data";
-      if (!incoming.length) throw new Error("No complete " + timeframe.toUpperCase() + " bars could be resampled from Twelve Data M5");
-    } catch (error) {
-      console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data unavailable; using Dukascopy fallback. Reason: " + error.message);
-      provider = "Dukascopy fallback";
+
+  // FinancialData.Net contributes an independent UTC M1 feed for EURUSD and
+  // BTCUSD. It is resampled to closed M5 candles and merged into the existing
+  // history; it never supplies bid/ask quotes or bypasses quote/risk gates.
+  if (timeframe === "m5" && process.env.FDN_API_KEY && ["eurusd", "btcusd"].includes(market.prefix)) {
+    const fdnMarket = market.prefix.toUpperCase();
+    const fdn = await fetchFdnM5Candles(fdnMarket, {
+      apiKey: process.env.FDN_API_KEY,
+      maxPages: Number(process.env.FDN_MAX_PAGES ?? 1)
+    });
+    if (fdn.status === "OK") {
+      incoming = fdn.candles;
+      provider = "FinancialData.Net M1 → M5";
+      console.log("FDN M1 feed:", fdnMarket, "|", fdn.candles.length, "complete M5 bars |", fdn.entitlement, "| UTC");
+    } else {
+      console.warn("FDN M1 feed unavailable for " + fdnMarket + ": " + (fdn.error ?? fdn.status) + "; using existing provider chain.");
+    }
+  }
+
+  if (!incoming?.length) {
+    if (useKraken) {
+      incoming = await downloadKrakenCandles(timeframe);
+    } else if (process.env.TWELVE_DATA_API_KEY && TWELVE_DATA_SYMBOLS[market.prefix]) {
+      try {
+        const freshM5 = await downloadTwelveDataM5(market);
+        incoming = timeframe === "m5" ? freshM5 : resampleFiveMinuteCandles(freshM5, timeframe);
+        provider = "Twelve Data";
+        if (!incoming.length) throw new Error("No complete " + timeframe.toUpperCase() + " bars could be resampled from Twelve Data M5");
+      } catch (error) {
+        console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data unavailable; using Dukascopy fallback. Reason: " + error.message);
+        provider = "Dukascopy fallback";
+        incoming = await fetchDukascopyHistory(market, timeframe, from, to);
+      }
+    } else {
       incoming = await fetchDukascopyHistory(market, timeframe, from, to);
     }
-  } else {
-    incoming = await fetchDukascopyHistory(market, timeframe, from, to);
   }
 
   if (!Array.isArray(incoming) || incoming.length < 1) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
   let merged = mergeCandles(previous, incoming, cutoff);
-  if (provider === "Twelve Data") {
+  if (provider === "Twelve Data" || provider === "FinancialData.Net M1 → M5") {
     console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is too short for a cold start; supplementing from Dukascopy.");
     const fallback = await fetchDukascopyHistory(market, timeframe, from, to);
     merged = mergeCandles(merged, fallback, cutoff);
-    provider = "Twelve Data + Dukascopy history";
+    provider = provider + " + Dukascopy baseline history";
   }
   if (merged.length < 100) {
     throw new Error(`Not enough merged ${market.label} ${timeframe.toUpperCase()} candles: ${merged.length}`);
