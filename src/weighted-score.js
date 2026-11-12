@@ -79,14 +79,14 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
   const advisories = [];
-  // Spot FX feeds often publish OHLC candles without reliable volume. Do not
-  // manufacture volume or let a missing FX volume field veto every EUR/USD
-  // setup; keep A1 HEART explicitly unavailable/advisory until a real
-  // tick-volume source is supplied. BTC and XAU retain the full A1 hard gate.
-  if (market === "EURUSD" && a1Heart?.status === "UNAVAILABLE") {
-    advisories.push("A1 HEART not scored: EUR/USD feed has insufficient usable venue tick-volume; no volume is inferred or fabricated.");
-  } else if (a1Heart?.status !== "READY" || a1Heart?.direction !== side) {
-    hardBlockers.push("A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction");
+  // A1 HEART is a distinct opening-range/volume-profile strategy, not a
+  // universal prerequisite for every trend, VWAP, SMC or retest candidate.
+  // Requiring it globally silently vetoes otherwise valid BTC/XAU candidates
+  // whenever its session-specific volume pattern is absent. Keep its state
+  // visible as an advisory; a candidate selected explicitly from A1 HEART must
+  // pass that strategy's own READY/direction check before it can be approved.
+  if (a1Heart?.status !== "READY" || a1Heart?.direction !== side) {
+    advisories.push("A1 HEART is not confirmed for this direction; this only disables the A1 HEART setup family and does not veto independent strategy candidates.");
   }
   if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");
   if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
