@@ -1,3 +1,5 @@
+import { repriceIndicativePlan } from "./trade-plan.js";
+
 const MAX_ENTRY_DEVIATION_ATR = Object.freeze({ EURUSD: 0.2, BTCUSD: 0.25, XAUUSD: 0.2 });
 
 export function runSignalApprovalAgent({
@@ -15,7 +17,7 @@ export function runSignalApprovalAgent({
       ? plan.stopLoss < plan.entry && plan.takeProfit > plan.entry
       : plan.stopLoss > plan.entry && plan.takeProfit < plan.entry;
     if (!correct) blockers.push("Stop-loss or take-profit is on the wrong side of entry");
-    if (!(Number(plan.riskRewardValue) >= 2)) blockers.push("Risk/reward is below 1:2");
+    if (!(Number(plan.riskRewardValue) >= 2)) blockers.push("Indicative risk/reward is below 1:2");
     if (plan.entryTriggerConfirmed !== true) blockers.push("Closed M5 entry trigger is not confirmed");
   }
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Fresh bid/ask quote is not validated");
@@ -31,6 +33,11 @@ export function runSignalApprovalAgent({
   if (!quote || !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask)) blockers.push("Bid/ask quote missing");
   else if ((candidate === "BUY" && plan && quote.ask <= 0) || (candidate === "SELL" && plan && quote.bid <= 0)) blockers.push("Executable-side quote is invalid");
   const quoteEntry = candidate === "BUY" ? quote?.ask : candidate === "SELL" ? quote?.bid : null;
+  const repriced = plan && Number.isFinite(quote?.bid) && Number.isFinite(quote?.ask)
+    ? repriceIndicativePlan(plan, quote) : null;
+  const liveRiskReward = repriced?.riskRewardValue ?? null;
+  if (plan && repriced?.repriceStatus === "INVALIDATED") blockers.push(repriced.repriceReason);
+  else if (plan && !(Number(liveRiskReward) >= 2)) blockers.push("Live executable-side risk/reward is below 1:2");
   const market = marketReview?.market ?? plan?.market ?? "UNKNOWN";
   const maxEntryDeviationAtr = MAX_ENTRY_DEVIATION_ATR[market] ?? 0.2;
   const entryDeviationAtr = Number.isFinite(quoteEntry) && Number.isFinite(plan?.entry) &&
@@ -58,7 +65,12 @@ export function runSignalApprovalAgent({
     spread: quoteValidation?.spread ?? null,
     quoteEntry: Number.isFinite(quoteEntry) ? quoteEntry : null,
     entryDeviationAtr,
-    entry: plan?.entry ?? null,
+    indicativeEntry: plan?.entry ?? null,
+    entry: Number.isFinite(repriced?.liveEntry) ? repriced.liveEntry : plan?.entry ?? null,
+    liveEntry: Number.isFinite(repriced?.liveEntry) ? repriced.liveEntry : null,
+    liveRiskReward,
+    riskReward: repriced?.riskReward ?? null,
+    repriceStatus: repriced?.repriceStatus ?? null,
     stopLoss: plan?.stopLoss ?? null,
     takeProfit: plan?.takeProfit ?? null,
     blockers: unique
