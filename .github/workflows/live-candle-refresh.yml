@@ -127,7 +127,9 @@ jobs:
           node --input-type=module -e 'import { readFile } from "node:fs/promises"; const s = JSON.parse(await readFile("dashboard/data/latest.json", "utf8")); if (s.validation?.status !== "PASS") throw new Error("Dashboard candle snapshot is not PASS: " + s.validation?.status);'
           snapshot="$(mktemp)"
           brain_snapshot="$(mktemp)"
+          signal_snapshot="$(mktemp)"
           cp dashboard/data/latest.json "$snapshot"
+          cp dashboard/data/signals.json "$signal_snapshot"
           if [ -f data/second-brain.jsonl ]; then cp data/second-brain.jsonl "$brain_snapshot"; else : > "$brain_snapshot"; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -137,6 +139,7 @@ jobs:
             git fetch origin "$GITHUB_REF_NAME"
             git reset --hard "origin/$GITHUB_REF_NAME"
             cp "$snapshot" dashboard/data/latest.json
+            cp "$signal_snapshot" dashboard/data/signals.json
             mkdir -p data
             cp "$brain_snapshot" data/second-brain.jsonl
             git add dashboard/data/latest.json dashboard/data/signals.json data/second-brain.jsonl
@@ -153,7 +156,7 @@ jobs:
             fi
             echo "Branch advanced during publish; retrying on latest branch."
           done
-          rm -f "$snapshot" "$brain_snapshot"
+          rm -f "$snapshot" "$signal_snapshot" "$brain_snapshot"
           if [ "$pushed" != true ]; then
             echo "Could not publish dashboard snapshot after five attempts." >&2
             exit 1
