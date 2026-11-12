@@ -105,7 +105,7 @@ test("BTC approval and entry verification use the same 0.25 ATR deviation limit"
   const marketReview = { market: "BTCUSD", direction: "BUY", approved: true, blockers: [] };
   const plan = {
     market: "BTCUSD", direction: "BUY", entry: 100, stopLoss: 99,
-    takeProfit: 102.1, riskRewardValue: 2.1, entryTriggerConfirmed: true
+    takeProfit: 102.7, riskRewardValue: 2.7, entryTriggerConfirmed: true
   };
   const quote = { bid: 100.21, ask: 100.22, source: "test", venue: "test" };
   const quoteValidation = { valid: true, spread: 0.01, ageMs: 100 };
