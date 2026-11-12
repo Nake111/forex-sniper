@@ -19,7 +19,7 @@ function decodeXml(value = "") {
 }
 function tagValue(xml, names) {
   const tags = [...xml.matchAll(/<([\w:]+)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi)];
-  const match = tags.find(entry => names.includes(entry[1].split(":").at(-1).toLowerCase()));
+  const match = tags.find(entry => names.map(name => name.toLowerCase()).includes(entry[1].split(":").at(-1).toLowerCase()));
   return match ? decodeXml(match[2]) : "";
 }
 function classifyItem(item, market, sourceUrl, now, maxAgeMs) {
