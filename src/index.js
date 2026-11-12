@@ -25,6 +25,7 @@ import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
 
+const DATA_DIR = (process.env.DATA_DIR ?? "data").replace(/\\/+$/, "");
 const WINDOW = 240;
 const MIN_HISTORY = 60;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
@@ -87,7 +88,7 @@ async function loadCandles(path, timeframe, interval) {
 
 async function loadGoldLiveContext() {
   try {
-    const raw = await readFile("data/gold-live-ticks.jsonl", "utf8");
+    const raw = await readFile(`${DATA_DIR}/gold-live-ticks.jsonl`, "utf8");
     const ticks = raw.trim().split("\n").slice(-500).map(line => JSON.parse(line))
       .filter(tick => tick.symbol === "DXY" && Number.isFinite(tick.timestamp) && Number.isFinite(tick.price))
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -163,7 +164,7 @@ async function analyseMarket(market, macroContext) {
 
   const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
     key: tf.key,
-    candles: await loadCandles(`data/${market.symbol === "BTCUSD" ? (process.env.BTC_DATA_PREFIX ?? market.prefix) : market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
+    candles: await loadCandles(`${DATA_DIR}/${market.symbol === "BTCUSD" ? (process.env.BTC_DATA_PREFIX ?? market.prefix) : market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
   })));
 
   const staleTimeframes = TIMEFRAMES.filter(tf => {
