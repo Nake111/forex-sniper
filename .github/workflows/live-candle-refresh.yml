@@ -125,6 +125,8 @@ jobs:
         env:
           MAX_SIGNAL_REPORT_AGE_MS: "600000"
 
+      - name: Build strategy performance report from append-only paper journal
+        run: node scripts/publish-paper-performance.js
       - name: Validate and publish closed dashboard candles
         shell: bash
         run: |
@@ -153,8 +155,10 @@ jobs:
           snapshot="$(mktemp)"
           brain_snapshot="$(mktemp)"
           signal_snapshot="$(mktemp)"
+          performance_snapshot="$(mktemp)"
           cp dashboard/data/latest.json "$snapshot"
           cp dashboard/data/signals.json "$signal_snapshot"
+          cp dashboard/data/paper-performance.json "$performance_snapshot"
           if [ -f data/second-brain.jsonl ]; then cp data/second-brain.jsonl "$brain_snapshot"; else : > "$brain_snapshot"; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -167,7 +171,7 @@ jobs:
             cp "$signal_snapshot" dashboard/data/signals.json
             mkdir -p data
             cp "$brain_snapshot" data/second-brain.jsonl
-            git add dashboard/data/latest.json dashboard/data/signals.json data/second-brain.jsonl
+            git add dashboard/data/latest.json dashboard/data/signals.json dashboard/data/paper-performance.json data/second-brain.jsonl
             if git diff --cached --quiet; then
               echo "Dashboard candle snapshot is already current."
               pushed=true
@@ -181,7 +185,7 @@ jobs:
             fi
             echo "Branch advanced during publish; retrying on latest branch."
           done
-          rm -f "$snapshot" "$signal_snapshot" "$brain_snapshot"
+          rm -f "$snapshot" "$signal_snapshot" "$performance_snapshot" "$brain_snapshot"
           if [ "$pushed" != true ]; then
             echo "Could not publish dashboard snapshot after five attempts." >&2
             exit 1
