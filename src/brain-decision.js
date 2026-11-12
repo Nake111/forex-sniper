@@ -18,7 +18,8 @@ export function decideBrainAction({
   calendarBlocked = false,
   macroBlocked = false,
   dataStale = false,
-  newsBlocked = false
+  newsBlocked = false,
+  marketLearning = null
 }) {
   const direction = DIRECTIONS.has(candidate) ? candidate : "NO SETUP";
   const blockers = [...new Set([
@@ -56,6 +57,7 @@ export function decideBrainAction({
     mode: "PAPER_RESEARCH_ONLY",
     score: Number.isFinite(weightedScore?.score) ? weightedScore.score : null,
     scoreMeaning: "HEURISTIC_EVIDENCE_POINTS_NOT_PROBABILITY",
+    marketLearning,
     checks,
     blockers: approved ? [] : blockers.length ? blockers : ["ONE_OR_MORE_REQUIRED_DECISION_CHECKS_FAILED"],
     explanation: approved
