@@ -1,4 +1,8 @@
 import { readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 import { analyseTimeframe } from "./market.js";
 import { buildIndicativeTradePlan, pricePlanAtExecutableQuote, finalAction } from "./trade-plan.js";
 import { evaluateDeterministicFallback } from "./execution-policy.js";
@@ -164,12 +168,13 @@ async function analyseMarket(market, macroContext) {
     console.log("Gold bid/ask source: Biquote primary, Twelve Data fallback; validated immediately before the execution gate.");
   }
 
-  const frames = await Promise.all(TIMEFRAMES.map(async tf => ({
+  const loadMarketFrames = async () => Promise.all(TIMEFRAMES.map(async tf => ({
     key: tf.key,
     candles: await loadCandles(`${DATA_DIR}/${market.symbol === "BTCUSD" ? (process.env.BTC_DATA_PREFIX ?? market.prefix) : market.prefix}-${tf.file}.json`, tf.key, tf.milliseconds)
   })));
+  let frames = await loadMarketFrames();
 
-  const staleTimeframes = TIMEFRAMES.filter(tf => {
+  let staleTimeframes = TIMEFRAMES.filter(tf => {
     const candles = frames.find(frame => frame.key === tf.key).candles;
     const closedAt = candles.at(-1).timestamp + tf.milliseconds;
     return Date.now() - closedAt > tf.maxAgeMs;
@@ -182,8 +187,37 @@ async function analyseMarket(market, macroContext) {
       `| age minutes: ${ageMinutes.toFixed(1)} | status: ${staleTimeframes.includes(tf) ? "STALE" : "FRESH"}`);
   }
   if (staleTimeframes.length) {
-    macroContext = { ...macroContext, dataStale: true, staleTimeframes: staleTimeframes.map(tf => tf.key) };
-    console.log("DATA SAFETY GATE: HOLD — stale candle data on", staleTimeframes.map(tf => tf.key).join(", "));
+    console.log("FAST RECOVERY: stale candles detected; refreshing provider history (maximum 2 attempts).");
+    for (let attempt = 1; attempt <= 2 && staleTimeframes.length; attempt++) {
+      try {
+        const env = {
+          ...process.env,
+          MARKET_FILTER: market.symbol,
+          DATA_DAYS_BACK: process.env.DATA_DAYS_BACK ?? "180"
+        };
+        const refreshed = await execFileAsync(process.execPath, ["src/download.js"], {
+          cwd: process.cwd(), env, timeout: 90_000, maxBuffer: 10 * 1024 * 1024
+        });
+        console.log(`FAST RECOVERY ATTEMPT ${attempt}: candle refresh completed.`);
+        if (refreshed.stdout) console.log(refreshed.stdout);
+        if (refreshed.stderr) console.warn(refreshed.stderr);
+        frames = await loadMarketFrames();
+        staleTimeframes = TIMEFRAMES.filter(tf => {
+          const candles = frames.find(frame => frame.key === tf.key).candles;
+          const closedAt = candles.at(-1).timestamp + tf.milliseconds;
+          return Date.now() - closedAt > tf.maxAgeMs;
+        });
+      } catch (error) {
+        console.warn(`FAST RECOVERY ATTEMPT ${attempt} FAILED:`, error.message);
+      }
+    }
+    if (staleTimeframes.length) {
+      macroContext = { ...macroContext, dataStale: true, staleTimeframes: staleTimeframes.map(tf => tf.key) };
+      console.log("DATA SAFETY GATE: HOLD — refresh did not restore fresh candles on", staleTimeframes.map(tf => tf.key).join(", "));
+    } else {
+      macroContext = { ...macroContext, dataStale: false, staleTimeframes: [] };
+      console.log("DATA SAFETY GATE: RECOVERED — fresh candles reloaded; all downstream indicators and approval gates will be recomputed.");
+    }
   }
 
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
