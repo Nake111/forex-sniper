@@ -88,12 +88,32 @@ export async function updateSecondBrain({
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
       if (!stopHit && !targetHit) continue;
       const ambiguous = stopHit && targetHit;
+      const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : "LOSS";
+      const resolutionPrice = ambiguous ? null : targetHit ? record.takeProfit : record.stopLoss;
+      const entry = Number(record.indicativeEntry);
+      const stop = Number(record.stopLoss);
+      const riskDistance = Math.abs(entry - stop);
+      const grossR = !ambiguous && finite(entry) && finite(stop) && riskDistance > 0
+        ? (record.side === "BUY" ? resolutionPrice - entry : entry - resolutionPrice) / riskDistance
+        : null;
+      const estimatedCostBps = Number(record.quoteEvidence?.costs?.estimatedRoundTripCostBps);
+      const midpoint = Number(record.quoteEvidence?.midpoint);
+      const estimatedCostPrice = finite(estimatedCostBps) && estimatedCostBps >= 0 && finite(midpoint) && midpoint > 0
+        ? midpoint * estimatedCostBps / 10_000 : null;
+      const estimatedCostR = estimatedCostPrice !== null && riskDistance > 0
+        ? estimatedCostPrice / riskDistance : null;
       newEvents.push({
         eventId: `OUTCOME:${signalId}`, eventType: "PAPER_OUTCOME",
-        signalId, market, outcome: ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : "LOSS",
-        resolvedAt: at, resolutionPrice: ambiguous ? null : targetHit ? record.takeProfit : record.stopLoss,
+        signalId, market, outcome,
+        resolvedAt: at, resolutionPrice,
+        grossR: round(grossR, 4),
+        estimatedRoundTripCostPrice: round(estimatedCostPrice),
+        estimatedCostR: round(estimatedCostR, 4),
+        netEstimatedR: grossR !== null && estimatedCostR !== null ? round(grossR - estimatedCostR, 4) : null,
+        estimatedCostMethod: "Signal-time observed spread plus configured estimated two-sided slippage and commission; not observed execution cost",
         resolutionMethod: "Subsequent closed-candle high/low proxy; stop-first when both levels touch",
-        actualFill: null, observedSlippage: null
+        rCalculationMethod: "Indicative plan entry and stop distance; not an actual fill",
+        actualFill: null, observedSlippage: null, actualCommission: null
       });
       resolved.add(signalId);
       break;
