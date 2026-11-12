@@ -66,8 +66,12 @@ export function summarizePublicTraderEvidence(ideas = []) {
     identityWarning: "Configured HTTPS feed and same-host article link are checked; publisher authenticity, trader identity and performance are not independently verified."
   };
 }
+export const DEFAULT_PUBLIC_TRADER_RSS_URLS = ["https://www.tradingview.com/feed/"];
+
 export async function fetchPublicTraderEvidence(market, {
-  feedUrls = (process.env.PUBLIC_TRADER_RSS_URLS ?? "").split(",").map(value => value.trim()).filter(Boolean),
+  feedUrls = (process.env.PUBLIC_TRADER_RSS_URLS ?? "").split(",").map(value => value.trim()).filter(Boolean).length
+    ? (process.env.PUBLIC_TRADER_RSS_URLS ?? "").split(",").map(value => value.trim()).filter(Boolean)
+    : DEFAULT_PUBLIC_TRADER_RSS_URLS,
   fetchImpl = fetch, timeoutMs = 5_000, now = Date.now(),
   maxAgeMs = 24 * 60 * 60 * 1000, maxFeeds = 3
 } = {}) {
