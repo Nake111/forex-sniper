@@ -1,0 +1,46 @@
+name: Forex Sniper Stale-Data Watchdog
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: forex-sniper-market-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout latest published snapshot
+        uses: actions/checkout@v4
+      - name: Check freshness, provider health and shared analysis cycle
+        id: watchdog
+        continue-on-error: true
+        run: node scripts/stale-data-watchdog.js
+        env:
+          WATCHDOG_MAX_SIGNAL_AGE_MS: "600000"
+          WATCHDOG_MAX_CANDLE_AGE_MS: "600000"
+          WATCHDOG_MAX_QUOTE_AGE_MS: "15000"
+      - name: Publish fail-closed decisions when any data gate fails
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- dashboard/data/signals.json; then
+            echo "No watchdog publication change required."
+          else
+            git add dashboard/data/signals.json
+            git commit -m "Watchdog fail-closed stale market signals"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Fail run visibly when watchdog blocks signals
+        if: steps.watchdog.outcome == 'failure'
+        run: |
+          echo "Watchdog blocked stale or inconsistent market data. Signals were fail-closed."
+          exit 1
