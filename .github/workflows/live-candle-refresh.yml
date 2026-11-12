@@ -113,7 +113,7 @@ jobs:
         run: node scripts/verify-snapshot.js "$REPORT_PATH"
         env:
           MAX_SNAPSHOT_QUOTE_AGE_MS: "15000"
-      - name: Validate and publish closed dashboard candles
+      - name: Build fail-closed live signal controller snapshot\n        run: node scripts/publish-signal-controller.js "$REPORT_PATH"\n        env:\n          MAX_SIGNAL_REPORT_AGE_MS: "600000"\n\n      - name: Validate and publish closed dashboard candles
         shell: bash
         run: |
           set -euo pipefail
