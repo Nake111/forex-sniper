@@ -22,6 +22,7 @@ import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
 import { fetchBidAskQuotes } from "./bid-ask-quotes.js";
 import { createQuoteSnapshot } from "./quote-snapshot.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
+import { fetchPublicTraderEvidence } from "./public-trader-signals.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
@@ -495,6 +496,8 @@ async function analyseMarket(market, macroContext) {
     validation: quoteValidation
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
+  const publicTraderEvidence = await fetchPublicTraderEvidence(market.symbol);
+  console.log("PUBLIC TRADER IDEAS (ADVISORY ONLY):", JSON.stringify(publicTraderEvidence));
   const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
   console.log("A1 HEART — MULTI-SESSION OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
   console.log("A1 HEART SESSION STATUS:", (a1Heart.sessions ?? []).map(session => `${session.name}: ${session.status}`).join(" | "));
