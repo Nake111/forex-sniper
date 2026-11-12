@@ -113,14 +113,14 @@ test("BTC approval and entry verification use the same 0.25 ATR deviation limit"
     candidate: "BUY", marketReview, plan, quote, quoteValidation, entryAtr: 1
   });
   assert.equal(approval.approved, true);
-  assert.equal(approval.entryDeviationAtr, 0.22);
+  assert.ok(Math.abs(approval.entryDeviationAtr - 0.22) < 1e-9);
 
   const verification = runEntryVerificationAgent({
     market: "BTCUSD", candidate: "BUY", plan, quote, quoteValidation,
     entryAtr: 1, marketReview, approval
   });
   assert.equal(verification.approved, true);
-  assert.equal(verification.entryDeviationAtr, 0.22);
+  assert.ok(Math.abs(verification.entryDeviationAtr - 0.22) < 1e-9);
 });
 
 test("entry verification rejects null numeric levels instead of treating them as zero", () => {
