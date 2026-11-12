@@ -14,7 +14,10 @@ const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
 if (!["baseline", "strict", "advanced", "institutional", "gold", "balanced"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 const START_RATIO = Number(process.env.BACKTEST_START_RATIO ?? 0);
+const END_RATIO = Number(process.env.BACKTEST_END_RATIO ?? 1);
+const SESSION_FILTER = (process.env.BACKTEST_SESSION ?? "ALL").toUpperCase();
 if (!Number.isFinite(START_RATIO) || START_RATIO < 0 || START_RATIO >= 1) throw new Error("BACKTEST_START_RATIO must be in [0, 1)");
+if (!Number.isFinite(END_RATIO) || END_RATIO <= START_RATIO || END_RATIO > 1) throw new Error("BACKTEST_END_RATIO must be > BACKTEST_START_RATIO and <= 1");
 
 const WINDOW = 240;
 const MIN_HISTORY = 60;
@@ -82,13 +85,15 @@ async function main() {
     load(`data/${DATA_PREFIX}-h1.json`, "H1")
   ]);
   const holdoutIndex = Math.floor(m5.length * START_RATIO);
+  const testEndIndex = Math.min(m5.length, Math.floor(m5.length * END_RATIO));
   const testStartTime = m5[holdoutIndex].time;
+  const testEndTime = m5[testEndIndex - 1].time;
   const trades = [];
   let m15Index = -1, h1Index = -1, cachedM15 = null, cachedH1 = null;
   let previousM15 = -1, previousH1 = -1, signalsChecked = 0, openAtEnd = 0;
   let i = MIN_HISTORY - 1;
 
-  while (i < m5.length - 1) {
+  while (i < testEndIndex - 1) {
     const closeTime = m5[i].time + 5 * 60 * 1000;
     m15Index = latestClosed(m15, 15 * 60 * 1000, closeTime, m15Index);
     h1Index = latestClosed(h1, 60 * 60 * 1000, closeTime, h1Index);
@@ -110,6 +115,8 @@ async function main() {
     const plan = tradePlan(signal, currentM5, confirmation);
     signalsChecked++;
     if (!plan) { i++; continue; }
+    const session = (currentM5.sessionContext?.primary ?? "UNKNOWN").toUpperCase();
+    if (SESSION_FILTER !== "ALL" && session !== SESSION_FILTER) { i++; continue; }
 
     const entryIndex = i + 1;
     if (m5[entryIndex].time < testStartTime) { i++; continue; }
@@ -123,11 +130,11 @@ async function main() {
     const sl = signal === "BUY" ? entry - risk : entry + risk;
     const tp = signal === "BUY" ? entry + reward : entry - reward;
     let exit = null, exitIndex = entryIndex;
-    for (let j = entryIndex; j < m5.length; j++) {
+    for (let j = entryIndex; j < testEndIndex; j++) {
       exit = resolveExit(signal, m5[j], sl, tp);
       if (exit) { exitIndex = j; break; }
     }
-    if (!exit) { openAtEnd++; break; }
+    if (!exit) { openAtEnd++; i = testEndIndex; break; }
     const grossMove = signal === "BUY" ? exit.price - entry : entry - exit.price;
     const costInPrice = entry * COST_BPS / 10000;
     const netMove = grossMove - costInPrice;
@@ -136,6 +143,13 @@ async function main() {
       side: signal, outcome: exit.outcome,
       session: currentM5.sessionContext?.primary ?? "UNKNOWN",
       sessionBreakout: currentM5.sessionContext?.breakout ?? "NONE",
+      signalClose: currentM5.close,
+      plannedEntry: plan.entry,
+      actualEntry: entry,
+      entryDisplacement: Math.abs(entry - plan.entry),
+      entryDisplacementAtr: currentM5.atr14 > 0 ? Math.abs(entry - plan.entry) / currentM5.atr14 : null,
+      stopDistance: risk,
+      targetDistance: reward,
       entryTime: new Date(m5[entryIndex].time).toISOString(),
       exitTime: new Date(m5[exitIndex].time).toISOString(),
       netMove, netPercent: (netMove / entry) * 100, netR
@@ -166,8 +180,8 @@ async function main() {
   }
   console.log("SIGNAL: M5 + M15 + H1");
   console.log("PROFILE:", SIGNAL_PROFILE);
-  console.log("TEST START RATIO:", START_RATIO);
-  console.log(`Period: ${new Date(testStartTime).toISOString()} to ${new Date(m5.at(-1).time).toISOString()}`);
+  console.log("TEST RATIOS:", `${START_RATIO} → ${END_RATIO}`, "| session filter:", SESSION_FILTER);
+  console.log(`Period: ${new Date(testStartTime).toISOString()} to ${new Date(testEndTime).toISOString()}`);
   console.log(`Candles: M5 ${m5.length} | M15 ${m15.length} | H1 ${h1.length}`);
   console.log(`Signals evaluated: ${signalsChecked}`);
   console.log(`Closed trades: ${trades.length}`);
@@ -185,6 +199,10 @@ async function main() {
   console.log(`Net result: ${totalNetR.toFixed(2)} R`);
   console.log(`Profit factor: ${factor === null ? "N/A" : factor.toFixed(2)}`);
   console.log(`Maximum drawdown: ${maxDrawdown(trades).toFixed(2)} R`);
+  const displacement = trades.map(t => t.entryDisplacementAtr).filter(Number.isFinite);
+  console.log(`Mean entry displacement: ${displacement.length ? (displacement.reduce((a,b)=>a+b,0)/displacement.length).toFixed(3) : "N/A"} ATR`);
+  console.log(`Median entry displacement: ${displacement.length ? [...displacement].sort((a,b)=>a-b)[Math.floor(displacement.length/2)].toFixed(3) : "N/A"} ATR`);
+  console.log("Entry quality note: historical next-candle-open proxy; no bid/ask or actual fill data in candle-only backtest.");
   console.log("\\nSESSION PERFORMANCE (signal-time session; descriptive, not a trade filter):");
   for (const row of summarizeSessionPerformance(trades)) {
     console.log(`${row.session}: trades=${row.trades}, winRate=${row.winRate.toFixed(2)}%, netR=${row.netR.toFixed(2)}, profitFactor=${row.profitFactor === null ? "N/A" : row.profitFactor.toFixed(2)}`);
