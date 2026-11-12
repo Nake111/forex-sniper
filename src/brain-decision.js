@@ -4,6 +4,8 @@
  * Combines the existing specialist modules into one auditable final decision.
  * Scores are evidence points, never probabilities. The brain cannot place orders.
  */
+import { buildRecoveryPlan } from "./recovery-orchestrator.js";
+
 const DIRECTIONS = new Set(["BUY", "SELL"]);
 
 export function decideBrainAction({
@@ -33,6 +35,8 @@ export function decideBrainAction({
     ...(newsBlocked ? ["HIGH_IMPACT_NEWS_WINDOW"] : [])
   ].filter(Boolean).map(String))];
 
+  const recoveryPlan = buildRecoveryPlan({ blockers });
+
   const checks = {
     directionalCandidate: direction !== "NO SETUP",
     weightedEvidenceEligible: weightedScore?.status === "ELIGIBLE_FOR_RISK_GATE",
@@ -58,6 +62,7 @@ export function decideBrainAction({
     score: Number.isFinite(weightedScore?.score) ? weightedScore.score : null,
     scoreMeaning: "HEURISTIC_EVIDENCE_POINTS_NOT_PROBABILITY",
     marketLearning,
+    recoveryPlan,
     checks,
     blockers: approved ? [] : blockers.length ? blockers : ["ONE_OR_MORE_REQUIRED_DECISION_CHECKS_FAILED"],
     explanation: approved
