@@ -25,6 +25,7 @@ if (marketData.validation?.status !== "PASS") failures.push("Market-data validat
 if (Object.keys(signals.markets ?? {}).length !== EXPECTED.length) failures.push("Signal snapshot has missing or unexpected markets");
 
 const perMarket = {};
+const closedCandleTimes = new Set();
 for (const id of EXPECTED) {
   const candle = marketData.markets?.[id]?.timeframes?.M5;
   const signal = signals.markets?.[id];
@@ -36,6 +37,7 @@ for (const id of EXPECTED) {
     issues.push("M5 provider candle is missing, failed, or stale");
   }
   if (candle?.gapCount !== 0) issues.push("M5 provider data contains interval gaps");
+  if (Number.isFinite(candleTime)) closedCandleTimes.add(new Date(candleTime).toISOString());
   if (!signal) issues.push("Market signal is missing");
   if (signal && signal.analysisCycle?.id !== signalCycle) issues.push("Market signal has a mismatched analysis cycle");
 
@@ -51,6 +53,7 @@ for (const id of EXPECTED) {
     quoteAgeMs: Number.isFinite(quoteAge) ? Math.round(quoteAge) : null };
 }
 
+if (closedCandleTimes.size !== 1) failures.push("Markets do not share the same latest closed M5 candle timestamp");
 const globalFailure = failures.length > 0;
 for (const [id, result] of Object.entries(perMarket)) {
   if (globalFailure || result.issues.length) {
