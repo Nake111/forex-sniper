@@ -1,5 +1,6 @@
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { findHistoricalCoverageGap } from "./candle-history-coverage.js";
 
 const DAYS_BACK = Number(process.env.DATA_DAYS_BACK ?? 180);
 const OVERLAP_DAYS = Number(process.env.DATA_OVERLAP_DAYS ?? 3);
@@ -268,6 +269,30 @@ async function downloadOne(market, timeframe) {
   }
   if (merged.length < 100) {
     throw new Error(`Not enough merged ${market.label} ${timeframe.toUpperCase()} candles: ${merged.length}`);
+  }
+  if (provider.startsWith("Twelve Data")) {
+    const gap = findHistoricalCoverageGap(merged, cutoff);
+    if (gap) {
+      console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is truncated; backfilling the older range from Dukascopy.");
+      const backfill = await getHistoricalRates({
+        instrument: market.instrument,
+        dates: { from: formatDate(new Date(gap.from)), to: gap.to === null ? to : new Date(gap.to).toISOString() },
+        timeframe,
+        format: "json",
+        volumes: true,
+        useCache: true,
+        batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
+        pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
+        requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
+        retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
+        pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
+        rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
+      });
+      merged = mergeCandles(merged, backfill, cutoff);
+      provider += " + Dukascopy historical backfill";
+      const remainingGap = findHistoricalCoverageGap(merged, cutoff);
+      if (remainingGap) throw new Error(market.label + " " + timeframe.toUpperCase() + ": historical backfill did not reach requested cutoff");
+    }
   }
   await atomicWrite(path, merged);
   console.log(`${market.label} ${timeframe.toUpperCase()}: fetched ${incoming.length}, merged ${merged.length}, added/updated ${Math.max(0, merged.length - previous.length)}; saved ${path}${useKraken ? " (Kraken XBT/USD spot; provider returns a rolling window)" : " (Dukascopy)"}.`);
