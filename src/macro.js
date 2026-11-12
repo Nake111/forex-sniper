@@ -47,7 +47,12 @@ export function buildMacroContext(articles = [], now = Date.now(), calendar = { 
         lastVerifiedAt: event.lastVerifiedAt
       }))
     },
+    // Keep scheduled-event risk distinct from news/headline risk. The combined
+    // eventRisk remains fail-closed for downstream approval, while these fields
+    // let diagnostics identify the actual source of a veto.
     eventRisk,
+    calendarRiskStatus: currencyRisk?.status ?? "UNKNOWN",
+    headlineRiskStatus: recentHighImpact.length ? "HIGH" : "NORMAL",
     recentHighImpactCount: recentHighImpact.length,
     headlines: recentHighImpact.slice(0, 3).map(article => ({
       title: article.title, source: article.source, date: article.date, url: article.url

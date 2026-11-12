@@ -24,6 +24,9 @@ test("weighted score admits strong candidate to risk gate, not direct execution"
   assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
   assert.ok(result.score >= 75);
   assert.equal(result.coverage, 100);
+  const spread = result.components.find(item => item.name === "quote_and_spread");
+  assert.equal(spread.detail.spreadAtr, 0.0001);
+  assert.equal(spread.detail.spreadAtrLimit, 0.12);
   assert.equal(result.decision, "CANDIDATE_ONLY");
   assert.equal(result.approved, false);
   assert.equal(result.riskApprovalRequired, true);

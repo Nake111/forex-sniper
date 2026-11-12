@@ -156,7 +156,19 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
   const atrBase = M5.atrBaseline;
   const volatilityExtreme = Number.isFinite(atr) && Number.isFinite(atrBase) && atrBase > 0 && atr / atrBase > 2.5;
   const riskBlocks = [];
-  if (macro.eventRisk !== "NORMAL") riskBlocks.push("ECONOMIC_CALENDAR_" + (macro.eventRisk ?? "UNKNOWN"));
+  if (macro.eventRisk !== "NORMAL") {
+    const calendarRisk = macro.calendarRiskStatus ?? "UNKNOWN";
+    const headlineRisk = macro.headlineRiskStatus ?? (macro.recentHighImpactCount > 0 ? "HIGH" : "NORMAL");
+    if (calendarRisk !== "NORMAL" && calendarRisk !== "UNKNOWN") {
+      riskBlocks.push("ECONOMIC_CALENDAR_" + calendarRisk);
+    } else if (headlineRisk === "HIGH") {
+      riskBlocks.push("HIGH_IMPACT_HEADLINES");
+    } else if (calendarRisk === "UNKNOWN" || macro.eventRisk === "UNKNOWN") {
+      riskBlocks.push("ECONOMIC_CALENDAR_UNKNOWN");
+    } else {
+      riskBlocks.push("MACRO_RISK_" + (macro.eventRisk ?? "UNKNOWN"));
+    }
+  }
   if (macro.dataStale === true) riskBlocks.push("STALE_MARKET_DATA");
   if (volatilityExtreme) riskBlocks.push("ABNORMAL_VOLATILITY");
   if (!frames?.M5 || !frames?.M15 || !frames?.H1) riskBlocks.push("MISSING_TIMEFRAME_DATA");
