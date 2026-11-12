@@ -1,6 +1,7 @@
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 
+const DATA_DIR = process.env.DATA_DIR ?? "data";
 const DAYS_BACK = Number(process.env.DATA_DAYS_BACK ?? 180);
 const OVERLAP_DAYS = Number(process.env.DATA_OVERLAP_DAYS ?? 3);
 const MARKETS = [
@@ -181,13 +182,45 @@ async function downloadKrakenCandles(timeframe) {
   }));
 }
 
+async function fetchDukascopyHistory(market, timeframe, from, to) {
+  // Dukascopy's FX/metals responses are capped near 5,000 bars per request.
+  // Chunk by timeframe so a 180-day training window is actually complete.
+  const chunkDays = market.prefix === "btcusd" ? 200 : ({ m5: 16, m15: 50, h1: 180, h4: 180 }[timeframe] ?? 30);
+  const start = new Date(from + "T00:00:00.000Z");
+  const end = new Date(to);
+  const output = [];
+  for (let cursor = start; cursor < end;) {
+    const next = new Date(Math.min(end.getTime(), cursor.getTime() + chunkDays * 86_400_000));
+    const chunkFrom = formatDate(cursor);
+    const chunkTo = next.toISOString();
+    console.log(`Dukascopy chunk ${market.label} ${timeframe.toUpperCase()}: ${chunkFrom} → ${chunkTo.slice(0, 10)}`);
+    const rows = await getHistoricalRates({
+      instrument: market.instrument,
+      dates: { from: chunkFrom, to: chunkTo },
+      timeframe,
+      format: "json",
+      volumes: true,
+      useCache: true,
+      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
+      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
+      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
+      retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
+      pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
+      rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
+    });
+    if (Array.isArray(rows)) output.push(...rows);
+    cursor = next;
+  }
+  return output;
+}
+
 async function downloadOne(market, timeframe) {
   const now = new Date();
   const cutoff = now.getTime() - DAYS_BACK * 86_400_000;
   const useKraken = market.prefix === "btcusd" &&
     (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase() === "kraken-btcusd";
   const prefix = useKraken ? "kraken-btcusd" : market.prefix;
-  const path = `data/${prefix}-${timeframe}.json`;
+  const path = `${DATA_DIR}/${prefix}-${timeframe}.json`;
   const previous = await readCachedCandles(path);
   const latestCached = previous.reduce((latest, candle) => Math.max(latest, candleTimestamp(candle)), 0);
   const earliestAllowed = new Date(cutoff);
@@ -211,58 +244,19 @@ async function downloadOne(market, timeframe) {
     } catch (error) {
       console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data unavailable; using Dukascopy fallback. Reason: " + error.message);
       provider = "Dukascopy fallback";
-      incoming = await getHistoricalRates({
-        instrument: market.instrument,
-        dates: { from, to },
-        timeframe,
-        format: "json",
-        volumes: true,
-        useCache: true,
-        batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
-        pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
-        requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
-        retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
-        pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
-        rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
-      });
+      incoming = await fetchDukascopyHistory(market, timeframe, from, to);
     }
   } else {
-    incoming = await getHistoricalRates({
-      instrument: market.instrument,
-      dates: { from, to },
-      timeframe,
-      format: "json",
-      volumes: true,
-      useCache: true,
-      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
-      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
-      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
-      retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
-      pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
-      rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
-    });
+    incoming = await fetchDukascopyHistory(market, timeframe, from, to);
   }
 
   if (!Array.isArray(incoming) || incoming.length < 1) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
   let merged = mergeCandles(previous, incoming, cutoff);
-  if (merged.length < 100 && provider === "Twelve Data") {
+  if (provider === "Twelve Data") {
     console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is too short for a cold start; supplementing from Dukascopy.");
-    const fallback = await getHistoricalRates({
-      instrument: market.instrument,
-      dates: { from, to },
-      timeframe,
-      format: "json",
-      volumes: true,
-      useCache: true,
-      batchSize: Number(process.env.DUKASCOPY_BATCH_SIZE ?? 6),
-      pauseBetweenBatchesMs: Number(process.env.DUKASCOPY_BATCH_PAUSE_MS ?? 500),
-      requestIntervalMs: Number(process.env.DUKASCOPY_REQUEST_INTERVAL_MS ?? 150),
-      retryCount: Number(process.env.DUKASCOPY_RETRY_COUNT ?? 3),
-      pauseBetweenRetriesMs: Number(process.env.DUKASCOPY_RETRY_PAUSE_MS ?? 1500),
-      rateLimitRetryCount: Number(process.env.DUKASCOPY_RATE_LIMIT_RETRIES ?? 5)
-    });
+    const fallback = await fetchDukascopyHistory(market, timeframe, from, to);
     merged = mergeCandles(merged, fallback, cutoff);
     provider = "Twelve Data + Dukascopy history";
   }
@@ -289,7 +283,7 @@ async function main() {
   if (!Number.isInteger(DAYS_BACK) || DAYS_BACK < 30 || DAYS_BACK > 730) {
     throw new Error("DATA_DAYS_BACK must be an integer between 30 and 730");
   }
-  await mkdir("data", { recursive: true });
+  await mkdir(DATA_DIR, { recursive: true });
   const tasks = SELECTED_MARKETS.flatMap(market => TIMEFRAMES.map(timeframe => () => downloadOne(market, timeframe)));
   const startedAt = Date.now();
   console.log("Incremental candle refresh: reuse cached history, fetch a recent overlapping window, deduplicate by timestamp.");

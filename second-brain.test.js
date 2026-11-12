@@ -14,7 +14,7 @@ test("Second Brain records an executable signal and resolves its target from lat
     const result = await updateSecondBrain({ path, market: "EURUSD", signal: "HOLD", candles: [...first, { timestamp: 5000, open: 100, high: 105, low: 99, close: 104 }], now: 8000 });
     assert.equal(result.wins, 1);
     const saved = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
-    assert.equal(saved[0].outcome, "WIN");
+    assert.ok(saved.some(event => event.eventType === "PAPER_OUTCOME" && event.outcome === "WIN"));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
