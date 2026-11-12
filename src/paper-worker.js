@@ -17,6 +17,16 @@ function runNode(script) {
   });
 }
 
+async function reportJournalHealth(phase) {
+  try {
+    const response = await fetch(feedUrl + "/journal-health", { signal: AbortSignal.timeout(3_000) });
+    const status = await response.json();
+    console.log(`PAPER JOURNAL HEALTH [${phase}]:`, JSON.stringify(status));
+  } catch (error) {
+    console.warn(`PAPER JOURNAL HEALTH CHECK FAILED [${phase}]:`, error.message);
+  }
+}
+
 async function waitForFeed() {
   for (let attempt = 1; attempt <= 60 && !stopping; attempt++) {
     try {
@@ -58,6 +68,7 @@ async function main() {
     intervalMs
   }));
   await waitForFeed();
+  await reportJournalHealth("startup-recovery");
   while (!stopping) {
     const cycleStartedAt = Date.now();
     try {
@@ -65,6 +76,7 @@ async function main() {
       await runNode("src/download.js");
       console.log("PAPER CYCLE: running multi-market analysis");
       await runNode("src/index.js");
+      await reportJournalHealth("after-cycle");
       console.log("PAPER CYCLE COMPLETE:", new Date().toISOString());
     } catch (error) {
       console.error("PAPER CYCLE FAILED CLOSED:", error.message);
