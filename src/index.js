@@ -25,7 +25,7 @@ import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
 
-const DATA_DIR = (process.env.DATA_DIR ?? "data").replace(/\\/+$/, "");
+const DATA_DIR = process.env.DATA_DIR ?? "data";
 const WINDOW = 240;
 const MIN_HISTORY = 60;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
