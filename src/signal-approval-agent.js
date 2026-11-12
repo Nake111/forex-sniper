@@ -1,3 +1,5 @@
+const MAX_ENTRY_DEVIATION_ATR = Object.freeze({ EURUSD: 0.2, BTCUSD: 0.25, XAUUSD: 0.2 });
+
 export function runSignalApprovalAgent({
   candidate, marketReview, plan, quoteValidation, quote,
   dataStale = false, executionBlockers = [], entryAtr = null, now = Date.now()
@@ -20,7 +22,8 @@ export function runSignalApprovalAgent({
   if (!quote || !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask)) blockers.push("Bid/ask quote missing");
   else if ((candidate === "BUY" && plan && quote.ask <= 0) || (candidate === "SELL" && plan && quote.bid <= 0)) blockers.push("Executable-side quote is invalid");
   const quoteEntry = candidate === "BUY" ? quote?.ask : candidate === "SELL" ? quote?.bid : null;
-  const maxEntryDeviationAtr = marketReview?.market === "BTCUSD" ? 0.25 : 0.2;
+  const market = marketReview?.market ?? plan?.market ?? "UNKNOWN";
+  const maxEntryDeviationAtr = MAX_ENTRY_DEVIATION_ATR[market] ?? 0.2;
   const entryDeviationAtr = Number.isFinite(quoteEntry) && Number.isFinite(plan?.entry) &&
     Number.isFinite(entryAtr) && entryAtr > 0
       ? Math.abs(quoteEntry - plan.entry) / entryAtr : null;
@@ -35,7 +38,7 @@ export function runSignalApprovalAgent({
   return {
     agent: "SIGNAL_APPROVAL_AGENT",
     version: "1.0.0",
-    market: marketReview?.market ?? plan?.market ?? "UNKNOWN",
+    market,
     candidate: ["BUY", "SELL"].includes(candidate) ? candidate : "NO TRADE",
     decision: approved ? candidate : "NO APPROVED TRADE",
     approved,

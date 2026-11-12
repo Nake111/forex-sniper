@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { runMarketIntelligenceAgent } from "../src/market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "../src/signal-approval-agent.js";
+import { runEntryVerificationAgent } from "../src/entry-verification-agent.js";
 
 function frame(direction = "BULLISH") {
   const bullish = direction === "BULLISH";
@@ -97,4 +98,41 @@ test("approval agent rejects missing quote and accepts only complete paper check
   const base = { candidate: "BUY", marketReview, plan, quote: { bid: 1.1, ask: 1.1001 }, quoteValidation: { valid: true, spread: 0.0001 }, entryAtr: 0.01 };
   assert.equal(runSignalApprovalAgent({ ...base, quote: null }).approved, false);
   assert.equal(runSignalApprovalAgent(base).decision, "BUY");
+});
+
+
+test("BTC approval and entry verification use the same 0.25 ATR deviation limit", () => {
+  const marketReview = { market: "BTCUSD", direction: "BUY", approved: true, blockers: [] };
+  const plan = {
+    market: "BTCUSD", direction: "BUY", entry: 100, stopLoss: 99,
+    takeProfit: 102.7, riskRewardValue: 2.7, entryTriggerConfirmed: true
+  };
+  const quote = { bid: 100.21, ask: 100.22, source: "test", venue: "test" };
+  const quoteValidation = { valid: true, spread: 0.01, ageMs: 100 };
+  const approval = runSignalApprovalAgent({
+    candidate: "BUY", marketReview, plan, quote, quoteValidation, entryAtr: 1
+  });
+  assert.equal(approval.approved, true);
+  assert.ok(Math.abs(approval.entryDeviationAtr - 0.22) < 1e-9);
+
+  const verification = runEntryVerificationAgent({
+    market: "BTCUSD", candidate: "BUY", plan, quote, quoteValidation,
+    entryAtr: 1, marketReview, approval
+  });
+  assert.equal(verification.approved, true);
+  assert.ok(Math.abs(verification.entryDeviationAtr - 0.22) < 1e-9);
+});
+
+test("entry verification rejects null numeric levels instead of treating them as zero", () => {
+  const result = runEntryVerificationAgent({
+    market: "EURUSD", candidate: "BUY",
+    plan: { entry: null, stopLoss: 0, takeProfit: 1, entryTriggerConfirmed: true },
+    quote: { bid: 1, ask: 1.0001 },
+    quoteValidation: { valid: true, spread: 0.0001 },
+    entryAtr: 0.01,
+    marketReview: { market: "EURUSD", direction: "BUY", approved: true },
+    approval: { approved: true, decision: "BUY" }
+  });
+  assert.equal(result.approved, false);
+  assert.ok(result.blockers.includes("Entry, stop-loss or take-profit is missing"));
 });

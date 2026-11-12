@@ -1,7 +1,7 @@
 const SPREAD_ATR_LIMITS = Object.freeze({ EURUSD: 0.12, BTCUSD: 0.18, XAUUSD: 0.15 });
 const MAX_ENTRY_DEVIATION_ATR = Object.freeze({ EURUSD: 0.2, BTCUSD: 0.25, XAUUSD: 0.2 });
 
-const finite = value => Number.isFinite(Number(value));
+const finite = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 const unique = values => [...new Set(values.filter(Boolean))];
 
 /**
