@@ -1,4 +1,5 @@
 import http from "node:http";
+import { open, stat } from "node:fs/promises";
 import WebSocket from "ws";
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 import { normalizeCoinbaseTicker, normalizeBiquoteStreamTick } from "./realtime-feed-core.js";
@@ -203,6 +204,36 @@ const server = http.createServer((request, response) => {
     const snapshot = brainSnapshot();
     response.writeHead(200);
     response.end(JSON.stringify({ ...snapshot, dataStatus: snapshot.coverage.freshMarkets === MARKETS.length ? "ALL_MARKETS_FRESH" : "PARTIAL_OR_STALE" }));
+    return;
+  }
+  if (url.pathname === "/journal-health") {
+    const journalPath = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl";
+    try {
+      const info = await stat(journalPath);
+      const handle = await open(journalPath, "r");
+      let tail = "";
+      try {
+        const length = Math.min(info.size, 16_384);
+        const buffer = Buffer.alloc(length);
+        await handle.read(buffer, 0, length, Math.max(0, info.size - length));
+        tail = buffer.toString("utf8");
+      } finally {
+        await handle.close();
+      }
+      const lastLine = tail.trim().split(/\r?\n/).at(-1);
+      let lastEvent = null;
+      try { lastEvent = lastLine ? JSON.parse(lastLine) : null; } catch {}
+      response.writeHead(lastEvent ? 200 : 503);
+      response.end(JSON.stringify({
+        status: lastEvent ? "PERSISTENT_JOURNAL_READABLE" : "JOURNAL_EMPTY_OR_INVALID",
+        journalPath, bytes: info.size,
+        lastEventType: lastEvent?.eventType ?? lastEvent?.kind ?? null,
+        lastEventAt: lastEvent?.observedAt ?? lastEvent?.createdAt ?? lastEvent?.resolvedAt ?? null
+      }));
+    } catch (error) {
+      response.writeHead(error.code === "ENOENT" ? 503 : 500);
+      response.end(JSON.stringify({ status: "JOURNAL_UNAVAILABLE", journalPath, error: error.message }));
+    }
     return;
   }
   if (url.pathname === "/ready") {
