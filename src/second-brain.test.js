@@ -43,7 +43,13 @@ test("paper journal is append-only, stores validated quote evidence, and resolve
     const saved = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
     assert.ok(saved.some(row => row.eventType === "PAPER_SIGNAL"));
     assert.ok(saved.some(row => row.eventType === "PAPER_OBSERVATION"));
-    assert.ok(saved.some(row => row.eventType === "PAPER_OUTCOME" && row.outcome === "WIN"));
+    const outcome = saved.find(row => row.eventType === "PAPER_OUTCOME" && row.outcome === "WIN");
+    assert.ok(outcome);
+    assert.ok(outcome.grossR > 1.9);
+    assert.ok(outcome.estimatedCostR > 0);
+    assert.ok(outcome.netEstimatedR < outcome.grossR);
+    assert.equal(outcome.actualFill, null);
+    assert.equal(outcome.observedSlippage, null);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
