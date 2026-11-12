@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-12T08:46:22.524Z",
+  "sourceReportGeneratedAt": "2026-11-12T08:46:03.000Z",
+  "sourceReportAgeSeconds": 20,
+  "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
+  "mode": "PAPER_RESEARCH_ONLY",
+  "markets": {
+    "EURUSD": {
+      "label": "EUR/USD",
+      "decision": "NO APPROVED TRADE",
+      "status": "REJECTED_OR_UNVERIFIED",
+      "candidate": "BUY",
+      "score": "45/100 / 100%",
+      "entry": null,
+      "stopLoss": null,
+      "takeProfit": null,
+      "riskReward": null,
+      "quote": {
+        "bid": 1.10902,
+        "ask": 1.10908,
+        "source": "Railway continuous realtime feed",
+        "timestamp": 1794473174000,
+        "ageMs": 2738,
+        "validated": true
+      },
+      "agents": {
+        "marketIntelligenceApproved": false,
+        "signalApprovalApproved": false,
+        "entryVerificationApproved": false
+      },
+      "verification": {
+        "layer2": "REJECTED",
+        "layer3": "REJECTED",
+        "blockers": [
+          "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
+          "Fresh bid/ask and market-specific spread/ATR check did not pass",
+          "Required closed M5 entry trigger is not confirmed",
+          "Layer 2 verification did not pass",
+          "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
+          "EURUSD spread/ATR 0.1541 exceeds the 0.12 limit",
+          "No directional candidate",
+          "M5 closed candle does not confirm the higher-timeframe direction",
+          "Independent market-intelligence direction conflicts with candidate",
+          "Stop-loss or take-profit is on the wrong side of entry",
+          "Cannot verify entry distance against the live bid/ask and ATR",
+          "No BUY/SELL candidate to verify",
+          "Independent signal approval agent did not approve this direction",
+          "market-intelligence agent did not independently confirm this direction",
+          "Trade plan direction conflicts with candidate",
+          "Spread/ATR 0.1541 exceeds EURUSD limit 0.12",
+          "Executable entry distance from live bid/ask cannot be verified",
+          "Broker execution venue/account is not connected and verified"
+        ]
+      },
+      "generatedAt": "2026-11-12T08:46:22.524Z"
+    },
+    "BTCUSD": {
+      "label": "BTC/USD",
+      "decision": "NO APPROVED TRADE",
+      "status": "REJECTED_OR_UNVERIFIED",
+      "candidate": "SELL",
+      "score": "100/100 / 100%",
+      "entry": null,
+      "stopLoss": null,
+      "takeProfit": null,
+      "riskReward": null,
+      "quote": {
+        "bid": 73425.92,
+        "ask": 73425.93,
+        "source": "Railway continuous realtime feed",
+        "timestamp": 1794473179092,
+        "ageMs": 222,
+        "validated": true
+      },
+      "agents": {
+        "marketIntelligenceApproved": true,
+        "signalApprovalApproved": false,
+        "entryVerificationApproved": false
+      },
+      "verification": {
+        "layer2": "PASSED",
+        "layer3": "REJECTED",
+        "blockers": [
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
+          "Independent signal approval agent did not approve this direction",
+          "Executable-side quote is 0.403 ATR from planned entry; maximum is 0.25",
+          "Live-quote risk/reward is below 1:2",
+          "Broker execution venue/account is not connected and verified"
+        ]
+      },
+      "generatedAt": "2026-11-12T08:46:22.524Z"
+    },
+    "XAUUSD": {
+      "label": "XAU/USD (Gold)",
+      "decision": "NO APPROVED TRADE",
+      "status": "REJECTED_OR_UNVERIFIED",
+      "candidate": "SELL",
+      "score": "100/100 / 100%",
+      "entry": null,
+      "stopLoss": null,
+      "takeProfit": null,
+      "riskReward": null,
+      "quote": {
+        "bid": 3941.688,
+        "ask": 3941.856,
+        "source": "Railway continuous realtime feed",
+        "timestamp": 1794473180000,
+        "ageMs": 2423,
+        "validated": true
+      },
+      "agents": {
+        "marketIntelligenceApproved": true,
+        "signalApprovalApproved": false,
+        "entryVerificationApproved": false
+      },
+      "verification": {
+        "layer2": "REJECTED",
+        "layer3": "REJECTED",
+        "blockers": [
+          "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
+          "Layer 2 verification did not pass",
+          "Economic/news risk is HIGH",
+          "Risk manager veto: ECONOMIC_CALENDAR_HIGH",
+          "No directional candidate",
+          "Independent market-intelligence direction conflicts with candidate",
+          "Cannot verify entry distance against the live bid/ask and ATR",
+          "No BUY/SELL candidate to verify",
+          "Independent signal approval agent did not approve this direction",
+          "market-intelligence agent did not independently confirm this direction",
+          "Trade plan direction conflicts with candidate",
+          "Executable entry distance from live bid/ask cannot be verified",
+          "Broker execution venue/account is not connected and verified"
+        ]
+      },
+      "generatedAt": "2026-11-12T08:46:22.524Z"
+    }
+  }
+}
