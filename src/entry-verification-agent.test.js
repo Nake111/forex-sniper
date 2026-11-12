@@ -28,7 +28,7 @@ test("verifies an aligned BUY against live ask, spread, SL/TP and effective 1:2 
 test("rejects when live ask moved too far from planned entry", () => {
   const result = runEntryVerificationAgent({ ...base, quote: { ...base.quote, ask: 1.1005, bid: 1.10048 } });
   assert.equal(result.approved, false);
-  assert.ok(result.blockers.some(x => x.includes("ATR from planned entry")));
+  assert.ok(result.blockers.some(x => x.includes("ATR from signal reference entry")));
 });
 
 test("rejects a spread wider than market-specific ATR limit", () => {
