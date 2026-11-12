@@ -6,7 +6,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/live-candle-refresh.yml"
-      - "src/publish-dashboard-data.js"\n      - "scripts/publish-signal-controller.js"
+      - "src/publish-dashboard-data.js"
+      - "scripts/publish-signal-controller.js"
       - "src/download.js"
       - "src/index.js"
       - "src/market-intelligence-agent.js"
@@ -113,7 +114,12 @@ jobs:
         run: node scripts/verify-snapshot.js "$REPORT_PATH"
         env:
           MAX_SNAPSHOT_QUOTE_AGE_MS: "15000"
-      - name: Build fail-closed live signal controller snapshot\n        run: node scripts/publish-signal-controller.js "$REPORT_PATH"\n        env:\n          MAX_SIGNAL_REPORT_AGE_MS: "600000"\n\n      - name: Validate and publish closed dashboard candles
+      - name: Build fail-closed live signal controller snapshot
+        run: node scripts/publish-signal-controller.js "$REPORT_PATH"
+        env:
+          MAX_SIGNAL_REPORT_AGE_MS: "600000"
+
+      - name: Validate and publish closed dashboard candles
         shell: bash
         run: |
           set -euo pipefail
