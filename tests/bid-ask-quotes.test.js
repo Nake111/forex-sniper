@@ -35,7 +35,7 @@ test("realtime feed validates provider time against feed clock, not runner clock
     receivedAt: feedServerTime - 400, source: "Coinbase Exchange BTC-USD ticker WebSocket",
     venue: "Coinbase Exchange", timestampQuality: "PROVIDER_TIMESTAMP", tradeable: true };
   const result = await fetchRealtimeFeedQuotes({
-    url: "https://feed.example", now,
+    url: "https://feed.example", now, markets: ["BTCUSD"],
     fetchImpl: async () => ({ ok: true, json: async () => ({
       updatedAt: feedServerTime, quotes: { BTCUSD: quote },
       markets: { BTCUSD: { status: "FRESH", ageMs: 500, timestamp: quote.timestamp, bid: quote.bid, ask: quote.ask } }
