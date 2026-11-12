@@ -560,7 +560,7 @@ async function analyseMarket(market, macroContext) {
     approval,
     entryVerification: verification,
     executionLayer,
-    hardBlockers: executionBlockers,
+    hardBlockers: approvalBlockers,
     calendarBlocked,
     macroBlocked: goldMacroBlocked,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
