@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/live-candle-refresh.yml"
-      - "src/publish-dashboard-data.js"
+      - "src/publish-dashboard-data.js"\n      - "scripts/publish-signal-controller.js"
       - "src/download.js"
       - "src/index.js"
       - "src/market-intelligence-agent.js"
@@ -133,7 +133,7 @@ jobs:
             cp "$snapshot" dashboard/data/latest.json
             mkdir -p data
             cp "$brain_snapshot" data/second-brain.jsonl
-            git add dashboard/data/latest.json data/second-brain.jsonl
+            git add dashboard/data/latest.json dashboard/data/signals.json data/second-brain.jsonl
             if git diff --cached --quiet; then
               echo "Dashboard candle snapshot is already current."
               pushed=true
