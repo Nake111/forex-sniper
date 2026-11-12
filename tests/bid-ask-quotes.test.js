@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  fetchBidAskQuotes, fetchRealtimeFeedQuotes, normalizeKrakenTicker, validateBidAskQuote
+  fetchBidAskQuotes, fetchRealtimeFeedQuotes, normalizeCoinbaseRestTicker, normalizeKrakenTicker, validateBidAskQuote
 } from "../src/bid-ask-quotes.js";
 import {
   fetchBiquoteQuote, normalizeBiquoteTick, validateBiquoteTick
@@ -18,7 +18,8 @@ test("normalizes Kraken XBT/USD order-book bid/ask without claiming provider tim
   assert.equal(quote.bid, 70000.1);
   assert.equal(quote.ask, 70000.2);
   assert.equal(quote.timestampQuality, "RECEIVED_AT_ONLY");
-  assert.equal(validateBidAskQuote(quote, { now }).valid, true);
+  assert.equal(validateBidAskQuote(quote, { now }).valid, false);
+  assert.match(validateBidAskQuote(quote, { now }).reason, /provider-supplied quote timestamp/);
 });
 
 test("rejects crossed, stale and missing quotes", () => {
@@ -63,18 +64,31 @@ test("realtime feed rejects receive-time-only BTC quotes and unhealthy feed snap
   assert.match(result.errors[0], /provider timestamp unavailable/);
 });
 
-test("fetchBidAskQuotes uses Kraken public ticker without credentials for BTCUSD", async () => {
+test("normalizes provider-timestamped Coinbase BTC/USD REST quotes", () => {
+  const quote = normalizeCoinbaseRestTicker({
+    time: new Date(now).toISOString(), bid: "70000", ask: "70001", price: "70000.5"
+  }, now);
+  assert.equal(quote.market, "BTCUSD");
+  assert.equal(quote.bid, 70000);
+  assert.equal(quote.ask, 70001);
+  assert.equal(quote.timestampQuality, "PROVIDER_TIMESTAMP");
+  assert.equal(validateBidAskQuote(quote, { now }).valid, true);
+  assert.equal(normalizeCoinbaseRestTicker({ bid: "70000", ask: "70001" }, now), null);
+});
+
+test("fetchBidAskQuotes uses Coinbase REST without credentials for BTCUSD", async () => {
   const fetchImpl = async url => ({
     ok: true,
-    json: async () => url.includes("kraken.com")
-      ? { error: [], result: { XXBTZUSD: { b: ["70000", "1", "1"], a: ["70001", "1", "1"] } } }
+    json: async () => url.includes("coinbase")
+      ? { time: new Date().toISOString(), bid: "70000", ask: "70001", price: "70000.5" }
       : {}
   });
   const result = await fetchBidAskQuotes({ markets: ["BTCUSD"], fetchImpl });
   assert.equal(result.quotes.BTCUSD.bid, 70000);
   assert.equal(result.quotes.BTCUSD.ask, 70001);
+  assert.equal(result.quotes.BTCUSD.timestampQuality, "PROVIDER_TIMESTAMP");
   assert.equal(result.status, "COMPLETE");
-  assert.ok(result.provider.includes("Biquote + Kraken"));
+  assert.ok(result.provider.includes("Coinbase BTCUSD"));
 });
 
 test("Kraken rejects empty and crossed public ticker payloads", () => {

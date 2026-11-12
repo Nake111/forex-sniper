@@ -135,7 +135,13 @@ for (const market of markets) {
     decision: paperApproved ? action : "NO APPROVED TRADE",
     status: paperApproved ? "PAPER_SIGNAL_APPROVED" : "REJECTED_OR_UNVERIFIED",
     candidate,
-    candidateStatus: paperApproved ? "APPROVED_PAPER_SIGNAL" : candidatePlan ? "WATCHLIST_ONLY_NOT_APPROVED" : "NO_VALID_DIRECTIONAL_PLAN",
+    candidateStatus: paperApproved ? "APPROVED_PAPER_SIGNAL" : candidateIsDirectional ? "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED" : "NO_DIRECTIONAL_SETUP",
+    signalGrade: paperApproved ? "A" : candidateIsDirectional ? "B" : "NO SETUP",
+    signalGradeMeaning: paperApproved
+      ? "All paper-approval gates passed; still not a broker order"
+      : candidateIsDirectional
+        ? "Directional research candidate only; one or more approval gates failed"
+        : "No BUY/SELL direction was discovered",
     candidatePlan,
     score: candidateStrength
       ? candidateStrength.score + "/" + candidateStrength.maxScore + " candidate strength · " +

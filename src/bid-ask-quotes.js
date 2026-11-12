@@ -47,6 +47,7 @@ export async function fetchRealtimeFeedQuotes({
 }
 
 import { fetchTwelveDataQuotes } from "./twelve-data-quotes.js";
+import { normalizeCoinbaseTicker } from "./realtime-feed-core.js";
 import { fetchBiquoteQuote, validateBiquoteTick } from "./biquote-quotes.js";
 
 function finitePositive(value) {
@@ -96,6 +97,9 @@ export function validateBidAskQuote(quote, { now = Date.now(), maxAgeMs = 15_000
   if (providerAgeMs > maxAgeMs || receiveAgeMs > maxAgeMs) {
     return { valid: false, reason: "Quote is stale" };
   }
+  if (quote.timestampQuality !== "PROVIDER_TIMESTAMP") {
+    return { valid: false, reason: "Provider-supplied quote timestamp is required; receive-time-only quotes are diagnostic only" };
+  }
   if (quote.tradeable === false) {
     return { valid: false, reason: "Provider marks instrument as not tradeable or prices delayed" };
   }
@@ -106,6 +110,34 @@ export function validateBidAskQuote(quote, { now = Date.now(), maxAgeMs = 15_000
     spreadPct: ((quote.ask - quote.bid) / ((quote.ask + quote.bid) / 2)) * 100,
     timestampQuality: quote.timestampQuality ?? "PROVIDER_TIMESTAMP"
   };
+}
+
+export function normalizeCoinbaseRestTicker(payload, receivedAt = Date.now()) {
+  const quote = normalizeCoinbaseTicker({
+    type: "ticker", product_id: "BTC-USD", time: payload?.time,
+    best_bid: payload?.bid ?? payload?.best_bid,
+    best_ask: payload?.ask ?? payload?.best_ask
+  }, receivedAt);
+  if (!quote || quote.timestampQuality !== "PROVIDER_TIMESTAMP") return null;
+  return { ...quote, source: "Coinbase Exchange BTC-USD ticker REST",
+    venue: "Coinbase Exchange", tradeable: true };
+}
+
+async function fetchCoinbaseQuote(fetchImpl = fetch) {
+  try {
+    const response = await fetchImpl(
+      "https://api.exchange.coinbase.com/products/BTC-USD/ticker",
+      { signal: AbortSignal.timeout(5_000), headers: { accept: "application/json" } }
+    );
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const quote = normalizeCoinbaseRestTicker(await response.json());
+    if (!quote) throw new Error("Coinbase returned no provider-timestamped BTC/USD bid/ask");
+    const validation = validateBidAskQuote(quote);
+    if (!validation.valid) throw new Error(validation.reason);
+    return { quote, error: null };
+  } catch (error) {
+    return { quote: null, error: "Coinbase BTC/USD ticker request failed: " + error.message };
+  }
 }
 
 async function fetchKrakenQuote(fetchImpl = fetch) {
@@ -122,6 +154,12 @@ async function fetchKrakenQuote(fetchImpl = fetch) {
   }
 }
 
+/**
+ * Direct quote policy for the GitHub signal pipeline:
+ * Biquote = EURUSD/XAUUSD; Coinbase Exchange = BTCUSD; Twelve Data is a
+ * validated provider-timestamped fallback. The optional Railway stream is
+ * intentionally not used for paper-approval decisions.
+ */
 export async function fetchBidAskQuotes({
   fetchImpl = fetch,
   markets = ["EURUSD", "BTCUSD", "XAUUSD"]
@@ -129,75 +167,53 @@ export async function fetchBidAskQuotes({
   const requested = [...new Set(markets)].filter(symbol =>
     ["EURUSD", "BTCUSD", "XAUUSD"].includes(symbol)
   );
-  const realtime = await fetchRealtimeFeedQuotes({ fetchImpl, markets: requested });
-  const quotes = { ...realtime.quotes };
-  const errors = [...realtime.errors];
-
-  const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD" && !quotes[symbol]);
-  if (nonCryptoMarkets.length) {
-    const biquoteResults = await Promise.all(nonCryptoMarkets.map(async symbol => [
-      symbol, await fetchBiquoteQuote(symbol, { fetchImpl })
-    ]));
-    const missingMarkets = [];
-    for (const [symbol, result] of biquoteResults) {
-      const validation = validateBiquoteTick(result.quote);
-      if (validation.valid) {
-        quotes[symbol] = {
-          ...result.quote,
-          venue: result.quote.venue ?? "Biquote MT5 feed",
-          source: "Biquote live bid/ask"
-        };
-      } else {
-        errors.push(result.error ?? symbol + ": " + validation.reason);
-        missingMarkets.push(symbol);
-      }
-    }
-
-    // Twelve Data remains a secondary fallback, but its price WebSocket does
-    // not guarantee bid/ask fields for every symbol or subscription tier.
-    if (missingMarkets.length) {
-      const feed = await fetchTwelveDataQuotes({ markets: missingMarkets, requireBidAsk: true });
-      for (const symbol of missingMarkets) {
-        const quote = feed.quotes?.[symbol];
-        const validation = validateBidAskQuote(quote);
-        if (validation.valid) quotes[symbol] = {
-          ...quote,
-          venue: quote.exchange ?? "Twelve Data reference feed",
-          source: "Twelve Data WebSocket bid/ask fallback"
-        };
-        else errors.push(symbol + ": " + (validation.reason ?? feed.errors?.join("; ") ?? "Twelve Data quote unavailable"));
-      }
-      if (feed.errors?.length) errors.push(...feed.errors);
+  const quotes = {};
+  const errors = [];
+  const nonCryptoMarkets = requested.filter(symbol => symbol !== "BTCUSD");
+  const biquoteResults = await Promise.all(nonCryptoMarkets.map(async symbol => [
+    symbol, await fetchBiquoteQuote(symbol, { fetchImpl })
+  ]));
+  const missingMarkets = [];
+  for (const [symbol, result] of biquoteResults) {
+    const validation = validateBiquoteTick(result.quote);
+    if (validation.valid) {
+      quotes[symbol] = { ...result.quote, venue: result.quote.venue ?? "Biquote MT5 feed",
+        source: "Biquote live bid/ask" };
+    } else {
+      errors.push(result.error ?? symbol + ": " + validation.reason);
+      missingMarkets.push(symbol);
     }
   }
 
-  if (requested.includes("BTCUSD") && !quotes.BTCUSD) {
-    const kraken = await fetchKrakenQuote(fetchImpl);
-    if (kraken.quote && validateBidAskQuote(kraken.quote).valid) {
-      quotes.BTCUSD = kraken.quote;
-    } else {
-      errors.push(kraken.error ?? "Kraken BTC/USD quote failed validation");
-      const fallback = await fetchTwelveDataQuotes({ markets: ["BTCUSD"], requireBidAsk: true });
-      const quote = fallback.quotes?.BTCUSD;
+  if (requested.includes("BTCUSD")) {
+    const coinbase = await fetchCoinbaseQuote(fetchImpl);
+    if (coinbase.quote) quotes.BTCUSD = coinbase.quote;
+    else {
+      errors.push(coinbase.error);
+      missingMarkets.push("BTCUSD");
+    }
+  }
+
+  // Fallback is accepted only if the provider supplies bid, ask and its own timestamp.
+  if (missingMarkets.length) {
+    const feed = await fetchTwelveDataQuotes({ markets: missingMarkets, requireBidAsk: true });
+    for (const symbol of missingMarkets) {
+      const quote = feed.quotes?.[symbol];
       const validation = validateBidAskQuote(quote);
-      if (validation.valid) {
-        quotes.BTCUSD = {
-          ...quote,
-          venue: quote.exchange ?? "Twelve Data reference feed",
-          source: "Twelve Data WebSocket bid/ask fallback"
-        };
+      if (validation.valid && quote.timestampQuality === "PROVIDER_TIMESTAMP") {
+        quotes[symbol] = { ...quote, venue: quote.exchange ?? "Twelve Data reference feed",
+          source: "Twelve Data WebSocket bid/ask fallback" };
       } else {
-        errors.push("BTCUSD Twelve Data fallback: " + (validation.reason ?? "quote unavailable"));
+        errors.push(symbol + ": " + (validation.reason ?? feed.errors?.join("; ") ?? "Twelve Data quote unavailable"));
       }
     }
+    if (feed.errors?.length) errors.push(...feed.errors);
   }
 
   const complete = requested.length > 0 && requested.every(symbol => Boolean(quotes[symbol]));
   return {
     status: complete ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
-    provider: "Biquote + Kraken (Twelve Data fallback; no Capital.com)",
-    quotes,
-    errors,
-    receivedAt: Date.now()
+    provider: "Biquote EURUSD/XAUUSD + Coinbase BTCUSD (Twelve Data timestamped fallback; no Railway dependency)",
+    quotes, errors, receivedAt: Date.now()
   };
 }

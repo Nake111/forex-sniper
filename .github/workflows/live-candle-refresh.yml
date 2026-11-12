@@ -123,7 +123,6 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-          REALTIME_FEED_URL: https://btc-10-second-feed-production.up.railway.app
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
       - name: Require fresh quotes and complete three-agent verification

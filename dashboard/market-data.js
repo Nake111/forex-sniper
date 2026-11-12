@@ -76,18 +76,20 @@
       const age=Date.now()-Date.parse(data.generatedAt);
       if(!Number.isFinite(age)||age< -60000||age>10*60*1000)throw new Error("Signal snapshot is stale");
       signalCards.replaceChildren();
-      let approved=0;
+      let approved=0,gradeB=0;
       for(const [symbol,item] of Object.entries(data.markets)){
         const card=document.createElement("div");
         card.style.cssText="border:1px solid #223047;border-radius:10px;padding:12px;background:#0a1321";
         const title=document.createElement("div");title.textContent=item.label||symbol;title.style.cssText="font-weight:700;margin-bottom:8px";
-        const decision=document.createElement("div");decision.textContent=item.decision||"NO APPROVED TRADE";decision.style.cssText="font-size:21px;font-weight:850;color:"+(item.status==="PAPER_SIGNAL_APPROVED"?(item.decision==="BUY"?"#35d49a":"#ff647c"):"#f4bd58");
+        const decision=document.createElement("div");decision.textContent=item.signalGrade==="B"?"GRADE B · "+(item.candidate||"UNKNOWN")+" · NOT APPROVED":item.signalGrade==="A"?"GRADE A · APPROVED PAPER "+item.decision:"NO SETUP";decision.style.cssText="font-size:19px;font-weight:850;color:"+(item.signalGrade==="A"?(item.decision==="BUY"?"#35d49a":"#ff647c"):"#f4bd58");
         const details=document.createElement("div");details.style.cssText="font-size:11px;color:#8291a8;margin-top:8px;white-space:pre-line";
         const strength=item.candidateStrength
           ?"Candidate strength "+item.candidateStrength.score+"/"+item.candidateStrength.maxScore+
             " · Evidence coverage "+(item.candidateStrength.evidenceCoveragePct??"—")+"% · Not probability"
           :"Candidate "+(item.candidate||"unknown");
-        const planText=item.status==="PAPER_SIGNAL_APPROVED"
+        const planText=item.candidatePlan
+          ?(item.signalGrade==="A"?"Approved paper entry ":"Indicative entry — NOT APPROVED ")+item.candidatePlan.entry+" ("+(item.candidatePlan.entryReference??"quote")+") · SL "+item.candidatePlan.stopLoss+" · TP "+item.candidatePlan.takeProfit+" · R:R "+item.candidatePlan.riskReward
+          :"Entry / SL / TP unavailable: no complete validated quote-based plan";
           ?"Entry "+item.entry+" ("+(item.candidatePlan?.entryReference??"quote")+") · SL "+item.stopLoss+" · TP "+item.takeProfit+" · R:R "+item.riskReward
           :strength+"\\n"+((item.verification?.blockers||[]).slice(0,3).join("; ")||"Independent approval not passed");
         details.textContent=planText;
@@ -96,9 +98,9 @@
         const broker=document.createElement("div");broker.style.cssText="font-size:10px;color:#8291a8;margin-top:6px";
         broker.textContent="Broker execution: "+(item.brokerExecution?.status??"disabled")+" · no orders sent";
         card.append(title,decision,details,quote,broker);
-        if(item.status==="PAPER_SIGNAL_APPROVED")approved++;
+        if(item.signalGrade==="A")approved++;else if(item.signalGrade==="B")gradeB++;
       }
-      signalBadge.textContent=approved?"APPROVED PAPER SIGNAL":"NO APPROVED TRADE";
+      signalBadge.textContent=approved?"APPROVED PAPER SIGNAL":gradeB?"GRADE B CANDIDATES · NOT APPROVED":"NO SETUP";
       signalBadge.className="pill "+(approved?"live":"");
       signalStatus.textContent="Verified snapshot "+new Date(data.generatedAt).toLocaleString()+" · "+Math.round(age/1000)+"s old · research only, no broker orders";
     }catch(error){

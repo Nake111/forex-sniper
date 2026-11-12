@@ -556,6 +556,8 @@ async function analyseMarket(market, macroContext) {
   console.log("LAYER 3 — EXECUTION APPROVAL:", JSON.stringify(executionLayer));
   // Approved results are paper signals only; no broker execution venue is connected.
   const action = riskClear && executionLayer.paperApproved ? approval.decision : "NO TRADE";
+  const signalGrade = action === "BUY" || action === "SELL" ? "A"
+    : ["BUY", "SELL"].includes(directionalCandidate) ? "B" : "NO SETUP";
   const executionStatus = action === "BUY" || action === "SELL"
     ? "PAPER SIGNAL APPROVED — entry priced at validated " + plan.entryReference + "; broker routing remains disabled"
     : "NO APPROVED TRADE — one or more confirmation, data, spread or risk gates failed";
@@ -600,6 +602,7 @@ async function analyseMarket(market, macroContext) {
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
   console.log("LAYER 1 DISCOVERED CANDIDATE:", discoveryLayer.candidate);
+  console.log("SIGNAL GRADE:", signalGrade, "| A=approved paper signal; B=directional research only, not approved; NO SETUP=no direction");
   console.log("CANDIDATE STRENGTH / EVIDENCE COVERAGE:", weightedScore.score + "/100" + " / " + weightedScore.coverage + "%");
   console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
   console.log("LAYER 3 PAPER APPROVAL:", executionLayer.decision, "| approved:", executionLayer.paperApproved);
