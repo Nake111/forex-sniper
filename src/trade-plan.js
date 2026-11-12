@@ -145,7 +145,45 @@ export function buildIndicativeTradePlan(signal, result, market) {
     stopType: validStops.length ? "MARKET_STRUCTURE" : "MARKET_SPECIFIC_ATR",
     riskDistance,
     entryTriggerConfirmed,
-    status: entryTriggerConfirmed ? "TRIGGER_CONFIRMED — awaiting execution gates" : "INDICATIVE — M5 trigger not confirmed",
+    status: entryTriggerConfirmed ? "TRIGGER_CONFIRMED \u2014 awaiting execution gates" : "INDICATIVE \u2014 M5 trigger not confirmed",
+    executable: false
+  };
+}
+
+/**
+ * Re-price an indicative candle-close plan on the executable side of a quote.
+ * Stop and take-profit stay fixed. BUY fills on the ask, SELL on the bid.
+ * Does not mark the plan executable.
+ */
+export function repriceIndicativePlan(plan, quote) {
+  if (!plan || !["BUY", "SELL"].includes(plan.direction)) return null;
+  const bid = Number(quote?.bid);
+  const ask = Number(quote?.ask);
+  const base = {
+    ...plan,
+    indicativeEntry: plan.entry,
+    liveEntry: null,
+    riskRewardValue: null,
+    riskReward: null,
+    repriceStatus: "INVALIDATED",
+    repriceReason: "Quote is missing, locked, or crossed",
+    executable: false
+  };
+  if (!(ask > bid) || !(bid > 0)) return base;
+  const liveEntry = plan.direction === "BUY" ? ask : bid;
+  const risk = plan.direction === "BUY" ? liveEntry - plan.stopLoss : plan.stopLoss - liveEntry;
+  const reward = plan.direction === "BUY" ? plan.takeProfit - liveEntry : liveEntry - plan.takeProfit;
+  const valid = Number.isFinite(risk) && Number.isFinite(reward) && risk > 0 && reward > 0;
+  const riskRewardValue = valid ? reward / risk : null;
+  return {
+    ...plan,
+    indicativeEntry: plan.entry,
+    liveEntry,
+    riskDistance: valid ? risk : null,
+    riskRewardValue,
+    riskReward: riskRewardValue == null ? null : "1:" + riskRewardValue.toFixed(2),
+    repriceStatus: valid ? "REPRICED" : "INVALIDATED",
+    repriceReason: valid ? null : "Live quote crossed the stop or the target",
     executable: false
   };
 }
