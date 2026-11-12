@@ -52,7 +52,7 @@ test("paper signal timeout is resolved after 180 subsequent closed M5 candles", 
       path, market: "EURUSD", signal: "NO TRADE", candles, now: 60_000_000
     });
     assert.equal(result.timeouts, 1);
-    const saved = (await readFile(path, "utf8")).trim().split("\\n").map(JSON.parse);
+    const saved = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
     const signal = saved.find(event => event.eventType === "PAPER_SIGNAL");
     const outcome = saved.find(event => event.eventType === "PAPER_OUTCOME");
     assert.equal(signal.strategy.strategyId, "CORE");
