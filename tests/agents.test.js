@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { runMarketIntelligenceAgent } from "../src/market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "../src/signal-approval-agent.js";
 import { runEntryVerificationAgent } from "../src/entry-verification-agent.js";
+import { runTradingAgents } from "../src/trading-agents.js";
 
 function frame(direction = "BULLISH") {
   const bullish = direction === "BULLISH";
@@ -143,4 +144,31 @@ test("entry verification rejects null numeric levels instead of treating them as
   });
   assert.equal(result.approved, false);
   assert.ok(result.blockers.includes("Entry, stop-loss or take-profit is missing"));
+});
+
+
+test("headline caution is not mislabeled as an economic-calendar event veto", () => {
+  const frames = { M5: {}, M15: {}, H1: {} };
+  const report = runTradingAgents({
+    market: "XAUUSD",
+    frames,
+    macro: {
+      eventRisk: "HIGH",
+      calendarRiskStatus: "NORMAL",
+      headlineRiskStatus: "HIGH",
+      recentHighImpactCount: 1
+    }
+  });
+  assert.ok(report.riskManager.blocks.includes("HIGH_IMPACT_HEADLINES"));
+  assert.equal(report.riskManager.blocks.includes("ECONOMIC_CALENDAR_HIGH"), false);
+});
+
+test("unknown calendar status remains a fail-closed approval veto", () => {
+  const report = runTradingAgents({
+    market: "EURUSD",
+    frames: { M5: {}, M15: {}, H1: {} },
+    macro: { eventRisk: "UNKNOWN", calendarRiskStatus: "UNKNOWN", headlineRiskStatus: "NORMAL" }
+  });
+  assert.ok(report.riskManager.blocks.includes("ECONOMIC_CALENDAR_UNKNOWN"));
+  assert.equal(report.riskManager.approved, false);
 });
