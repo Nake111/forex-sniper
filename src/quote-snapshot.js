@@ -37,6 +37,10 @@ export function validateQuoteSnapshot(snapshot, quote, now = Date.now()) {
     return { valid: false, reason: "Quote snapshot identity mismatch" };
   }
   if (snapshot.market !== quote.market) return { valid: false, reason: "Quote snapshot market mismatch" };
+  const frozen = snapshot.quote;
+  if (!frozen || ["bid", "ask", "timestamp", "receivedAt", "source", "venue"].some(key => frozen[key] !== quote[key])) {
+    return { valid: false, reason: "Quote values changed after snapshot creation" };
+  }
   if (now - quote.timestamp > snapshot.maxAgeMs || now - quote.receivedAt > snapshot.maxAgeMs) {
     return { valid: false, reason: "Quote snapshot expired before approval" };
   }
