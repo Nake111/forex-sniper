@@ -24,3 +24,9 @@ test("missing feed configuration is explicit", async () => {
  const result=await fetchPublicTraderEvidence("BTCUSD",{feedUrls:[]});
  assert.equal(result.status,"NOT_CONFIGURED"); assert.equal(result.mayOverrideValidation,false);
 });
+
+test("parses Atom entries with mixed-case publication tags", () => {
+ const atom=`<feed><entry><title>BTC/USD bullish BUY outlook</title><summary>Long</summary><updated>2026-11-12T11:30:00Z</updated><link href="https://ideas.example.com/btc-long"/></entry></feed>`;
+ const ideas=parsePublicIdeaFeed(atom,{market:"BTCUSD",sourceUrl:"https://ideas.example.com/atom.xml",now});
+ assert.equal(ideas.length,1); assert.equal(ideas[0].direction,"BUY");
+});
