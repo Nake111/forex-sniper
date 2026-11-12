@@ -19,7 +19,7 @@ function decodeXml(value = "") {
 }
 function tagValue(xml, names) {
   for (const name of names) {
-    const pattern = new RegExp("<(?:[\\w-]+:)?" + name + "\\b[^>]*>([\\s\\S]*?)</(?:[\\w-]+:)?" + name + "\\s*>", "i");
+    const pattern = new RegExp("<" + name + "\\b[^>]*>([\\s\\S]*?)</" + name + "\\s*>", "i");
     const match = xml.match(pattern);
     if (match) return decodeXml(match[1]);
   }
