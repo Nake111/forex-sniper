@@ -99,7 +99,8 @@ test("approval agent rejects missing quote and accepts only complete paper check
   const quote = { market: "EURUSD", bid: 1.1, ask: 1.1001, timestamp, receivedAt: timestamp,
     source: "test", venue: "test", snapshotId: "eur-test-snapshot" };
   const base = { candidate: "BUY", marketReview, plan, quote,
-    quoteValidation: { valid: true, spread: 0.0001, snapshotId: quote.snapshotId }, entryAtr: 0.01 };
+    quoteValidation: { valid: true, spread: 0.0001, snapshotId: quote.snapshotId, bid: quote.bid, ask: quote.ask,
+      timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue }, entryAtr: 0.01 };
   assert.equal(runSignalApprovalAgent({ ...base, quote: null }).approved, false);
   assert.equal(runSignalApprovalAgent(base).decision, "BUY");
 });
@@ -114,7 +115,8 @@ test("BTC approval and entry verification use the same 0.25 ATR deviation limit"
   const timestamp = Date.now() - 500;
   const quote = { market: "BTCUSD", bid: 100.21, ask: 100.22, timestamp, receivedAt: timestamp,
     source: "test", venue: "test", snapshotId: "btc-test-snapshot" };
-  const quoteValidation = { valid: true, spread: 0.01, ageMs: 100, snapshotId: quote.snapshotId };
+  const quoteValidation = { valid: true, spread: 0.01, ageMs: 100, snapshotId: quote.snapshotId, bid: quote.bid, ask: quote.ask,
+    timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue };
   const approval = runSignalApprovalAgent({
     candidate: "BUY", marketReview, plan, quote, quoteValidation, entryAtr: 1
   });
