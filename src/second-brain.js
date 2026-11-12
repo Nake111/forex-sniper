@@ -33,8 +33,8 @@ function candleTime(candle) {
  * when later closed candles touch a stored stop or target. It never places orders.
  */
 export async function updateSecondBrain({
-  market, candles = [], signal = "HOLD", plan = null, vwap = {},
-  agents = {}, llm = {}, macro = {}, frames = {}, marketIntelligence = {}, approval = {}, path = "data/second-brain.jsonl",
+  market, candles = [], signal = "HOLD", candidate = "HOLD", plan = null, quote = null, quoteValidation = {},
+  vwap = {}, agents = {}, llm = {}, macro = {}, frames = {}, marketIntelligence = {}, approval = {}, verification = {}, decisionLayers = {}, path = "data/second-brain.jsonl",
   now = Date.now()
 }) {
   const records = await readJournal(path);
@@ -103,6 +103,22 @@ export async function updateSecondBrain({
       llm: { status: llm.status ?? "NOT_CONFIGURED", decision: llm.decision ?? "UNKNOWN" },
       marketIntelligence: { agent: marketIntelligence.agent ?? "UNAVAILABLE", direction: marketIntelligence.direction ?? null, approved: marketIntelligence.approved === true, blockers: marketIntelligence.blockers ?? [], orderFlow: marketIntelligence.orderFlow ?? null, eventRisk: marketIntelligence.eventRisk ?? null },
       approval: { agent: approval.agent ?? "UNAVAILABLE", decision: approval.decision ?? "UNKNOWN", approved: approval.approved === true, blockers: approval.blockers ?? [] },
+      verification: { agent: verification.agent ?? "UNAVAILABLE", decision: verification.decision ?? "UNKNOWN", approved: verification.approved === true, blockers: verification.blockers ?? [] },
+      decisionLayers: { discovery: decisionLayers.discovery?.candidate ?? null, verification: decisionLayers.verification?.status ?? null, execution: decisionLayers.execution?.decision ?? null },
+      quoteEvidence: {
+        provider: quote?.source ?? null, venue: quote?.venue ?? null,
+        bid: finite(quote?.bid) ? quote.bid : null, ask: finite(quote?.ask) ? quote.ask : null,
+        observedSpread: finite(quoteValidation.spread) ? quoteValidation.spread : null,
+        quoteTimestamp: finite(quote?.timestamp) ? quote.timestamp : null,
+        receivedAt: finite(quote?.receivedAt) ? quote.receivedAt : null,
+        quoteAgeMs: finite(quote?.timestamp) ? Math.max(0, now - quote.timestamp) : null,
+        validation: quoteValidation.valid === true ? "VALID" : "INVALID_OR_UNAVAILABLE",
+        spreadAtr: finite(quoteValidation.spreadAtr) ? quoteValidation.spreadAtr : null,
+        estimatedSlippage: null, observedSlippage: null,
+        executionFill: null, note: "Reference quote only; no broker fill or observed slippage available"
+      },
+      candidateDirection: ["BUY", "SELL"].includes(candidate) ? candidate : "NONE",
+      outcomeMethod: "Subsequent closed-candle high/low proxy; not a broker fill",
       macro: { eventRisk: macro.eventRisk ?? "UNKNOWN", dataStale: macro.dataStale === true },
       timeframes: timeframeSummary
     });
