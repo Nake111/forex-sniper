@@ -64,7 +64,8 @@ test("EURUSD missing venue tick-volume is advisory, not a hard A1 veto", () => {
     a1Heart: { status: "UNAVAILABLE", direction: "HOLD" }
   });
   assert.equal(result.hardBlockers.some(reason => reason.startsWith("A1 HEART")), false);
-  assert.ok(result.advisories.some(reason => reason.includes("tick-volume")));
+  assert.ok(result.advisories.some(reason => reason.includes("A1 HEART")));
+  assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
 });
 
 test("BTCUSD can advance independent candidates when A1 HEART is not ready", () => {
