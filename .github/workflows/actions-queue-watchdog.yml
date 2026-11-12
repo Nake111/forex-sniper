@@ -17,14 +17,17 @@ jobs:
   recover:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel stale queued test runs and dispatch one recovery check
+      - name: Recover stalled checks and missed market refreshes
         uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const staleAfterMs = 60 * 1000;
-            const dispatchCooldownMs = 15 * 60 * 1000;
+            const now = Date.now();
+            const staleAfterMs = 8 * 60 * 1000;
+            const refreshStaleAfterMs = 12 * 60 * 1000;
+            const dispatchCooldownMs = 10 * 60 * 1000;
+            const refreshPath = ".github/workflows/live-candle-refresh.yml";
             const targetNames = new Set([
               "Main Branch Code and Test Check",
               "Quant Swarm Validation",
@@ -35,79 +38,88 @@ jobs:
             const { data } = await github.rest.actions.listWorkflowRunsForRepo({
               owner, repo, per_page: 100
             });
+            const runs = data.workflow_runs;
 
-            const now = Date.now();
-            const stale = data.workflow_runs.filter(run =>
+            // First clean up queued jobs that have no runner/job record.
+            const staleChecks = runs.filter(run =>
               targetNames.has(run.name) &&
               run.status === "queued" &&
               now - Date.parse(run.created_at) >= staleAfterMs
             );
-
-            const cancelled = [];
-            for (const run of stale) {
+            for (const run of staleChecks) {
               const { data: jobsData } = await github.rest.actions.listJobsForWorkflowRun({
                 owner, repo, run_id: run.id, per_page: 100
               });
-              if (jobsData.jobs.length !== 0) continue;
+              if (jobsData.jobs.length === 0) {
+                await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: run.id });
+                core.warning(`Cancelled stale queued check ${run.id} (${run.name})`);
+              }
+            }
 
-              await github.rest.actions.cancelWorkflowRun({
-                owner, repo, run_id: run.id
+            // Recover the actual market pipeline when GitHub has missed or delayed
+            // scheduled invocations. Never start a second refresh while one is active.
+            const refreshRuns = runs
+              .filter(run => run.path === refreshPath && run.head_branch === "main")
+              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+            const active = refreshRuns.find(run =>
+              ["queued", "in_progress"].includes(run.status)
+            );
+
+            let cancelledStaleRefreshId = null;
+            if (active?.status === "queued" &&
+                now - Date.parse(active.created_at) >= staleAfterMs) {
+              const { data: jobsData } = await github.rest.actions.listJobsForWorkflowRun({
+                owner, repo, run_id: active.id, per_page: 100
               });
-              cancelled.push(run);
-              core.info(`Cancelled stale queued run ${run.id} (${run.name})`);
+              if (jobsData.jobs.length === 0) {
+                await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: active.id });
+                cancelledStaleRefreshId = active.id;
+                core.warning(`Cancelled stalled queued market refresh ${active.id}`);
+              }
             }
 
-            if (cancelled.length === 0) {
-              core.info("No stale queued test runs without jobs. No recovery dispatch needed.");
-              return;
-            }
-
-            const latestRuns = await github.rest.actions.listWorkflowRunsForRepo({
-              owner, repo, per_page: 100
-            });
-            const runs = latestRuns.data.workflow_runs;
-            const checkRuns = runs.filter(run =>
-              run.path === ".github/workflows/check.yml"
-            );
-
-            const recentDispatch = checkRuns
-              .filter(run =>
-                run.event === "workflow_dispatch" &&
-                now - Date.parse(run.created_at) < dispatchCooldownMs
-              )
-              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
-
-            if (recentDispatch) {
-              core.info(`Recovery dispatch skipped: 15-minute cooldown active (run ${recentDispatch.id}).`);
-              return;
-            }
-
-            const activeCheck = checkRuns.find(run =>
+            const stillActive = refreshRuns.find(run =>
               ["queued", "in_progress"].includes(run.status) &&
-              !cancelled.some(old => old.id === run.id)
+              run.id !== cancelledStaleRefreshId
             );
-            if (activeCheck) {
-              core.info(`Recovery dispatch skipped: check workflow ${activeCheck.id} is already active.`);
+            if (stillActive) {
+              core.info(`Market refresh ${stillActive.id} is already ${stillActive.status}; no duplicate dispatch.`);
               return;
             }
 
-            const ref = cancelled
-              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0]
-              .head_branch || "main";
+            const latest = refreshRuns[0];
+            const latestIsHealthy = latest?.status === "completed" &&
+              latest.conclusion === "success" &&
+              now - Date.parse(latest.updated_at) < refreshStaleAfterMs;
+            if (latestIsHealthy) {
+              core.info(`Latest market refresh succeeded ${Math.round((now - Date.parse(latest.updated_at)) / 60000)} minute(s) ago.`);
+              return;
+            }
+
+            const recentRecovery = refreshRuns.find(run =>
+              run.event === "workflow_dispatch" &&
+              now - Date.parse(run.created_at) < dispatchCooldownMs
+            );
+            if (recentRecovery) {
+              core.info(`Market refresh recovery cooldown active (run ${recentRecovery.id}).`);
+              return;
+            }
 
             await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
-              workflow_id: "check.yml",
-              ref
+              workflow_id: "live-candle-refresh.yml",
+              ref: "main"
             });
-
-            core.notice(`Dispatched one recovery code/test workflow on ref: ${ref}`);
+            core.notice("Dispatched a recovery market refresh on main.");
             core.summary
-              .addHeading("Actions queue recovery")
+              .addHeading("Market refresh recovery")
               .addList([
-                `Cancelled ${cancelled.length} stale queued test run(s) with no jobs.`,
-                `Dispatched one Main Branch Code and Test Check on ${ref}.`,
-                "A 15-minute cooldown prevents repeated recovery dispatches."
+                latest
+                  ? `Latest refresh: ${latest.status}/${latest.conclusion ?? "no conclusion"} at ${latest.updated_at}.`
+                  : "No prior market refresh run was found.",
+                "No active refresh was running.",
+                "One recovery refresh was dispatched on main.",
+                "A 10-minute cooldown prevents duplicate recovery dispatches."
               ])
               .write();
