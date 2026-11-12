@@ -110,14 +110,23 @@ export async function updateSecondBrain({
   const spreadAtr = finite(observedSpread) && finite(frames?.M5?.atr14) && frames.M5.atr14 > 0
     ? observedSpread / frames.M5.atr14 : null;
   const quoteAgeMs = finite(quoteTimestamp) ? Math.max(0, now - quoteTimestamp) : null;
+  const costEstimate = estimateCost(market, midpoint);
+  const observedSpreadBps = finite(observedSpread) && finite(midpoint) && midpoint > 0
+    ? observedSpread / midpoint * 10000 : null;
+  costEstimate.observedSpreadBps = round(observedSpreadBps, 4);
+  costEstimate.estimatedRoundTripCostBps = finite(observedSpreadBps) &&
+    finite(costEstimate.estimatedSlippageBpsPerSide)
+    ? round(observedSpreadBps + 2 * costEstimate.estimatedSlippageBpsPerSide +
+      (costEstimate.estimatedCommissionBpsRoundTrip ?? 0), 4) : null;
   const quoteEvidence = {
     provider: quote?.source ?? null, venue: quote?.venue ?? null,
     bid: round(quote?.bid), ask: round(quote?.ask), midpoint: round(midpoint),
-    observedSpread: round(observedSpread), quoteTimestamp, receivedAt: quoteReceivedAt,
-    quoteAgeMs, timestampQuality: quote?.timestampQuality ?? null,
+    observedSpread: round(observedSpread), observedSpreadBps: round(observedSpreadBps, 4),
+    quoteTimestamp, receivedAt: quoteReceivedAt, quoteAgeMs,
+    timestampQuality: quote?.timestampQuality ?? null,
     validation: quoteValidation?.valid === true ? "VALID" : "INVALID_OR_UNAVAILABLE",
     validationReason: quoteValidation?.reason ?? null, spreadAtr: round(spreadAtr, 6),
-    costs: estimateCost(market, midpoint)
+    costs: costEstimate
   };
 
   const observationId = `OBS:${market}:${candleAt ?? "NO_CANDLE"}:${quoteTimestamp ?? "NO_QUOTE"}`;
