@@ -1,6 +1,13 @@
 name: Forex Sniper Stale-Data Watchdog
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/stale-data-watchdog.yml"
+      - "scripts/stale-data-watchdog.js"
+      - "dashboard/data/latest.json"
+      - "dashboard/data/signals.json"
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
