@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T14:00:43.736Z",
-  "generatedAtSlovenia": "2026-11-12 15:00:43",
+  "generatedAt": "2026-11-12T14:02:01.317Z",
+  "generatedAtSlovenia": "2026-11-12 15:02:01",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-12T13:59:44.000Z",
-    "timestampUtc": "2026-11-12T13:59:44.000Z",
-    "timestampSlovenia": "2026-11-12T14:59:44+01:00",
+    "id": "2026-11-12T14:01:10.000Z",
+    "timestampUtc": "2026-11-12T14:01:10.000Z",
+    "timestampSlovenia": "2026-11-12T15:01:10+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-12T13:59:44.000Z",
-  "sourceReportAgeSeconds": 60,
+  "sourceReportGeneratedAt": "2026-11-12T14:01:10.000Z",
+  "sourceReportAgeSeconds": 51,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -19,21 +19,23 @@
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "SELL",
-      "score": "100/100 / 100%",
+      "candidateStatus": "NO_VALID_DIRECTIONAL_PLAN",
+      "candidatePlan": null,
+      "score": "80/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10907,
-        "ask": 1.10913,
+        "bid": 1.10927,
+        "ask": 1.10933,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492008000,
-        "ageMs": 2731,
+        "timestamp": 1794492096000,
+        "ageMs": 1961,
         "validated": true
       },
       "agents": {
-        "marketIntelligenceApproved": true,
+        "marketIntelligenceApproved": false,
         "signalApprovalApproved": false,
         "entryVerificationApproved": false
       },
@@ -42,11 +44,14 @@
         "layer3": "REJECTED",
         "blockers": [
           "Macro/event-risk hard gate is active",
+          "Required closed M5 entry trigger is not confirmed",
           "Layer 2 verification did not pass",
           "Economic/news risk is MEDIUM",
           "Risk manager veto: ECONOMIC_CALENDAR_MEDIUM",
           "No directional candidate",
+          "M5 closed candle does not confirm the higher-timeframe direction",
           "Independent market-intelligence direction conflicts with candidate",
+          "Closed M5 entry trigger is not confirmed",
           "Cannot verify entry distance against the live bid/ask and ATR",
           "No BUY/SELL candidate to verify",
           "Independent signal approval agent did not approve this direction",
@@ -56,12 +61,12 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:00:43.736Z",
-      "generatedAtSlovenia": "2026-11-12 15:00:43",
+      "generatedAt": "2026-11-12T14:02:01.317Z",
+      "generatedAtSlovenia": "2026-11-12 15:02:01",
       "analysisCycle": {
-        "id": "2026-11-12T13:59:44.000Z",
-        "timestampUtc": "2026-11-12T13:59:44.000Z",
-        "timestampSlovenia": "2026-11-12T14:59:44+01:00",
+        "id": "2026-11-12T14:01:10.000Z",
+        "timestampUtc": "2026-11-12T14:01:10.000Z",
+        "timestampSlovenia": "2026-11-12T15:01:10+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -70,17 +75,19 @@
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "SELL",
+      "candidateStatus": "NO_VALID_DIRECTIONAL_PLAN",
+      "candidatePlan": null,
       "score": "80/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 72401.52,
-        "ask": 72403.73,
+        "bid": 72420.62,
+        "ask": 72420.63,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492028183,
-        "ageMs": 228,
+        "timestamp": 1794492114998,
+        "ageMs": 289,
         "validated": true
       },
       "agents": {
@@ -109,12 +116,12 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:00:43.736Z",
-      "generatedAtSlovenia": "2026-11-12 15:00:43",
+      "generatedAt": "2026-11-12T14:02:01.317Z",
+      "generatedAtSlovenia": "2026-11-12 15:02:01",
       "analysisCycle": {
-        "id": "2026-11-12T13:59:44.000Z",
-        "timestampUtc": "2026-11-12T13:59:44.000Z",
-        "timestampSlovenia": "2026-11-12T14:59:44+01:00",
+        "id": "2026-11-12T14:01:10.000Z",
+        "timestampUtc": "2026-11-12T14:01:10.000Z",
+        "timestampSlovenia": "2026-11-12T15:01:10+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -123,17 +130,19 @@
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "SELL",
+      "candidateStatus": "NO_VALID_DIRECTIONAL_PLAN",
+      "candidatePlan": null,
       "score": "70/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3893.903,
-        "ask": 3894.071,
+        "bid": 3893.658,
+        "ask": 3893.826,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492040000,
-        "ageMs": 3608,
+        "timestamp": 1794492118000,
+        "ageMs": 3176,
         "validated": true
       },
       "agents": {
@@ -164,12 +173,12 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:00:43.736Z",
-      "generatedAtSlovenia": "2026-11-12 15:00:43",
+      "generatedAt": "2026-11-12T14:02:01.317Z",
+      "generatedAtSlovenia": "2026-11-12 15:02:01",
       "analysisCycle": {
-        "id": "2026-11-12T13:59:44.000Z",
-        "timestampUtc": "2026-11-12T13:59:44.000Z",
-        "timestampSlovenia": "2026-11-12T14:59:44+01:00",
+        "id": "2026-11-12T14:01:10.000Z",
+        "timestampUtc": "2026-11-12T14:01:10.000Z",
+        "timestampSlovenia": "2026-11-12T15:01:10+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
