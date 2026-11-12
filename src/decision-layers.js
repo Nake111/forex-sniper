@@ -78,7 +78,14 @@ export function buildVerificationLayer({
       status: weightedScore.status === "ELIGIBLE_FOR_RISK_GATE" && hard.length === 0 ? "PASSED" : "REJECTED",
       score: weightedScore.score, coverage: weightedScore.coverage,
       components: weightedScore.components, checks,
-      blockers: [...new Set([...hard, ...(weightedScore.status === "WATCHLIST" ? ["Weighted score below 75-point approval threshold"] : [])])],
+      blockers: [...new Set([
+        ...hard,
+        ...(weightedScore.status === "WATCHLIST" ? ["Weighted score below 75-point approval threshold"] : []),
+        ...(weightedScore.status === "REJECTED" ? ["Weighted evidence did not meet the candidate-advancement criteria"] : []),
+        ...(weightedScore.components ?? [])
+          .filter(item => item.status === "FAIL" || item.status === "UNAVAILABLE")
+          .map(item => item.name + ": " + item.status + (item.detail ? " — " + JSON.stringify(item.detail) : ""))
+      ])],
       candidatePreserved: true
     };
   }
