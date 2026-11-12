@@ -46,12 +46,15 @@ function quality(candles, tf, now) {
   if (ageMs > tf.maxAgeMs) issues.push("STALE_CLOSED_CANDLE");
   if (gaps >= 10) issues.push("EXCESSIVE_MISSING_INTERVALS_IN_RECENT_WINDOW");
   return { status: issues.length ? "WARN" : "PASS", latestClosedAt: new Date(closedAt).toISOString(),
+    latestClosedAtSlovenia: new Date(closedAt).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),
     ageSeconds: Math.round(ageMs/1000), maxAgeSeconds: Math.round(tf.maxAgeMs/1000),
     candleCount: candles.length, gapCount: gaps, issues };
 }
 async function main() {
   const now = Date.now();
   const snapshot = { schemaVersion: 1, generatedAt: new Date(now).toISOString(),
+    generatedAtSlovenia: new Date(now).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),
+    timeZone: "Europe/Ljubljana",
     refreshTarget: "5 minutes (GitHub Actions; not a tick stream)", markets: {},
     validation: { status: "PASS", checks: ["valid OHLC", "closed candles only", "sorted and deduplicated timestamps", "minimum 60 bars", "freshness thresholds", "recent interval gaps"] } };
   for (const market of MARKETS) {
