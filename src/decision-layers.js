@@ -107,43 +107,44 @@ export function buildVerificationLayer({
  * connected and independently verified.
  */
 export function buildExecutionLayer({
-  discovery,
-  verification,
-  plan,
-  quote,
-  quoteValidation,
-  approval,
-  entryVerification,
+  discovery, verification, plan, quote, quoteValidation, approval, entryVerification,
   executionVenueConnected = false
 }) {
   const candidate = discovery?.candidate;
-  const blockers = [
+  const paperBlockers = [
     ...(verification?.status === "PASSED" ? [] : ["Layer 2 verification did not pass"]),
     ...(approval?.approved ? [] : approval?.blockers ?? ["Signal approval did not pass"]),
     ...(entryVerification?.approved ? [] : entryVerification?.blockers ?? ["Entry verification did not pass"]),
-    ...(plan ? [] : ["Entry/SL/TP plan unavailable"]),
+    ...(plan && Number.isFinite(plan.entry) && Number.isFinite(plan.stopLoss) && Number.isFinite(plan.takeProfit)
+      ? [] : ["Quote-priced entry/SL/TP plan unavailable"]),
     ...(quoteValidation?.valid ? [] : [quoteValidation?.reason ?? "Fresh bid/ask validation failed"]),
-    ...(quote && Number.isFinite(quote.bid) && Number.isFinite(quote.ask) && quote.ask > quote.bid ? [] : ["Valid uncrossed bid/ask is unavailable"]),
-    ...(executionVenueConnected ? [] : ["Broker execution venue/account is not connected and verified"])
+    ...(quote && Number.isFinite(quote.bid) && Number.isFinite(quote.ask) && quote.bid > 0 && quote.ask > quote.bid
+      ? [] : ["Valid uncrossed bid/ask is unavailable"])
   ];
-  const paperApproved = DIRECTIONS.has(candidate) && blockers.length === 1 &&
-    blockers[0] === "Broker execution venue/account is not connected and verified";
-  const executable = DIRECTIONS.has(candidate) && blockers.length === 0 && executionVenueConnected;
+  if (plan && [plan.entry, plan.stopLoss, plan.takeProfit].every(Number.isFinite)) {
+    const geometryValid = candidate === "BUY"
+      ? plan.stopLoss < plan.entry && plan.takeProfit > plan.entry
+      : candidate === "SELL" ? plan.stopLoss > plan.entry && plan.takeProfit < plan.entry : false;
+    if (!geometryValid) paperBlockers.push("Paper plan stop-loss/target geometry is invalid at executable-side entry");
+    const rewardRisk = Number.isFinite(plan.riskRewardValue) ? plan.riskRewardValue : null;
+    if (rewardRisk === null || rewardRisk < 2) paperBlockers.push("Executable-side reward/risk is below 1:2");
+  }
+  const brokerBlockers = executionVenueConnected ? [] : ["Broker execution venue/account is not connected and verified"];
+  const paperApproved = ["BUY", "SELL"].includes(candidate) && paperBlockers.length === 0;
+  const brokerExecutionStatus = executionVenueConnected
+    ? "VENUE_CONNECTED_BUT_ROUTING_DISABLED" : "NOT_CONNECTED_PAPER_ONLY";
   return {
-    layer: 3,
-    name: "EXECUTION_APPROVAL",
-    market: discovery?.market ?? "UNKNOWN",
-    candidate,
-    decision: executable ? candidate : paperApproved ? "PAPER SIGNAL APPROVED" : "REJECTED",
-    paperApproved,
-    executable,
-    entry: plan?.entry ?? null,
-    stopLoss: plan?.stopLoss ?? null,
-    takeProfit: plan?.takeProfit ?? null,
-    riskReward: plan?.riskReward ?? null,
-    bid: quote?.bid ?? null,
-    ask: quote?.ask ?? null,
-    quoteSource: quote?.source ?? null,
-    blockers
+    layer: 3, name: "PAPER_APPROVAL_AND_BROKER_STATUS",
+    market: discovery?.market ?? "UNKNOWN", candidate,
+    decision: paperApproved ? "PAPER SIGNAL APPROVED" : "REJECTED",
+    paperApproved, paperBlockers: [...new Set(paperBlockers)],
+    brokerExecutionStatus, brokerExecutionConnected: executionVenueConnected,
+    brokerExecutable: false, executable: false,
+    entry: plan?.entry ?? null, entryReference: plan?.entryReference ?? null,
+    signalReferenceEntry: plan?.signalReferenceEntry ?? null,
+    stopLoss: plan?.stopLoss ?? null, takeProfit: plan?.takeProfit ?? null,
+    riskReward: plan?.riskReward ?? null, riskRewardValue: plan?.riskRewardValue ?? null,
+    bid: quote?.bid ?? null, ask: quote?.ask ?? null, quoteSource: quote?.source ?? null,
+    blockers: [...new Set([...paperBlockers, ...brokerBlockers])], brokerBlockers
   };
 }

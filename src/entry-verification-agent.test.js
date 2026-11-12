@@ -78,3 +78,10 @@ test("uses BTC-specific spread and entry deviation limits", () => {
   });
   assert.equal(result.approved, true);
 });
+
+test("quote-priced plan still enforces deviation from the original closed M5 reference", () => {
+  const plan = { ...base.plan, entry: base.quote.ask, signalReferenceEntry: 1.1005, entryReference: "ASK" };
+  const result = runEntryVerificationAgent({ ...base, plan });
+  assert.equal(result.approved, false);
+  assert.ok(result.blockers.some(x => x.includes("signal reference entry")));
+});

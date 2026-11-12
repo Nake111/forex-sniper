@@ -83,10 +83,19 @@
         const title=document.createElement("div");title.textContent=item.label||symbol;title.style.cssText="font-weight:700;margin-bottom:8px";
         const decision=document.createElement("div");decision.textContent=item.decision||"NO APPROVED TRADE";decision.style.cssText="font-size:21px;font-weight:850;color:"+(item.status==="PAPER_SIGNAL_APPROVED"?(item.decision==="BUY"?"#35d49a":"#ff647c"):"#f4bd58");
         const details=document.createElement("div");details.style.cssText="font-size:11px;color:#8291a8;margin-top:8px;white-space:pre-line";
-        details.textContent=item.status==="PAPER_SIGNAL_APPROVED"?"Entry "+item.entry+" · SL "+item.stopLoss+" · TP "+item.takeProfit+" · R:R "+item.riskReward:"Candidate "+(item.candidate||"unknown")+"\n"+((item.verification?.blockers||[]).slice(0,3).join("; ")||"Independent approval not passed");
+        const strength=item.candidateStrength
+          ?"Candidate strength "+item.candidateStrength.score+"/"+item.candidateStrength.maxScore+
+            " · Evidence coverage "+(item.candidateStrength.evidenceCoveragePct??"—")+"% · Not probability"
+          :"Candidate "+(item.candidate||"unknown");
+        const planText=item.status==="PAPER_SIGNAL_APPROVED"
+          ?"Entry "+item.entry+" ("+(item.candidatePlan?.entryReference??"quote")+") · SL "+item.stopLoss+" · TP "+item.takeProfit+" · R:R "+item.riskReward
+          :strength+"\\n"+((item.verification?.blockers||[]).slice(0,3).join("; ")||"Independent approval not passed");
+        details.textContent=planText;
         const quote=document.createElement("div");quote.style.cssText="font-size:10px;color:#8291a8;margin-top:8px";
         quote.textContent="Bid "+(item.quote?.bid??"—")+" / Ask "+(item.quote?.ask??"—")+" · "+(item.quote?.ageMs??"—")+"ms · "+(item.quote?.source??"unknown");
-        card.append(title,decision,details,quote);signalCards.appendChild(card);
+        const broker=document.createElement("div");broker.style.cssText="font-size:10px;color:#8291a8;margin-top:6px";
+        broker.textContent="Broker execution: "+(item.brokerExecution?.status??"disabled")+" · no orders sent";
+        card.append(title,decision,details,quote,broker);
         if(item.status==="PAPER_SIGNAL_APPROVED")approved++;
       }
       signalBadge.textContent=approved?"APPROVED PAPER SIGNAL":"NO APPROVED TRADE";

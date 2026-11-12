@@ -56,9 +56,13 @@ export function runEntryVerificationAgent({
   }
 
   if (plan && executablePrice !== null && finite(plan.entry) && finite(entryAtr) && Number(entryAtr) > 0) {
-    entryDeviationAtr = Math.abs(executablePrice - Number(plan.entry)) / Number(entryAtr);
+    const signalReferenceEntry = finite(plan.signalReferenceEntry) ? Number(plan.signalReferenceEntry) : Number(plan.entry);
+    entryDeviationAtr = Math.abs(executablePrice - signalReferenceEntry) / Number(entryAtr);
+    if (plan.entryReference && Math.abs(executablePrice - Number(plan.entry)) > Math.max(1e-10, Number(entryAtr) * 0.0005)) {
+      blockers.push("Quote-priced plan entry no longer matches the validated executable-side quote");
+    }
     if (entryDeviationAtr > maxDeviation) {
-      blockers.push("Executable-side quote is " + entryDeviationAtr.toFixed(3) + " ATR from planned entry; maximum is " + maxDeviation);
+      blockers.push("Executable-side quote is " + entryDeviationAtr.toFixed(3) + " ATR from signal reference entry; maximum is " + maxDeviation);
     }
   } else if (plan) {
     blockers.push("Executable entry distance from live bid/ask cannot be verified");
@@ -94,6 +98,8 @@ export function runEntryVerificationAgent({
     spread,
     spreadAtr,
     entry: plan?.entry ?? null,
+    signalReferenceEntry: finite(plan?.signalReferenceEntry) ? Number(plan.signalReferenceEntry) : plan?.entry ?? null,
+    entryReference: plan?.entryReference ?? null,
     entryDeviationAtr,
     stopLoss: plan?.stopLoss ?? null,
     takeProfit: plan?.takeProfit ?? null,

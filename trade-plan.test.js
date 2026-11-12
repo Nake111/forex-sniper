@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalAction, tradePlan } from "./src/trade-plan.js";
+import { finalAction, tradePlan, buildIndicativeTradePlan, pricePlanAtExecutableQuote } from "./src/trade-plan.js";
 
 const market = { close: 1.12390, atr14: 0.000374, lastCandle: { open: 1.12370, high: 1.12400, low: 1.12360, close: 1.12390 } };
 const sellMarket = { close: 1.12370, atr14: market.atr14, lastCandle: { open: 1.12400, high: 1.12410, low: 1.12360, close: 1.12370 } };
@@ -45,4 +45,34 @@ test("Missing or directionally invalid M5 entry trigger blocks a plan", () => {
 test("Invalid ATR or missing confirmation blocks a plan", () => {
   assert.equal(tradePlan("BUY", { ...market, atr14: 0 }, { status: "H1 ALIGNED" }), null);
   assert.equal(tradePlan("BUY", market, null), null);
+});
+
+test("prices BUY at validated ask and calculates live R:R without moving SL/TP", () => {
+  const raw = buildIndicativeTradePlan("BUY", market, "EURUSD");
+  const quote = { bid: 1.12391, ask: 1.12393, timestamp: 1_800_000_000_000, receivedAt: 1_800_000_000_000,
+    source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "quote-buy" };
+  const validation = { valid: true, snapshotId: "quote-buy", bid: quote.bid, ask: quote.ask, timestamp: quote.timestamp,
+    receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue, timestampQuality: quote.timestampQuality,
+    ageMs: 100, checkedAt: 1_800_000_000_000 };
+  const plan = pricePlanAtExecutableQuote(raw, "BUY", quote, validation, market.atr14, 1_800_000_000_000);
+  assert.equal(plan.entry, quote.ask);
+  assert.equal(plan.entryReference, "ASK");
+  assert.equal(plan.signalReferenceEntry, market.close);
+  assert.equal(plan.stopLoss, raw.stopLoss);
+  assert.equal(plan.takeProfit, raw.takeProfit);
+  assert.ok(Math.abs(plan.riskRewardValue - Math.abs(plan.takeProfit-plan.entry)/Math.abs(plan.entry-plan.stopLoss)) < 1e-10);
+});
+
+test("prices SELL at validated bid and rejects stale or mismatched quote snapshots", () => {
+  const raw = buildIndicativeTradePlan("SELL", sellMarket, "EURUSD");
+  const quote = { bid: 1.12368, ask: 1.12370, timestamp: 1_800_000_000_000, receivedAt: 1_800_000_000_000,
+    source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "quote-sell" };
+  const validation = { valid: true, snapshotId: "quote-sell", bid: quote.bid, ask: quote.ask, timestamp: quote.timestamp,
+    receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue, timestampQuality: quote.timestampQuality,
+    ageMs: 100, checkedAt: 1_800_000_000_000 };
+  const plan = pricePlanAtExecutableQuote(raw, "SELL", quote, validation, market.atr14, 1_800_000_000_000);
+  assert.equal(plan.entry, quote.bid);
+  assert.equal(plan.entryReference, "BID");
+  assert.equal(pricePlanAtExecutableQuote(raw, "SELL", quote, { ...validation, ageMs: 20_000 }, market.atr14, 1_800_000_000_000), null);
+  assert.equal(pricePlanAtExecutableQuote(raw, "SELL", quote, { ...validation, snapshotId: "wrong" }, market.atr14, 1_800_000_000_000), null);
 });

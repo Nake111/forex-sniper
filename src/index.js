@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { analyseTimeframe } from "./market.js";
-import { buildIndicativeTradePlan, finalAction } from "./trade-plan.js";
+import { buildIndicativeTradePlan, pricePlanAtExecutableQuote, finalAction } from "./trade-plan.js";
 import { evaluateDeterministicFallback } from "./execution-policy.js";
 import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal.js";
 import { evaluateTieredSignal } from "./tiered-signal.js";
@@ -421,8 +421,7 @@ async function analyseMarket(market, macroContext) {
   const confirmation = market.symbol === "BTCUSD"
     ? confirmSignal(directionalCandidate, results.H1)
     : { status: "H1 ALIGNED", reason: "BTC-only squeeze filter not applicable; market-specific higher-timeframe and M5 checks remain mandatory." };
-  const plan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
-  if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; entry levels are indicative only");
+  const candleClosePlan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   // Fetch the active market's bid/ask immediately before final validation so
   // long-running agent reviews do not age the quote before the execution gate.
   const bidAskFeed = await fetchBidAskQuotes({ markets: [market.symbol] });
@@ -430,6 +429,11 @@ async function analyseMarket(market, macroContext) {
   const quoteSnapshot = createQuoteSnapshot(rawSpreadQuote, market.symbol);
   const spreadQuote = quoteSnapshot.quote;
   const quoteValidation = quoteSnapshot.validation;
+  const plan = pricePlanAtExecutableQuote(
+    candleClosePlan, directionalCandidate, spreadQuote, quoteValidation, results.M5.atr14
+  );
+  if (candleClosePlan && !plan) executionBlockers.push("No fresh validated executable-side quote could price the candidate plan");
+  if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; quote-priced levels are indicative only");
   const spreadVerified = Boolean(quoteValidation.valid &&
     Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
     quoteValidation.spread / results.M5.atr14 <=
@@ -475,6 +479,7 @@ async function analyseMarket(market, macroContext) {
     score: weightedScore.score,
     coverage: weightedScore.coverage,
     scoreStatus: weightedScore.status,
+    scoreType: "HEURISTIC_CANDIDATE_POINTS_NOT_PROBABILITY",
     closedM5At: new Date(latestClosedM5.timestamp + 5 * 60 * 1000).toISOString(),
     m5Close: results.M5.close,
     bid: spreadQuote?.bid ?? null,
@@ -550,9 +555,9 @@ async function analyseMarket(market, macroContext) {
   });
   console.log("LAYER 3 — EXECUTION APPROVAL:", JSON.stringify(executionLayer));
   // Approved results are paper signals only; no broker execution venue is connected.
-  const action = riskClear ? approval.decision : "NO TRADE";
+  const action = riskClear && executionLayer.paperApproved ? approval.decision : "NO TRADE";
   const executionStatus = action === "BUY" || action === "SELL"
-    ? "PAPER SIGNAL APPROVED — reference quote and strategy gates passed; NOT broker-executable"
+    ? "PAPER SIGNAL APPROVED — entry priced at validated " + plan.entryReference + "; broker routing remains disabled"
     : "NO APPROVED TRADE — one or more confirmation, data, spread or risk gates failed";
 
   try {
@@ -595,9 +600,10 @@ async function analyseMarket(market, macroContext) {
   console.log("ACTIVE PROFILE:", SIGNAL_PROFILE);
   if (tieredReport) console.log("SETUP TIER / TYPE:", tieredReport.tier, "/", tieredReport.setupType);
   console.log("LAYER 1 DISCOVERED CANDIDATE:", discoveryLayer.candidate);
-  console.log("WEIGHTED SCORE / COVERAGE:", weightedScore.score + "/100", "/", weightedScore.coverage + "%");
+  console.log("CANDIDATE STRENGTH / EVIDENCE COVERAGE:", weightedScore.score + "/100" + " / " + weightedScore.coverage + "%");
   console.log("LAYER 2 VERIFICATION:", verificationLayer.status, "| blockers:", JSON.stringify(verificationLayer.blockers));
-  console.log("LAYER 3 EXECUTION:", executionLayer.decision, "| broker executable:", executionLayer.executable);
+  console.log("LAYER 3 PAPER APPROVAL:", executionLayer.decision, "| approved:", executionLayer.paperApproved);
+  console.log("BROKER EXECUTION STATUS:", executionLayer.brokerExecutionStatus, "| executable:", executionLayer.brokerExecutable);
   console.log("DIRECTIONAL CANDIDATE:", directionalCandidate);
   console.log("EXECUTION CANDIDATE:", candidate);
   console.log("CONFIRMATION:", confirmation.status);
@@ -613,10 +619,13 @@ async function analyseMarket(market, macroContext) {
 
   if (plan) {
     console.log("ENTRY:", plan.entry.toFixed(market.symbol === "EURUSD" ? 5 : 2));
+    console.log("ENTRY REFERENCE:", plan.entryReference, "(validated executable-side quote)");
+    console.log("SIGNAL REFERENCE ENTRY:", plan.signalReferenceEntry.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("M5 ENTRY TRIGGER CONFIRMED:", plan.entryTriggerConfirmed);
     console.log("STOP LOSS:", plan.stopLoss.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("TAKE PROFIT:", plan.takeProfit.toFixed(market.symbol === "EURUSD" ? 5 : 2));
     console.log("RISK / REWARD:", plan.riskReward);
+    console.log("RISK / REWARD VALUE:", plan.riskRewardValue);
     console.log("STOP METHOD:", plan.stopType);
   } else {
     console.log("No entry levels: directional candidate or valid ATR/close is unavailable.");

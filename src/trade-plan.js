@@ -149,3 +149,43 @@ export function buildIndicativeTradePlan(signal, result, market) {
     executable: false
   };
 }
+
+/**
+ * Reprice a research plan at ask for BUY or bid for SELL. The original
+ * closed-M5 reference remains separate for anti-chasing checks. Stops and
+ * targets are not moved to manufacture a passing reward/risk ratio.
+ */
+export function pricePlanAtExecutableQuote(plan, signal, quote, quoteValidation, entryAtr, now = Date.now()) {
+  if (!plan || !["BUY", "SELL"].includes(signal)) return null;
+  const quoteAgeAtPricing = Number.isFinite(quoteValidation?.ageMs) && Number.isFinite(quoteValidation?.checkedAt)
+    ? quoteValidation.ageMs + Math.max(0, now - quoteValidation.checkedAt) : null;
+  const quoteMatches = quote && quoteValidation && quote.snapshotId &&
+    quoteValidation.snapshotId === quote.snapshotId &&
+    ["bid", "ask", "timestamp", "receivedAt", "source", "venue", "timestampQuality"]
+      .every(key => quoteValidation[key] === quote[key]);
+  if (quoteValidation?.valid !== true || !quoteMatches || quote.timestampQuality !== "PROVIDER_TIMESTAMP" ||
+      quoteAgeAtPricing === null || quoteAgeAtPricing < 0 || quoteAgeAtPricing > 15_000 ||
+      !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask) || quote.bid <= 0 || quote.ask <= quote.bid ||
+      !Number.isFinite(entryAtr) || entryAtr <= 0) return null;
+  const entryReference = signal === "BUY" ? "ASK" : "BID";
+  const entry = signal === "BUY" ? quote.ask : quote.bid;
+  const signalReferenceEntry = Number.isFinite(plan.signalReferenceEntry) ? plan.signalReferenceEntry : plan.entry;
+  const stopLoss = plan.stopLoss, takeProfit = plan.takeProfit;
+  if (![entry, signalReferenceEntry, stopLoss, takeProfit].every(Number.isFinite)) return null;
+  const geometryValid = signal === "BUY" ? stopLoss < entry && takeProfit > entry : stopLoss > entry && takeProfit < entry;
+  if (!geometryValid) return null;
+  const riskDistance = Math.abs(entry - stopLoss), rewardDistance = Math.abs(takeProfit - entry);
+  if (!(riskDistance > 0) || !(rewardDistance > 0)) return null;
+  const riskRewardValue = rewardDistance / riskDistance;
+  return {
+    ...plan, entry, signalReferenceEntry, stopLoss, takeProfit, entryReference,
+    entryPricing: "VALIDATED_EXECUTABLE_SIDE_QUOTE",
+    quoteSnapshotId: quote.snapshotId, quoteTimestamp: quote.timestamp, quoteSource: quote.source,
+    quoteAgeAtPricingMs: quoteAgeAtPricing, riskDistance, rewardDistance, riskRewardValue,
+    riskReward: "1:" + riskRewardValue.toFixed(2),
+    status: plan.entryTriggerConfirmed
+      ? "LIVE_QUOTE_PRICED — M5 trigger confirmed; paper approval gates pending"
+      : "LIVE_QUOTE_PRICED — indicative only; M5 trigger not confirmed",
+    executable: false
+  };
+}

@@ -1,4 +1,5 @@
 import { readFile, mkdir, writeFile, rename } from "node:fs/promises";
+import { parseCandidateStrength, parseRiskReward, formatRiskReward } from "../src/signal-format.js";
 
 const reportPath = process.argv[2];
 if (!reportPath) throw new Error("Usage: node scripts/publish-signal-controller.js <signal-report.txt>");
@@ -84,23 +85,33 @@ for (const market of markets) {
   const layer2 = jsonLine(section, "LAYER 2 — INDEPENDENT VERIFICATION:");
   const layer3 = jsonLine(section, "LAYER 3 — EXECUTION APPROVAL:");
   const action = lineValue(section, "FINAL ACTION:");
-  const scoreRaw = lineValue(section, "WEIGHTED SCORE / COVERAGE:");
+  const scoreRaw = lineValue(section, "CANDIDATE STRENGTH / EVIDENCE COVERAGE:") ??
+    lineValue(section, "WEIGHTED SCORE / COVERAGE:");
+  const candidateStrength = parseCandidateStrength(scoreRaw);
   const entry = numberAfter(section, "ENTRY:");
+  const signalReferenceEntry = numberAfter(section, "SIGNAL REFERENCE ENTRY:");
   const stopLoss = numberAfter(section, "STOP LOSS:");
   const takeProfit = numberAfter(section, "TAKE PROFIT:");
-  const riskReward = numberAfter(section, "RISK / REWARD:");
+  const riskRewardValue = parseRiskReward(lineValue(section, "RISK / REWARD VALUE:") ??
+    lineValue(section, "RISK / REWARD:"));
+  const riskReward = formatRiskReward(riskRewardValue);
+  const entryReference = lineValue(section, "ENTRY REFERENCE:") ?? null;
 
   const quoteAgeMs = Number(verification.quoteAgeMs);
   const quoteValid = verification.quoteValidationValid === true &&
     Number.isFinite(quoteAgeMs) && quoteAgeMs >= 0 && quoteAgeMs <= 15000 &&
+    quote.timestampQuality === "PROVIDER_TIMESTAMP" && Number.isFinite(Number(quote.timestamp)) &&
     Number(quote.bid) > 0 && Number(quote.ask) > Number(quote.bid);
+  const effectiveRiskReward = Number.isFinite(verification.effectiveRiskReward)
+    ? verification.effectiveRiskReward : riskRewardValue;
   const reportApproved = action === "BUY" || action === "SELL";
   const paperApproved = reportApproved && approval.approved === true &&
     verification.approved === true && layer2.status === "PASSED" &&
     layer3.paperApproved === true && quoteValid &&
     Number.isFinite(entry) && Number.isFinite(stopLoss) &&
-    Number.isFinite(takeProfit) && Number.isFinite(riskReward) &&
-    riskReward >= 2;
+    Number.isFinite(takeProfit) && Number.isFinite(effectiveRiskReward) &&
+    effectiveRiskReward >= 2 && typeof entryReference === "string" &&
+    entryReference.startsWith(action === "BUY" ? "ASK" : "BID");
   const candidate = lineValue(section, "DIRECTIONAL CANDIDATE:") ?? "UNKNOWN";
   const candidateIsDirectional = candidate === "BUY" || candidate === "SELL";
   const candidatePlanGeometryValid = candidateIsDirectional &&
@@ -108,15 +119,14 @@ for (const market of markets) {
     (candidate === "BUY"
       ? stopLoss < entry && takeProfit > entry
       : stopLoss > entry && takeProfit < entry) &&
-    Number.isFinite(riskReward) && riskReward >= 2;
+    Number.isFinite(riskRewardValue) && riskRewardValue > 0 && entryReference !== null;
   const entryTriggerConfirmed = lineValue(section, "M5 ENTRY TRIGGER CONFIRMED:") === "true";
   const candidatePlan = candidatePlanGeometryValid ? {
-    status: "INDICATIVE_ONLY_NOT_APPROVED",
-    entry,
-    stopLoss,
-    takeProfit,
-    riskReward,
-    entryTriggerConfirmed,
+    status: paperApproved ? "PAPER_SIGNAL_APPROVED" :
+      effectiveRiskReward !== null && effectiveRiskReward < 2 ? "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2" :
+      entryTriggerConfirmed ? "INDICATIVE_LIVE_QUOTE_PLAN_NOT_APPROVED" : "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+    entry, signalReferenceEntry, entryReference, stopLoss, takeProfit,
+    riskReward, riskRewardValue, entryTriggerConfirmed,
     stopMethod: lineValue(section, "STOP METHOD:") ?? "UNSPECIFIED"
   } : null;
 
@@ -127,7 +137,18 @@ for (const market of markets) {
     candidate,
     candidateStatus: paperApproved ? "APPROVED_PAPER_SIGNAL" : candidatePlan ? "WATCHLIST_ONLY_NOT_APPROVED" : "NO_VALID_DIRECTIONAL_PLAN",
     candidatePlan,
-    score: scoreRaw ?? null,
+    score: candidateStrength
+      ? candidateStrength.score + "/" + candidateStrength.maxScore + " candidate strength · " +
+        (candidateStrength.evidenceCoveragePct ?? "n/a") + "% evidence coverage"
+      : scoreRaw ?? null,
+    candidateStrength,
+    paperApproval: { status: paperApproved ? "APPROVED" : "NOT_APPROVED", approved: paperApproved,
+      decision: paperApproved ? action : "NO APPROVED TRADE" },
+    brokerExecution: {
+      status: layer3.brokerExecutionStatus ?? "NOT_CONNECTED_PAPER_ONLY",
+      connected: layer3.brokerExecutionConnected === true, executable: false,
+      blockers: (layer3.brokerBlockers ?? []).filter(value => typeof value === "string")
+    },
     entry: paperApproved ? entry : null,
     stopLoss: paperApproved ? stopLoss : null,
     takeProfit: paperApproved ? takeProfit : null,
@@ -137,6 +158,7 @@ for (const market of markets) {
       ask: Number(quote.ask) || null,
       source: quote.source ?? "unknown",
       timestamp: quote.timestamp ?? null,
+      timestampQuality: quote.timestampQuality ?? null,
       ageMs: Number.isFinite(quoteAgeMs) ? quoteAgeMs : null,
       validated: quoteValid
     },
@@ -150,9 +172,10 @@ for (const market of markets) {
       layer3: layer3.decision ?? "UNKNOWN",
       blockers: [
         ...(layer2.blockers ?? []),
-        ...(layer3.blockers ?? []),
+        ...(layer3.paperBlockers ?? layer3.blockers ?? []),
         ...(verification.blockers ?? [])
-      ].filter((value, index, all) => typeof value === "string" && all.indexOf(value) === index)
+      ].filter((value, index, all) => typeof value === "string" &&
+        !String(value).toLowerCase().includes("broker execution venue/account") && all.indexOf(value) === index)
     },
     generatedAt: new Date(now).toISOString(),
     generatedAtSlovenia: new Date(now).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),

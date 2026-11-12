@@ -63,7 +63,7 @@ test("valid paper setup is distinct from executable broker order", () => {
   const discovery = buildDiscoveryLayer({ market: "EURUSD", candidate: "BUY", frames });
   const result = buildExecutionLayer({
     discovery, verification: { status: "PASSED" },
-    plan: { entry: 1.1, stopLoss: 1.09, takeProfit: 1.12, riskReward: "1:2" },
+    plan: { entry: 1.1, stopLoss: 1.09, takeProfit: 1.12, riskReward: "1:2", riskRewardValue: 2 },
     quote: { bid: 1.1, ask: 1.1001, source: "reference" },
     quoteValidation: { valid: true },
     approval: { approved: true, blockers: [] },
@@ -148,4 +148,22 @@ test("weighted rejection exposes failed components without erasing the candidate
   assert.ok(verification.blockers.some(reason => reason.includes("M5_closed_candle_trigger: FAIL")));
   assert.ok(verification.blockers.some(reason => reason.includes("quote_and_spread: FAIL")));
   assert.equal(verification.blockers.some(reason => reason === "No directional candidate"), false);
+});
+
+test("paper approval is independent of broker connectivity and never enables routing", () => {
+  const discovery = buildDiscoveryLayer({ market: "EURUSD", candidate: "BUY", frames });
+  const result = buildExecutionLayer({
+    discovery, verification: { status: "PASSED" },
+    plan: { entry: 1.1001, entryReference: "ASK", stopLoss: 1.099, takeProfit: 1.1023, riskReward: "1:2.00", riskRewardValue: 2 },
+    quote: { bid: 1.1, ask: 1.1001, source: "reference" }, quoteValidation: { valid: true },
+    approval: { approved: true, blockers: [] },
+    entryVerification: { approved: true, effectiveRiskReward: 2, blockers: [] },
+    executionVenueConnected: false
+  });
+  assert.equal(result.paperApproved, true);
+  assert.equal(result.decision, "PAPER SIGNAL APPROVED");
+  assert.equal(result.brokerExecutionStatus, "NOT_CONNECTED_PAPER_ONLY");
+  assert.equal(result.brokerExecutable, false);
+  assert.equal(result.executable, false);
+  assert.deepEqual(result.paperBlockers, []);
 });

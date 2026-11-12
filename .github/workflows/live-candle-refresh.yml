@@ -8,6 +8,11 @@ on:
       - ".github/workflows/live-candle-refresh.yml"
       - "src/publish-dashboard-data.js"
       - "scripts/publish-signal-controller.js"
+      - "src/signal-format.js"
+      - "src/decision-layers.js"
+      - "src/entry-verification-agent.js"
+      - "src/entry-verification-agent.test.js"
+      - "src/second-brain.js"
       - "src/download.js"
       - "src/index.js"
       - "src/market-intelligence-agent.js"
@@ -39,6 +44,7 @@ on:
       - "dashboard/market-data.js"
       - "dashboard/performance.html"
       - "package.json"
+  # GitHub Actions schedule: five-minute target cadence (actual start may be delayed by GitHub).
   schedule:
     - cron: "*/5 * * * *"
 

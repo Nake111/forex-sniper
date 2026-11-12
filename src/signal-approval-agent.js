@@ -33,9 +33,14 @@ export function runSignalApprovalAgent({
   const quoteEntry = candidate === "BUY" ? quote?.ask : candidate === "SELL" ? quote?.bid : null;
   const market = marketReview?.market ?? plan?.market ?? "UNKNOWN";
   const maxEntryDeviationAtr = MAX_ENTRY_DEVIATION_ATR[market] ?? 0.2;
-  const entryDeviationAtr = Number.isFinite(quoteEntry) && Number.isFinite(plan?.entry) &&
+  const signalReferenceEntry = Number.isFinite(plan?.signalReferenceEntry) ? plan.signalReferenceEntry : plan?.entry;
+  const entryDeviationAtr = Number.isFinite(quoteEntry) && Number.isFinite(signalReferenceEntry) &&
     Number.isFinite(entryAtr) && entryAtr > 0
-      ? Math.abs(quoteEntry - plan.entry) / entryAtr : null;
+      ? Math.abs(quoteEntry - signalReferenceEntry) / entryAtr : null;
+  if (plan?.entryReference && Number.isFinite(plan.entry) && Number.isFinite(quoteEntry) &&
+      Math.abs(quoteEntry - plan.entry) > Math.max(1e-10, entryAtr * 0.0005)) {
+    blockers.push("Quote-priced plan entry no longer matches the validated executable-side quote");
+  }
   if (plan && entryDeviationAtr === null) blockers.push("Cannot verify entry distance against the live bid/ask and ATR");
   else if (entryDeviationAtr !== null && entryDeviationAtr > maxEntryDeviationAtr) {
     blockers.push("Current executable-side quote has moved more than " + maxEntryDeviationAtr + " ATR from the planned entry");
@@ -59,6 +64,8 @@ export function runSignalApprovalAgent({
     quoteEntry: Number.isFinite(quoteEntry) ? quoteEntry : null,
     entryDeviationAtr,
     entry: plan?.entry ?? null,
+    signalReferenceEntry: Number.isFinite(signalReferenceEntry) ? signalReferenceEntry : null,
+    entryReference: plan?.entryReference ?? null,
     stopLoss: plan?.stopLoss ?? null,
     takeProfit: plan?.takeProfit ?? null,
     blockers: unique

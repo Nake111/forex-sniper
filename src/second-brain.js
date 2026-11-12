@@ -200,9 +200,12 @@ export async function updateSecondBrain({
         eventId: signalId, eventType: "PAPER_SIGNAL", signalId, market, side: signal,
         createdAt: now, signalCandleAt: candleAt,
         indicativeEntry: finite(plan.entry) ? plan.entry : null,
+        signalReferenceEntry: finite(plan.signalReferenceEntry) ? plan.signalReferenceEntry : null,
+        entryReference: plan.entryReference ?? null,
         stopLoss: finite(plan.stopLoss) ? plan.stopLoss : null,
         takeProfit: finite(plan.takeProfit) ? plan.takeProfit : null,
-        riskReward: finite(plan.riskReward) ? plan.riskReward : null,
+        riskReward: finite(plan.riskRewardValue) ? plan.riskRewardValue : null,
+        riskRewardLabel: plan.riskReward ?? null,
         quoteEvidence, outcome: "PENDING",
         outcomeMethod: "Subsequent closed-candle high/low proxy; 180 M5 bars maximum; timeout marked at closing price; not a broker fill",
         strategy: { ...strategyAttribution }
