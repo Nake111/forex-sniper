@@ -1,6 +1,7 @@
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 
+const DATA_DIR = (process.env.DATA_DIR ?? "data").replace(/\\/+$/, "");
 const DAYS_BACK = Number(process.env.DATA_DAYS_BACK ?? 180);
 const OVERLAP_DAYS = Number(process.env.DATA_OVERLAP_DAYS ?? 3);
 const MARKETS = [
@@ -219,7 +220,7 @@ async function downloadOne(market, timeframe) {
   const useKraken = market.prefix === "btcusd" &&
     (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase() === "kraken-btcusd";
   const prefix = useKraken ? "kraken-btcusd" : market.prefix;
-  const path = `data/${prefix}-${timeframe}.json`;
+  const path = `${DATA_DIR}/${prefix}-${timeframe}.json`;
   const previous = await readCachedCandles(path);
   const latestCached = previous.reduce((latest, candle) => Math.max(latest, candleTimestamp(candle)), 0);
   const earliestAllowed = new Date(cutoff);
@@ -282,7 +283,7 @@ async function main() {
   if (!Number.isInteger(DAYS_BACK) || DAYS_BACK < 30 || DAYS_BACK > 730) {
     throw new Error("DATA_DAYS_BACK must be an integer between 30 and 730");
   }
-  await mkdir("data", { recursive: true });
+  await mkdir(DATA_DIR, { recursive: true });
   const tasks = SELECTED_MARKETS.flatMap(market => TIMEFRAMES.map(timeframe => () => downloadOne(market, timeframe)));
   const startedAt = Date.now();
   console.log("Incremental candle refresh: reuse cached history, fetch a recent overlapping window, deduplicate by timestamp.");
