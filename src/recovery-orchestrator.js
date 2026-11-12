@@ -5,8 +5,9 @@
  */
 const RETRYABLE = [
   /timeout/i, /temporar(?:y|ily)/i, /rate.?limit/i, /provider.*unavailable/i,
-  /quote.*stale/i, /stale.*quote/i, /missing.*candle/i, /incomplete.*candle/i,
-  /feed.*unavailable/i, /network/i
+  /quote.*stale/i, /stale.*quote/i, /stale.*data/i, /incomplete.*data/i,
+  /missing.*candle/i, /incomplete.*candle/i, /feed.*unavailable/i, /network/i,
+  /temporary.*unavailable/i, /provider.*timeout/i
 ];
 const HARD_BLOCK = [
   /risk.?reward/i, /stop.?loss/i, /position.?risk/i, /spread.*exceed/i,
