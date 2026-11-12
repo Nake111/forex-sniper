@@ -21,6 +21,8 @@ import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
+import { decideBrainAction } from "./brain-decision.js";
+import { learnFromMarketData } from "./market-data-learning.js";
 import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
@@ -187,6 +189,13 @@ async function analyseMarket(market, macroContext) {
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
     [key, analyseTimeframe(candles)]
   ));
+
+  // Learn market behaviour from refreshed provider candles, never from paper outcomes.
+  const marketLearning = learnFromMarketData(
+    frames.find(frame => frame.key === "M5").candles,
+    { market: market.symbol }
+  );
+  console.log("MARKET-DATA LEARNING (REAL CANDLES ONLY):", JSON.stringify(marketLearning));
 
   // VWAP strategy panel is advisory-only. It cannot promote or veto the primary signal.
   const vwapReport = evaluateVWAPStrategies({
@@ -545,17 +554,30 @@ async function analyseMarket(market, macroContext) {
     spreadVerified, weightedScore
   });
   console.log("LAYER 2 — INDEPENDENT VERIFICATION:", JSON.stringify(verificationLayer));
-  const riskClear = verificationLayer.status === "PASSED" &&
-    approval.approved && verification.approved &&
-    !calendarBlocked && !goldMacroBlocked &&
-    !macroContext.dataStale && !goldNewsWindow?.blockNewEntries;
   const executionLayer = buildExecutionLayer({
     discovery: discoveryLayer, verification: verificationLayer, plan, quote: spreadQuote,
     quoteValidation, approval, entryVerification: verification, executionVenueConnected: false
   });
   console.log("LAYER 3 — EXECUTION APPROVAL:", JSON.stringify(executionLayer));
-  // Approved results are paper signals only; no broker execution venue is connected.
-  const action = riskClear && executionLayer.paperApproved ? approval.decision : "NO TRADE";
+  // One deterministic brain owns the final paper decision. No broker orders are possible.
+  const brainDecision = decideBrainAction({
+    market: market.symbol,
+    candidate: directionalCandidate,
+    weightedScore,
+    verificationLayer,
+    approval,
+    entryVerification: verification,
+    executionLayer,
+    hardBlockers: approvalBlockers,
+    calendarBlocked,
+    macroBlocked: goldMacroBlocked,
+    dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
+    newsBlocked: Boolean(goldNewsWindow?.blockNewEntries),
+    marketLearning
+  });
+  console.log("UNIFIED TRADING BRAIN — FINAL DECISION:", JSON.stringify(brainDecision));
+  const riskClear = brainDecision.approved;
+  const action = brainDecision.action;
   const signalGrade = action === "BUY" || action === "SELL" ? "A"
     : ["BUY", "SELL"].includes(directionalCandidate) ? "B" : "NO SETUP";
   const executionStatus = action === "BUY" || action === "SELL"
