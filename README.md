@@ -141,6 +141,19 @@ npm run check
 npm test
 ```
 
+## FinancialData.Net secondary M1 data feed
+
+The project has an optional FinancialData.Net adapter based on the official `financialdatanet/fdnpy` API contract. Because Forex Sniper runs on Node.js, it calls the same documented REST endpoints directly rather than embedding a separate Python runtime.
+
+- EUR/USD: `forex-minute-prices` (provider marks Forex data Premium).
+- BTC/USD: `crypto-minute-prices` (provider lists crypto minute history under Standard).
+- The adapter normalizes provider UTC timestamps, rejects malformed/open-minute bars, and resamples only complete consecutive M1 groups into closed M5 candles.
+- FDN M1→M5 candles merge into the existing candle history as an additional provider. On cold start or provider failure, the existing Dukascopy/Kraken/Twelve Data chain supplies the baseline. Higher timeframes and all bid/ask execution-reference quotes remain on their separately validated providers.
+- FDN is candle/volume evidence only: it does not provide the bid/ask pair required for paper approval, and it cannot approve a BUY/SELL or override the existing spread, calendar, entry, agent, risk or holdout gates.
+- XAU/USD is intentionally not mapped to this FDN minute adapter; the documented SDK/API coverage used here does not establish an equivalent XAUUSD minute feed.
+
+To enable it, add a repository Actions secret named `FDN_API_KEY`. The live refresh workflow passes it only to the downloader. `FDN_MAX_PAGES` defaults to 1 to bound API usage (300 one-minute rows per request). The adapter is optional; missing/invalid credentials produce a logged fallback, not a fabricated feed. Check the provider's current plan and endpoint entitlements before enabling EUR/USD because Forex minute data is Premium.
+
 ## Automatic operation
 
 The repository uses one primary multi-market pipeline to avoid duplicate scheduled jobs:
