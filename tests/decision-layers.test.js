@@ -77,6 +77,11 @@ test("valid paper setup is distinct from executable broker order", () => {
 
 
 test("manual paper signal approval does not require a broker account", () => {
+  const timestamp = Date.now() - 500;
+  const quote = { market: "EURUSD", bid: 1.1000, ask: 1.1001, timestamp, receivedAt: timestamp,
+    source: "test", venue: "reference", snapshotId: "paper-test-snapshot" };
+  const quoteValidation = { valid: true, spread: 0.0001, snapshotId: quote.snapshotId,
+    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue };
   const approval = runSignalApprovalAgent({
     candidate: "BUY",
     marketReview: { market: "EURUSD", direction: "BUY", approved: true, blockers: [] },
@@ -84,8 +89,8 @@ test("manual paper signal approval does not require a broker account", () => {
       entry: 1.1, stopLoss: 1.099, takeProfit: 1.102,
       riskRewardValue: 2, entryTriggerConfirmed: true
     },
-    quoteValidation: { valid: true, spread: 0.0001 },
-    quote: { bid: 1.1000, ask: 1.1001 },
+    quoteValidation,
+    quote,
     entryAtr: 0.001,
     executionBlockers: []
   });
@@ -95,6 +100,11 @@ test("manual paper signal approval does not require a broker account", () => {
 });
 
 test("manual paper approval still rejects real market-risk blockers", () => {
+  const timestamp = Date.now() - 500;
+  const quote = { market: "EURUSD", bid: 1.0999, ask: 1.1000, timestamp, receivedAt: timestamp,
+    source: "test", venue: "reference", snapshotId: "blocked-test-snapshot" };
+  const quoteValidation = { valid: true, spread: 0.0001, snapshotId: quote.snapshotId,
+    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue };
   const approval = runSignalApprovalAgent({
     candidate: "SELL",
     marketReview: { market: "EURUSD", direction: "SELL", approved: true, blockers: [] },
@@ -102,8 +112,8 @@ test("manual paper approval still rejects real market-risk blockers", () => {
       entry: 1.1, stopLoss: 1.101, takeProfit: 1.098,
       riskRewardValue: 2, entryTriggerConfirmed: true
     },
-    quoteValidation: { valid: true, spread: 0.0001 },
-    quote: { bid: 1.0999, ask: 1.1000 },
+    quoteValidation,
+    quote,
     entryAtr: 0.001,
     executionBlockers: ["High-impact economic calendar event"]
   });
