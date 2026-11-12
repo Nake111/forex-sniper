@@ -49,7 +49,8 @@ export async function fetchFdnMinuteCandles(market, {
 } = {}) {
   const config = MARKET_ENDPOINTS[market];
   if (!config) return { status: "UNSUPPORTED_MARKET", candles: [], error: market + " has no configured FDN minute endpoint" };
-  if (!apiKey) return { status: "NOT_CONFIGURED", candles: [], error: "FDN_API_KEY is not configured" };
+  const normalizedApiKey = typeof apiKey === "string" ? apiKey.trim() : "";
+  if (!normalizedApiKey) return { status: "NOT_CONFIGURED", candles: [], error: "FDN_API_KEY is not configured or contains only whitespace" };
   if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 5) {
     throw new Error("FDN_MAX_PAGES must be an integer from 1 to 5");
   }
@@ -64,9 +65,27 @@ export async function fetchFdnMinuteCandles(market, {
         date,
         offset: String(page * PAGE_SIZE),
         format: "json",
-        key: apiKey
+        key: normalizedApiKey
       }).toString();
       const response = await fetchImpl(url, { signal: AbortSignal.timeout(12_000), headers: { accept: "application/json" } });
+      if (response.status === 401 || response.status === 403) {
+        let authDiagnosis = "API key rejected or endpoint access denied";
+        try {
+          const probeUrl = new URL(API_BASE + "/stock-symbols");
+          probeUrl.search = new URLSearchParams({ format: "json", key: normalizedApiKey }).toString();
+          const probe = await fetchImpl(probeUrl, { signal: AbortSignal.timeout(8_000), headers: { accept: "application/json" } });
+          if (probe.ok) {
+            authDiagnosis = "API key accepted by the free stock-symbols endpoint; this minute-data endpoint is not authorized for the account or plan";
+          } else if (probe.status === 401 || probe.status === 403) {
+            authDiagnosis = "API key rejected by the free stock-symbols endpoint too; verify the key value in GitHub Actions secrets";
+          } else {
+            authDiagnosis = "Minute endpoint denied access (HTTP " + response.status + "); key probe returned HTTP " + probe.status;
+          }
+        } catch (probeError) {
+          authDiagnosis = "Minute endpoint denied access (HTTP " + response.status + "); key validation probe failed: " + probeError.message;
+        }
+        throw new Error("HTTP " + response.status + " — " + authDiagnosis);
+      }
       if (!response.ok) throw new Error("HTTP " + response.status);
       const payload = await response.json();
       if (!Array.isArray(payload)) {
