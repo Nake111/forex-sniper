@@ -23,6 +23,7 @@ export function runEntryVerificationAgent({
   if (!marketReview?.approved || marketReview?.direction !== candidate) blockers.push("market-intelligence agent did not independently confirm this direction");
   if (dataStale) blockers.push("One or more required candle timeframes are stale");
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Latest bid/ask quote is not valid");
+  if (!quote?.snapshotId || quoteValidation?.snapshotId !== quote.snapshotId) blockers.push("Quote snapshot identity is missing or inconsistent");
   if (!quote || !finite(quote.bid) || !finite(quote.ask) || Number(quote.bid) <= 0 || Number(quote.ask) <= Number(quote.bid)) {
     blockers.push("A positive, uncrossed live bid/ask pair is required");
   }
