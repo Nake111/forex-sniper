@@ -22,6 +22,7 @@ import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
 import { decideBrainAction } from "./brain-decision.js";
+import { learnFromMarketData } from "./market-data-learning.js";
 import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
@@ -188,6 +189,13 @@ async function analyseMarket(market, macroContext) {
   const results = Object.fromEntries(frames.map(({ key, candles }) =>
     [key, analyseTimeframe(candles)]
   ));
+
+  // Learn market behaviour from refreshed provider candles, never from paper outcomes.
+  const marketLearning = learnFromMarketData(
+    frames.find(frame => frame.key === "M5").candles,
+    { market: market.symbol }
+  );
+  console.log("MARKET-DATA LEARNING (REAL CANDLES ONLY):", JSON.stringify(marketLearning));
 
   // VWAP strategy panel is advisory-only. It cannot promote or veto the primary signal.
   const vwapReport = evaluateVWAPStrategies({
@@ -564,7 +572,8 @@ async function analyseMarket(market, macroContext) {
     calendarBlocked,
     macroBlocked: goldMacroBlocked,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
-    newsBlocked: Boolean(goldNewsWindow?.blockNewEntries)
+    newsBlocked: Boolean(goldNewsWindow?.blockNewEntries),
+    marketLearning
   });
   console.log("UNIFIED TRADING BRAIN — FINAL DECISION:", JSON.stringify(brainDecision));
   const riskClear = brainDecision.approved;
