@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Forex Sniper Signal Bridge
+  version: 1.0.0
+  description: Securely dispatch the existing GitHub Actions paper-analysis workflow, check its run, and retrieve fail-closed paper signal results.
+servers:
+  - url: https://forex-sniper-chat-action-bridge-production.up.railway.app
+security:
+  - BearerAuth: []
+paths:
+  /run-signal:
+    post:
+      operationId: runSignal
+      summary: Start a fresh Forex Sniper analysis
+      description: Dispatches the main-branch GitHub Actions workflow for EUR/USD, BTC/USD and XAU/USD. Returns a request ID for polling.
+      responses:
+        "202":
+          description: Workflow dispatch accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  status: { type: string }
+                  message: { type: string }
+                required: [request_id, status]
+        "401": { description: Unauthorized }
+        "503": { description: Bridge secrets are not configured }
+  /status/{request_id}:
+    get:
+      operationId: getSignalRunStatus
+      summary: Check the requested GitHub Actions run
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Workflow run found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  run_id: { type: integer }
+                  status: { type: string }
+                  conclusion: { type: [string, "null"] }
+                  html_url: { type: string, format: uri }
+                  created_at: { type: string, format: date-time }
+                  updated_at: { type: string, format: date-time }
+                required: [request_id, status]
+        "202": { description: Dispatch accepted but run not listed yet }
+        "401": { description: Unauthorized }
+  /latest:
+    get:
+      operationId: getLatestPaperSignals
+      summary: Retrieve verified latest paper signal decisions
+      description: Returns BUY/SELL only when all server-side freshness, cycle, approval and quote checks pass. Otherwise returns NO APPROVED TRADE and blockers.
+      responses:
+        "200":
+          description: Fail-closed signal summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generatedAt: { type: [string, "null"], format: date-time }
+                  mode: { type: string, enum: [PAPER_RESEARCH_ONLY] }
+                  status: { type: string, enum: [APPROVED_PAPER_PLANS, NO APPROVED TRADE] }
+                  globalBlockers:
+                    type: array
+                    items: { type: string }
+                  markets:
+                    type: object
+                    additionalProperties: true
+                required: [mode, status, markets, globalBlockers]
+        "401": { description: Unauthorized }
+        "503": { description: Bridge secrets are not configured }
+  /health:
+    get:
+      operationId: bridgeHealth
+      summary: Check bridge health
+      responses:
+        "200": { description: Bridge is configured and responding }
+        "401": { description: Unauthorized }
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
