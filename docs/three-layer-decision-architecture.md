@@ -29,3 +29,11 @@ Requires a valid fresh bid/ask, executable-side price, entry, stop-loss, take-pr
 - Missing or stale required market data cannot be treated as a pass.
 - Bid/ask snapshots are not full order-book depth or proof of executed buyer/seller volume.
 - No order is placed by this decision pipeline.
+
+## Strategy-family isolation
+
+A1 HEART is a separate opening-range breakout strategy that requires its own session, volume-profile retest and absorption confirmation. It is not a universal prerequisite for unrelated trend, VWAP, SMC, or retest candidates. An unavailable or unready A1 setup is recorded as an advisory and disables only the A1 HEART setup family; it must not silently veto every BTC/USD or XAU/USD candidate. If a candidate is explicitly sourced from A1 HEART, that strategy must independently report READY in the same direction.
+
+The weighted score advances a candidate only to the risk gate. It never relaxes provider-timestamped quote freshness, spread/ATR, closed-candle trigger, independent direction/entry verification, event-risk, stop/target geometry or minimum live-quote R:R checks. Candidate discovery and approved paper signals remain separate outputs.
+
+The historical holdout audit is negative for all three markets. This correction fixes a strategy-routing defect; it is not evidence of profitability and does not authorize lowering thresholds or changing the frozen holdout. Evaluate the change on training data first, then commit candidate parameters before any one-time untouched holdout test. Continue paper-only operation.
