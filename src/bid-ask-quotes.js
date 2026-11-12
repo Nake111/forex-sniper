@@ -10,20 +10,36 @@ export async function fetchRealtimeFeedQuotes({
     const response = await fetchImpl(base + "/quotes", { signal: AbortSignal.timeout(4_000) });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const payload = await response.json();
+    const feedServerTime = Number(payload?.updatedAt);
+    const feedClockSkewMs = feedServerTime - now;
     const quotes = {};
     const errors = [];
+    if (!Number.isFinite(feedServerTime) || Math.abs(feedClockSkewMs) > 10_000) {
+      throw new Error("Realtime feed server clock is missing or differs from client clock by more than 10 seconds");
+    }
     for (const market of markets) {
       const quote = payload?.quotes?.[market];
+      const marketHealth = payload?.markets?.[market];
       if (!quote) { errors.push(market + ": no quote in realtime feed"); continue; }
+      if (marketHealth?.status !== "FRESH" || !Number.isFinite(marketHealth?.ageMs) ||
+          marketHealth.ageMs < 0 || marketHealth.ageMs > 15_000 ||
+          marketHealth.timestamp !== quote.timestamp || marketHealth.bid !== quote.bid || marketHealth.ask !== quote.ask) {
+        errors.push(market + ": feed-side health check or quote snapshot does not match");
+        continue;
+      }
+      if (quote.timestampQuality !== "PROVIDER_TIMESTAMP") {
+        errors.push(market + ": provider timestamp unavailable; receipt time alone is not sufficient");
+        continue;
+      }
       const validation = market === "BTCUSD"
-        ? validateBidAskQuote(quote, { now, maxAgeMs: 15_000 })
-        : validateBiquoteTick(quote, { now, maxAgeMs: 15_000 });
+        ? validateBidAskQuote(quote, { now: feedServerTime, maxAgeMs: 15_000 })
+        : validateBiquoteTick(quote, { now: feedServerTime, maxAgeMs: 15_000 });
       if (!validation.valid) { errors.push(market + ": " + validation.reason); continue; }
-      quotes[market] = { ...quote, source: "Railway continuous realtime feed", realtime: true };
+      quotes[market] = { ...quote, feedServerTime, source: "Railway continuous realtime feed", realtime: true };
     }
     return {
       status: markets.every(market => quotes[market]) ? "COMPLETE" : Object.keys(quotes).length ? "PARTIAL" : "UNAVAILABLE",
-      quotes, errors, provider: "Railway continuous feed", receivedAt: Date.now()
+      quotes, errors, provider: "Railway continuous feed", feedServerTime, feedClockSkewMs, receivedAt: now
     };
   } catch (error) {
     return { status: "UNAVAILABLE", quotes: {}, errors: ["Realtime feed request failed: " + error.message] };
