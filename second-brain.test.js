@@ -33,3 +33,32 @@ test("same-candle stop and target touch is marked ambiguous, not a win", async (
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("paper signal timeout is resolved after 180 subsequent closed M5 candles", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "sniper-brain-"));
+  const path = join(dir, "ledger.jsonl");
+  try {
+    const candles = Array.from({ length: 182 }, (_, i) => ({
+      timestamp: 1_000 + i * 300,
+      open: 100, high: 101, low: 99, close: 100
+    }));
+    await updateSecondBrain({
+      path, market: "EURUSD", signal: "BUY",
+      plan: { entry: 100, stopLoss: 98, takeProfit: 104, riskReward: "1:2" },
+      strategyAttribution: { strategyId: "CORE", session: "LONDON" },
+      candles: candles.slice(0, 1), now: 2_000
+    });
+    const result = await updateSecondBrain({
+      path, market: "EURUSD", signal: "NO TRADE", candles, now: 60_000_000
+    });
+    assert.equal(result.timeouts, 1);
+    const saved = (await readFile(path, "utf8")).trim().split("\\n").map(JSON.parse);
+    const signal = saved.find(event => event.eventType === "PAPER_SIGNAL");
+    const outcome = saved.find(event => event.eventType === "PAPER_OUTCOME");
+    assert.equal(signal.strategy.strategyId, "CORE");
+    assert.equal(outcome.outcome, "TIMEOUT");
+    assert.equal(outcome.barsHeld, 180);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
