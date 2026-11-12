@@ -26,7 +26,16 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
   if (!Array.isArray(events)) throw new Error("Paper journal events must be an array");
   const signals = events.filter(event => event.eventType === "PAPER_SIGNAL");
   const outcomes = new Map(events.filter(event => event.eventType === "PAPER_OUTCOME").map(event => [event.signalId, event]));
-  const records = signals.map(signal => ({ ...signal, ...(outcomes.has(signal.signalId) ? outcomes.get(signal.signalId) : { outcome: "PENDING" }) }));
+  const records = signals.map(signal => {
+    const outcome = outcomes.get(signal.signalId);
+    return {
+      ...signal, ...(outcome ?? { outcome: "PENDING" }),
+      // Use all known execution costs even when commission is not configured.
+      netEstimatedR: finite(outcome?.netEstimatedR) ? outcome.netEstimatedR
+        : finite(outcome?.netEstimatedRExcludingCommission) ? outcome.netEstimatedRExcludingCommission : null,
+      commissionIncluded: finite(outcome?.estimatedCommissionCostR)
+    };
+  });
   const groupBy = keyFn => {
     const groups = new Map();
     for (const row of records) {
@@ -38,7 +47,7 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
   };
   return {
     schemaVersion: 1, generatedAt, mode: "PAPER_RESEARCH_ONLY",
-    methodology: "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is included only when configured. No broker fills are assumed.",
+    methodology: "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
     totals: summarize(records),
     byStrategy: groupBy(row => row.strategy?.strategyId ?? "LEGACY_UNATTRIBUTED"),
     byMarket: groupBy(row => row.market),
