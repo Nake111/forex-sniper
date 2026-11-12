@@ -4,22 +4,22 @@
  * This module is advisory only and never changes signal approval.
  */
 const SYMBOL_PATTERNS = {
-  EURUSD: [/\\bEUR\\s*[/_-]?\\s*USD\\b/i, /\\bEURUSD\\b/i],
-  BTCUSD: [/\\bBTC\\s*[/_-]?\\s*USD\\b/i, /\\bBTCUSD\\b/i, /\\bBITCOIN\\b/i],
-  XAUUSD: [/\\bXAU\\s*[/_-]?\\s*USD\\b/i, /\\bXAUUSD\\b/i, /\\bGOLD\\b/i]
+  EURUSD: [/\bEUR\s*[/_-]?\s*USD\b/i, /\bEURUSD\b/i],
+  BTCUSD: [/\bBTC\s*[/_-]?\s*USD\b/i, /\bBTCUSD\b/i, /\bBITCOIN\b/i],
+  XAUUSD: [/\bXAU\s*[/_-]?\s*USD\b/i, /\bXAUUSD\b/i, /\bGOLD\b/i]
 };
-const BUY_WORDS = /\\b(buy|long|bullish|upside|breakout higher)\\b/i;
-const SELL_WORDS = /\\b(sell|short|bearish|downside|breakdown lower)\\b/i;
+const BUY_WORDS = /\b(buy|long|bullish|upside|breakout higher)\b/i;
+const SELL_WORDS = /\b(sell|short|bearish|downside|breakdown lower)\b/i;
 
 function decodeXml(value = "") {
-  return String(value).replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, "$1")
+  return String(value).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
     .replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/\\s+/g, " ").trim();
+    .replace(/\s+/g, " ").trim();
 }
 function tagValue(xml, names) {
   for (const name of names) {
-    const match = xml.match(new RegExp("<(?:\\w+:)?" + name + "\\b[^>]*>([\\s\\S]*?)</(?:\\w+:)?" + name + "\\s*>", "i"));
+    const match = xml.match(new RegExp("<(?:\w+:)?" + name + "\b[^>]*>([\s\S]*?)</(?:\w+:)?" + name + "\s*>", "i"));
     if (match) return decodeXml(match[1]);
   }
   return "";
@@ -29,7 +29,7 @@ function classifyItem(item, market, sourceUrl, now, maxAgeMs) {
   const description = tagValue(item, ["description", "summary", "content"]);
   const published = tagValue(item, ["pubDate", "published", "updated", "date"]);
   const linkText = tagValue(item, ["link"]);
-  const linkAttr = item.match(/<link\\b[^>]*href=["']([^"']+)["'][^>]*\\/?\\s*>/i)?.[1];
+  const linkAttr = item.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*\/?\s*>/i)?.[1];
   const link = linkAttr || linkText;
   const text = (title + " " + description).slice(0, 5000);
   if (!SYMBOL_PATTERNS[market]?.some(pattern => pattern.test(text))) return null;
@@ -50,7 +50,7 @@ function classifyItem(item, market, sourceUrl, now, maxAgeMs) {
 }
 export function parsePublicIdeaFeed(xml, { market, sourceUrl, now = Date.now(), maxAgeMs = 24 * 60 * 60 * 1000 } = {}) {
   if (!SYMBOL_PATTERNS[market] || typeof xml !== "string") return [];
-  const items = [...xml.matchAll(/<(item|entry)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi)].map(match => match[0]);
+  const items = [...xml.matchAll(/<(item|entry)\b[^>]*>[\s\S]*?<\/\1>/gi)].map(match => match[0]);
   return items.map(item => classifyItem(item, market, sourceUrl, now, maxAgeMs)).filter(Boolean);
 }
 export function summarizePublicTraderEvidence(ideas = []) {
