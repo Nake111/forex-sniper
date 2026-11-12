@@ -19,6 +19,18 @@ test("rejects stale provider quote", () => {
   assert.match(result.validation.reason, /stale/);
 });
 
+test("rejects receipt-time-only quotes even when recently received", () => {
+  const result = createQuoteSnapshot(quote({ timestampQuality: "RECEIVED_AT_ONLY" }), "EURUSD", 10_100);
+  assert.equal(result.valid, false);
+  assert.match(result.validation.reason, /Provider-supplied quote timestamp is required/);
+});
+
+test("uses feed server clock when provider timestamp is ahead of runner clock", () => {
+  const result = createQuoteSnapshot(quote({ timestamp: 15_000, receivedAt: 15_000, feedServerTime: 15_100 }), "EURUSD", 10_100);
+  assert.equal(result.valid, true);
+  assert.equal(result.validation.ageMs, 100);
+});
+
 test("rejects missing source, venue or provider timestamp", () => {
   for (const patch of [{ source: null }, { venue: null }, { timestamp: null }]) {
     assert.equal(createQuoteSnapshot(quote(patch), "EURUSD", 10_100).valid, false);
