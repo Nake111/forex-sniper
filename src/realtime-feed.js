@@ -1,5 +1,5 @@
 import http from "node:http";
-import { open, stat } from "node:fs/promises";
+import { open, readFile, stat } from "node:fs/promises";
 import WebSocket from "ws";
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 import { normalizeCoinbaseTicker, normalizeBiquoteStreamTick } from "./realtime-feed-core.js";
@@ -209,30 +209,61 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname === "/journal-health") {
     const journalPath = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl";
     try {
-      const info = await stat(journalPath);
-      const handle = await open(journalPath, "r");
-      let tail = "";
-      try {
-        const length = Math.min(info.size, 16_384);
-        const buffer = Buffer.alloc(length);
-        await handle.read(buffer, 0, length, Math.max(0, info.size - length));
-        tail = buffer.toString("utf8");
-      } finally {
-        await handle.close();
+      const [info, raw] = await Promise.all([stat(journalPath), readFile(journalPath, "utf8")]);
+      const events = raw.split(/\\r?\\n/).filter(Boolean).map((line, index) => {
+        try { return JSON.parse(line); }
+        catch { throw new Error(`Invalid JSON in paper journal at line ${index + 1}`); }
+      });
+      const eventCounts = {};
+      const markets = {};
+      for (const event of events) {
+        eventCounts[event.eventType ?? event.kind ?? "UNKNOWN"] = (eventCounts[event.eventType ?? event.kind ?? "UNKNOWN"] ?? 0) + 1;
+        const market = event.market;
+        if (!market) continue;
+        const summary = markets[market] ??= { observations: 0, signals: 0, wins: 0, losses: 0, ambiguous: 0, pending: 0, lastObservation: null };
+        if (event.eventType === "PAPER_OBSERVATION") {
+          summary.observations += 1;
+          if (!summary.lastObservation || Number(event.observedAt) > Number(summary.lastObservation.observedAt)) {
+            const quote = event.quoteEvidence ?? {};
+            summary.lastObservation = {
+              observedAt: event.observedAt ?? null,
+              decision: event.decision ?? null,
+              quote: {
+                provider: quote.provider ?? null, venue: quote.venue ?? null,
+                bid: quote.bid ?? null, ask: quote.ask ?? null,
+                observedSpread: quote.observedSpread ?? null,
+                quoteAgeMs: quote.quoteAgeMs ?? null,
+                validation: quote.validation ?? "UNKNOWN",
+                estimatedRoundTripCostBps: quote.costs?.estimatedRoundTripCostBps ?? null,
+                estimatedSlippageBpsPerSide: quote.costs?.estimatedSlippageBpsPerSide ?? null,
+                observedSlippage: quote.costs?.observedSlippage ?? null
+              }
+            };
+          }
+        } else if (event.eventType === "PAPER_SIGNAL" || event.kind === "SIGNAL") {
+          summary.signals += 1;
+          if (!event.eventType || !event.eventId) summary.pending += 1;
+        } else if (event.eventType === "PAPER_OUTCOME") {
+          if (event.outcome === "WIN") summary.wins += 1;
+          else if (event.outcome === "LOSS") summary.losses += 1;
+          else if (event.outcome === "AMBIGUOUS") summary.ambiguous += 1;
+        }
       }
-      const lastLine = tail.trim().split(/\r?\n/).at(-1);
-      let lastEvent = null;
-      try { lastEvent = lastLine ? JSON.parse(lastLine) : null; } catch {}
-      response.writeHead(lastEvent ? 200 : 503);
+      for (const [market, summary] of Object.entries(markets)) {
+        const outcomes = summary.wins + summary.losses + summary.ambiguous;
+        summary.pending = Math.max(summary.pending, summary.signals - outcomes);
+      }
+      const lastEvent = events.at(-1) ?? null;
+      response.writeHead(200);
       response.end(JSON.stringify({
-        status: lastEvent ? "PERSISTENT_JOURNAL_READABLE" : "JOURNAL_EMPTY_OR_INVALID",
-        journalPath, bytes: info.size,
+        status: events.length ? "PERSISTENT_JOURNAL_READABLE" : "JOURNAL_EMPTY",
+        journalPath, bytes: info.size, eventCount: events.length, eventCounts, markets,
         lastEventType: lastEvent?.eventType ?? lastEvent?.kind ?? null,
         lastEventAt: lastEvent?.observedAt ?? lastEvent?.createdAt ?? lastEvent?.resolvedAt ?? null
       }));
     } catch (error) {
       response.writeHead(error.code === "ENOENT" ? 503 : 500);
-      response.end(JSON.stringify({ status: "JOURNAL_UNAVAILABLE", journalPath, error: error.message }));
+      response.end(JSON.stringify({ status: "JOURNAL_UNAVAILABLE_OR_INVALID", journalPath, error: error.message }));
     }
     return;
   }
