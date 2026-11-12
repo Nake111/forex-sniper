@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T12:41:36.226Z",
-  "sourceReportGeneratedAt": "2026-11-12T12:40:44.000Z",
-  "sourceReportAgeSeconds": 52,
+  "generatedAt": "2026-11-12T13:01:57.384Z",
+  "sourceReportGeneratedAt": "2026-11-12T13:01:20.000Z",
+  "sourceReportAgeSeconds": 37,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -17,11 +17,11 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10803,
-        "ask": 1.10809,
-        "source": "Railway continuous realtime feed",
-        "timestamp": 1794487271000,
-        "ageMs": 3078,
+        "bid": 1.10887,
+        "ask": 1.10893,
+        "source": "Biquote live bid/ask",
+        "timestamp": 1794488496000,
+        "ageMs": 2834,
         "validated": true
       },
       "agents": {
@@ -38,9 +38,10 @@
           "Required closed M5 entry trigger is not confirmed",
           "Layer 2 verification did not pass",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "EURUSD spread/ATR 0.1846 exceeds the 0.12 limit",
+          "EURUSD spread/ATR 0.1761 exceeds the 0.12 limit",
           "No directional candidate",
           "M5 closed candle does not confirm the higher-timeframe direction",
+          "M5 buyer/seller pressure proxy conflicts with trend",
           "Independent market-intelligence direction conflicts with candidate",
           "Closed M5 entry trigger is not confirmed",
           "Cannot verify entry distance against the live bid/ask and ATR",
@@ -48,29 +49,29 @@
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
           "Trade plan direction conflicts with candidate",
-          "Spread/ATR 0.1846 exceeds EURUSD limit 0.12",
+          "Spread/ATR 0.1761 exceeds EURUSD limit 0.12",
           "Executable entry distance from live bid/ask cannot be verified",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T12:41:36.226Z"
+      "generatedAt": "2026-11-12T13:01:57.384Z"
     },
     "BTCUSD": {
       "label": "BTC/USD",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "SELL",
-      "score": "70/100 / 100%",
+      "score": "100/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 72879.78,
-        "ask": 72879.79,
+        "bid": 72781.53,
+        "ask": 72781.54,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794487282700,
-        "ageMs": 391,
+        "timestamp": 1794488504105,
+        "ageMs": 101,
         "validated": true
       },
       "agents": {
@@ -83,11 +84,9 @@
         "layer3": "REJECTED",
         "blockers": [
           "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
-          "Required closed M5 entry trigger is not confirmed",
           "Layer 2 verification did not pass",
           "No directional candidate",
           "Independent market-intelligence direction conflicts with candidate",
-          "Closed M5 entry trigger is not confirmed",
           "Cannot verify entry distance against the live bid/ask and ATR",
           "No BUY/SELL candidate to verify",
           "Independent signal approval agent did not approve this direction",
@@ -97,24 +96,24 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T12:41:36.226Z"
+      "generatedAt": "2026-11-12T13:01:57.384Z"
     },
     "XAUUSD": {
       "label": "XAU/USD (Gold)",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "SELL",
-      "score": "80/100 / 100%",
+      "score": "100/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3934.804,
-        "ask": 3934.972,
+        "bid": 3938.571,
+        "ask": 3938.739,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794487294000,
-        "ageMs": 2095,
+        "timestamp": 1794488514000,
+        "ageMs": 3236,
         "validated": true
       },
       "agents": {
@@ -127,14 +126,15 @@
         "layer3": "REJECTED",
         "blockers": [
           "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
-          "Required closed M5 entry trigger is not confirmed",
+          "Macro/event-risk hard gate is active",
           "Layer 2 verification did not pass",
+          "Calendar feed is available; no relevant event is inside the configured protection window.",
           "Economic/news risk is HIGH",
           "Risk manager veto: ECONOMIC_CALENDAR_HIGH",
+          "Recent high-impact headlines require caution; elevated H1 volatility (ATR14/baseline 1.64); secondary calendar is unavailable; risk veto remains active until both checks are clear.",
           "No directional candidate",
-          "Gold M5 trigger candle does not confirm H1/M15 direction",
+          "Gold buyer/seller pressure proxy conflicts with trend",
           "Independent market-intelligence direction conflicts with candidate",
-          "Closed M5 entry trigger is not confirmed",
           "Cannot verify entry distance against the live bid/ask and ATR",
           "No BUY/SELL candidate to verify",
           "Independent signal approval agent did not approve this direction",
@@ -144,7 +144,7 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T12:41:36.226Z"
+      "generatedAt": "2026-11-12T13:01:57.384Z"
     }
   }
 }
