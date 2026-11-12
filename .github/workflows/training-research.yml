@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: forex-sniper-training-research
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -54,7 +54,12 @@ jobs:
           echo "TRAINING ONLY: chronological first 70%; final 30% is not loaded into any experiment window." | tee research-results/training-matrix.txt
           for market in EURUSD BTCUSD XAUUSD; do
             for profile in balanced strict advanced institutional; do
-              for session in ALL LONDON NEW_YORK LONDON_NEW_YORK_OVERLAP TOKYO SYDNEY OFF_SESSION; do
+              if [ "$profile" = "balanced" ]; then
+                sessions=(ALL LONDON NEW_YORK LONDON_NEW_YORK_OVERLAP TOKYO SYDNEY OFF_SESSION)
+              else
+                sessions=(ALL)
+              fi
+              for session in "${sessions[@]}"; do
                 echo "===== market=$market profile=$profile session=$session =====" | tee -a research-results/training-matrix.txt
                 MARKET="$market" SIGNAL_PROFILE="$profile" BACKTEST_SESSION="$session" node src/backtest.js 2>&1 | tee -a research-results/training-matrix.txt
               done
