@@ -40,6 +40,11 @@ jobs:
         run: MARKET_FILTER=XAUUSD npm run download
         env:
           DATA_DAYS_BACK: "180"
+      - name: Verify full 180-day Gold candle coverage
+        run: node scripts/validate-history-coverage.js
+        env:
+          DATA_DAYS_BACK: "180"
+          MARKET_FILTER: "XAUUSD"
       - name: Generate XAUUSD report
         run: |
           set -o pipefail

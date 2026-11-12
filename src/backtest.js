@@ -4,13 +4,15 @@ import { evaluateSignal, confirmSignal } from "./signal.js";
 import { evaluateTieredSignal } from "./tiered-signal.js";
 import { tradePlan } from "./trade-plan.js";
 import { summarizeSessionPerformance } from "./session-performance.js";
+import { resolveBacktestCosts } from "./backtest-costs.js";
 
 const MARKET = (process.env.MARKET ?? "BTCUSD").toUpperCase();
 if (!["BTCUSD", "EURUSD", "XAUUSD"].includes(MARKET)) throw new Error("MARKET must be BTCUSD, EURUSD or XAUUSD");
 const DATA_PREFIX = MARKET === "BTCUSD"
   ? (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase()
   : MARKET.toLowerCase();
-const COST_BPS = Number(process.env.BACKTEST_COST_BPS ?? (MARKET === "EURUSD" ? 0.5 : 10));
+const COST_MODEL = resolveBacktestCosts(MARKET);
+const COST_BPS = COST_MODEL.roundTripCostBps;
 const SIGNAL_PROFILE = (process.env.SIGNAL_PROFILE ?? "balanced").toLowerCase();
 if (!["baseline", "strict", "advanced", "institutional", "gold", "balanced"].includes(SIGNAL_PROFILE)) throw new Error("SIGNAL_PROFILE must be baseline, strict, advanced, institutional or gold");
 const START_RATIO = Number(process.env.BACKTEST_START_RATIO ?? 0);
@@ -189,8 +191,16 @@ async function main() {
   for (const row of summarizeSessionPerformance(trades)) {
     console.log(`${row.session}: trades=${row.trades}, winRate=${row.winRate.toFixed(2)}%, netR=${row.netR.toFixed(2)}, profitFactor=${row.profitFactor === null ? "N/A" : row.profitFactor.toFixed(2)}`);
   }
-  console.log(`Round-trip cost assumption: ${COST_BPS} bps`);
+  console.log("COST MODEL:", COST_MODEL.model);
+  if (COST_MODEL.spreadBps !== null) {
+    console.log(`Spread assumption (round trip): ${COST_MODEL.spreadBps} bps`);
+    console.log("Spread basis:", COST_MODEL.spreadSource);
+    console.log(`Slippage assumption (each side): ${COST_MODEL.slippageBpsPerSide} bps`);
+    console.log(`Commission assumption (round trip): ${COST_MODEL.commissionBps} bps`);
+  }
+  console.log(`Total round-trip friction: ${COST_BPS} bps`);
   console.log(`Equivalent percentage cost: ${(COST_BPS / 100).toFixed(3)}%`);
+  console.log("Cost assumptions are simulated, not measured broker spread or actual fills.");
   console.log("Entry: next M5 candle open; structural stop/target distances are anchored at signal close.");
   console.log("If SL and TP hit in one candle, SL is counted first.");
   console.log("Unclosed trades are excluded. Historical simulation only; not a live performance claim.");

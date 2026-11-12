@@ -70,6 +70,11 @@ jobs:
           DUKASCOPY_REQUEST_INTERVAL_MS: "100"
           DUKASCOPY_RETRY_COUNT: "2"
           DUKASCOPY_RATE_LIMIT_RETRIES: "3"
+      - name: Verify full 180-day candle coverage
+        run: node scripts/validate-history-coverage.js
+        env:
+          DATA_DAYS_BACK: "180"
+          BTC_DATA_PREFIX: "btcusd"
       - name: Compare baseline, advanced and institutional strategies on a 30% chronological holdout
         run: |
           set -o pipefail
