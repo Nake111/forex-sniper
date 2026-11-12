@@ -1,0 +1,69 @@
+name: Historical Backtest Performance Audit
+
+on:
+  push:
+    branches:
+      - feat/backtest-cost-audit
+  workflow_dispatch:
+
+concurrency:
+  group: forex-sniper-performance-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  holdout-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      BTC_DATA_PREFIX: btcusd
+      NODE_OPTIONS: --max-old-space-size=4096
+      BACKTEST_START_RATIO: "0.7"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install
+      - name: Validate code and tests
+        run: npm run check && npm test
+      - name: Download 180-day historical candles
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "180"
+          DATA_OVERLAP_DAYS: "3"
+          DOWNLOAD_CONCURRENCY: "3"
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          DUKASCOPY_BATCH_SIZE: "10"
+          DUKASCOPY_BATCH_PAUSE_MS: "100"
+          DUKASCOPY_REQUEST_INTERVAL_MS: "100"
+          DUKASCOPY_RETRY_COUNT: "2"
+          DUKASCOPY_RATE_LIMIT_RETRIES: "3"
+      - name: Run chronological 30-percent holdout for all markets
+        run: |
+          set -o pipefail
+          {
+            echo "PERFORMANCE AUDIT — 180-DAY HISTORY / CHRONOLOGICAL 30% HOLDOUT"
+            echo "Generated UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
+            echo "=== EURUSD ==="
+            MARKET=EURUSD node src/backtest.js
+            echo "=== BTCUSD ==="
+            MARKET=BTCUSD node src/backtest.js
+            echo "=== XAUUSD ==="
+            MARKET=XAUUSD node src/backtest.js
+          } 2>&1 | tee backtest-performance.txt
+      - name: Upload performance report and historical data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-performance-audit
+          path: |
+            backtest-performance.txt
+            data/*.json
+          if-no-files-found: warn
+          retention-days: 30
