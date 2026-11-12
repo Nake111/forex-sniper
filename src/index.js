@@ -15,7 +15,8 @@ import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
-import { fetchBidAskQuotes, validateBidAskQuote } from "./bid-ask-quotes.js";
+import { fetchBidAskQuotes } from "./bid-ask-quotes.js";
+import { createQuoteSnapshot } from "./quote-snapshot.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
@@ -424,8 +425,10 @@ async function analyseMarket(market, macroContext) {
   // Fetch the active market's bid/ask immediately before final validation so
   // long-running agent reviews do not age the quote before the execution gate.
   const bidAskFeed = await fetchBidAskQuotes({ markets: [market.symbol] });
-  const spreadQuote = bidAskFeed.quotes[market.symbol] ?? null;
-  const quoteValidation = validateBidAskQuote(spreadQuote);
+  const rawSpreadQuote = bidAskFeed.quotes[market.symbol] ?? null;
+  const quoteSnapshot = createQuoteSnapshot(rawSpreadQuote, market.symbol);
+  const spreadQuote = quoteSnapshot.quote;
+  const quoteValidation = quoteSnapshot.validation;
   const spreadVerified = Boolean(quoteValidation.valid &&
     Number.isFinite(results.M5.atr14) && results.M5.atr14 > 0 &&
     quoteValidation.spread / results.M5.atr14 <=

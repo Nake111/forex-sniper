@@ -6,8 +6,11 @@ const base = {
   market: "EURUSD",
   candidate: "BUY",
   plan: { direction: "BUY", entry: 1.10000, stopLoss: 1.09900, takeProfit: 1.10210, entryTriggerConfirmed: true },
-  quote: { bid: 1.10000, ask: 1.10002, source: "test", venue: "reference" },
-  quoteValidation: { valid: true, ageMs: 100, spread: 0.00002 },
+  quote: { market: "EURUSD", bid: 1.10000, ask: 1.10002, timestamp: 1_799_999_999_000,
+    receivedAt: 1_799_999_999_000, source: "test", venue: "reference", snapshotId: "eur-test" },
+  quoteValidation: { valid: true, ageMs: 100, spread: 0.00002, snapshotId: "eur-test",
+    bid: 1.10000, ask: 1.10002, timestamp: 1_799_999_999_000, receivedAt: 1_799_999_999_000,
+    source: "test", venue: "reference" },
   entryAtr: 0.001,
   marketReview: { approved: true, direction: "BUY" },
   approval: { approved: true, decision: "BUY" },
@@ -67,7 +70,10 @@ test("uses BTC-specific spread and entry deviation limits", () => {
   const result = runEntryVerificationAgent({
     ...base, market: "BTCUSD", candidate: "BUY",
     plan: { direction: "BUY", entry: 100, stopLoss: 98, takeProfit: 105, entryTriggerConfirmed: true },
-    quote: { bid: 100, ask: 100.1 }, quoteValidation: { valid: true, ageMs: 100 },
+    quote: { market: "BTCUSD", bid: 100, ask: 100.1, timestamp: 1_799_999_999_000,
+      receivedAt: 1_799_999_999_000, source: "test", venue: "reference", snapshotId: "btc-test" },
+    quoteValidation: { valid: true, ageMs: 100, snapshotId: "btc-test", bid: 100, ask: 100.1,
+      timestamp: 1_799_999_999_000, receivedAt: 1_799_999_999_000, source: "test", venue: "reference" },
     entryAtr: 1
   });
   assert.equal(result.approved, true);

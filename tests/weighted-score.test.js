@@ -24,6 +24,9 @@ test("weighted score admits strong candidate to risk gate, not direct execution"
   assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
   assert.ok(result.score >= 75);
   assert.equal(result.coverage, 100);
+  assert.equal(result.decision, "CANDIDATE_ONLY");
+  assert.equal(result.approved, false);
+  assert.equal(result.riskApprovalRequired, true);
 });
 
 test("missing quote and trigger remain hard blockers regardless of score", () => {

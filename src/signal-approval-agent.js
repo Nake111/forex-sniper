@@ -19,6 +19,15 @@ export function runSignalApprovalAgent({
     if (plan.entryTriggerConfirmed !== true) blockers.push("Closed M5 entry trigger is not confirmed");
   }
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Fresh bid/ask quote is not validated");
+  if (!quote?.snapshotId || quoteValidation?.snapshotId !== quote.snapshotId) blockers.push("Quote snapshot identity is missing or inconsistent");
+  if (quote && quoteValidation && ["bid", "ask", "timestamp", "receivedAt", "source", "venue"].some(key => quoteValidation[key] !== quote[key])) {
+    blockers.push("Quote values do not match the approved snapshot");
+  }
+  if (quote && (!Number.isFinite(quote.timestamp) || !Number.isFinite(quote.receivedAt) ||
+      now - quote.timestamp < -2_000 || now - quote.receivedAt < 0 ||
+      now - quote.timestamp > 15_000 || now - quote.receivedAt > 15_000)) {
+    blockers.push("Quote snapshot expired or has invalid timestamps before approval");
+  }
   if (!quote || !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask)) blockers.push("Bid/ask quote missing");
   else if ((candidate === "BUY" && plan && quote.ask <= 0) || (candidate === "SELL" && plan && quote.bid <= 0)) blockers.push("Executable-side quote is invalid");
   const quoteEntry = candidate === "BUY" ? quote?.ask : candidate === "SELL" ? quote?.bid : null;

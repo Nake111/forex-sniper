@@ -23,6 +23,15 @@ export function runEntryVerificationAgent({
   if (!marketReview?.approved || marketReview?.direction !== candidate) blockers.push("market-intelligence agent did not independently confirm this direction");
   if (dataStale) blockers.push("One or more required candle timeframes are stale");
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Latest bid/ask quote is not valid");
+  if (!quote?.snapshotId || quoteValidation?.snapshotId !== quote.snapshotId) blockers.push("Quote snapshot identity is missing or inconsistent");
+  if (quote && quoteValidation && ["bid", "ask", "timestamp", "receivedAt", "source", "venue"].some(key => quoteValidation[key] !== quote[key])) {
+    blockers.push("Quote values do not match the approved snapshot");
+  }
+  if (quote && (!Number.isFinite(quote.timestamp) || !Number.isFinite(quote.receivedAt) ||
+      now - quote.timestamp < -2_000 || now - quote.receivedAt < 0 ||
+      now - quote.timestamp > 15_000 || now - quote.receivedAt > 15_000)) {
+    blockers.push("Quote snapshot expired or has invalid timestamps before approval");
+  }
   if (!quote || !finite(quote.bid) || !finite(quote.ask) || Number(quote.bid) <= 0 || Number(quote.ask) <= Number(quote.bid)) {
     blockers.push("A positive, uncrossed live bid/ask pair is required");
   }
