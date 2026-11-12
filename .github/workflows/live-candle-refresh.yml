@@ -98,9 +98,15 @@ jobs:
           set -o pipefail
           REPORT_PATH="reports/live-signals-$(date -u +%Y%m%dT%H%M%SZ).txt"
           echo "REPORT_PATH=$REPORT_PATH" >> "$GITHUB_ENV"
+          CYCLE_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          CYCLE_SLOVENIA="$(TZ=Europe/Ljubljana date -Iseconds)"
           {
             echo "FOREX SNIPER AUTOMATIC SIGNAL REPORT"
+            echo "Analysis cycle UTC: $CYCLE_UTC"
+            echo "Analysis cycle Slovenia: $CYCLE_SLOVENIA"
+            echo "Analysis timezone: Europe/Ljubljana"
             echo "Generated UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
+            echo "Generated Slovenia: $(TZ=Europe/Ljubljana date -Iseconds)"
             echo "Target cadence: 5 minutes; GitHub scheduling can be delayed."
             npm start
           } 2>&1 | tee "$REPORT_PATH"
