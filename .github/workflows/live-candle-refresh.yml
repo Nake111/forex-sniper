@@ -44,7 +44,7 @@ on:
       - "dashboard/market-data.js"
       - "dashboard/performance.html"
       - "package.json"
-  # GitHub Actions schedule: five-minute target cadence (actual start may be delayed by GitHub).
+  # GitHub Actions schedule: five-minute target cadence. The separate stale-data watchdog blocks old publications if Actions delays a run.
   schedule:
     - cron: "*/5 * * * *"
 
