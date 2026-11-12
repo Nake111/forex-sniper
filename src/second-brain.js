@@ -128,7 +128,7 @@ export async function updateSecondBrain({
           ? round(grossR - spreadAndSlippageR, 4) : null,
         netEstimatedR: grossR !== null && allInCostR !== null ? round(grossR - allInCostR, 4) : null,
         estimatedCostMethod: "Signal-time observed spread plus configured estimated two-sided slippage; commission kept separate and all-in cost remains unavailable until commission is configured",
-        resolutionMethod: "Subsequent closed-candle high/low proxy; stop-first when both levels touch",
+        resolutionMethod: "Subsequent closed-candle high/low proxy; ambiguous when both stop and target touch in the same candle",
         rCalculationMethod: "Indicative plan entry and stop distance; not an actual fill",
         actualFill: null, observedSlippage: null, actualCommission: null
       });
