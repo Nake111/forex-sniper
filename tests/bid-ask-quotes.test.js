@@ -53,7 +53,7 @@ test("realtime feed rejects receive-time-only BTC quotes and unhealthy feed snap
     receivedAt: now, source: "Kraken public ticker order book", venue: "Kraken",
     timestampQuality: "RECEIVED_AT_ONLY", tradeable: true };
   const result = await fetchRealtimeFeedQuotes({
-    url: "https://feed.example", now,
+    url: "https://feed.example", now, markets: ["BTCUSD"],
     fetchImpl: async () => ({ ok: true, json: async () => ({
       updatedAt: feedServerTime, quotes: { BTCUSD: quote },
       markets: { BTCUSD: { status: "FRESH", ageMs: 0, timestamp: quote.timestamp, bid: quote.bid, ask: quote.ask } }
