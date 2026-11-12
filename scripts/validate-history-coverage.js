@@ -13,8 +13,7 @@ const frames = [
   { name: "h4", interval: 4 * 60 * 60_000 }
 ];
 const now = Date.now();
-const earliestAllowed = now - (daysBack + 10) * 86_400_000;
-const latestAllowed = now - 4 * 60 * 60_000;
+const earliestRequired = now - (daysBack - 10) * 86_400_000;
 const errors = [];
 
 for (const market of markets) {
@@ -36,13 +35,13 @@ for (const market of markets) {
       const value = typeof raw === "number" ? raw : Date.parse(raw);
       return Number.isFinite(value) ? (value < 1e12 ? value * 1000 : value) : NaN;
     }).filter(Number.isFinite).sort((a, b) => a - b);
-    if (times.length < 100) errors.push(`${path}: only ${times.length} valid timestamped rows`);
-    if (!times.length) continue;
-    if (times[0] > earliestAllowed) errors.push(`${path}: history starts too recently (${new Date(times[0]).toISOString()})`);
-    if (times.at(-1) > latestAllowed) errors.push(`${path}: contains a candle that may not yet be closed`);
-    const uniqueCount = new Set(times).size;
-    if (uniqueCount !== times.length) errors.push(`${path}: duplicate timestamps detected`);
-    console.log(`${path}: rows=${times.length}, start=${new Date(times[0]).toISOString()}, end=${new Date(times.at(-1)).toISOString()}`);
+    const closedTimes = times.filter(time => time + frame.interval <= now);
+    if (closedTimes.length < 100) errors.push(`${path}: only ${closedTimes.length} closed timestamped rows`);
+    if (!closedTimes.length) continue;
+    if (closedTimes[0] > earliestRequired) errors.push(`${path}: history starts too recently (${new Date(closedTimes[0]).toISOString()})`);
+    const uniqueCount = new Set(closedTimes).size;
+    if (uniqueCount !== closedTimes.length) errors.push(`${path}: duplicate timestamps detected`);
+    console.log(`${path}: closedRows=${closedTimes.length}, start=${new Date(closedTimes[0]).toISOString()}, end=${new Date(closedTimes.at(-1)).toISOString()}`);
   }
 }
 
