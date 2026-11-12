@@ -60,6 +60,9 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
     (Array.isArray(smartMoney.orderBlocks) && smartMoney.orderBlocks.some(zone =>
       !zone.invalidated && zone.direction === (side === "BUY" ? "BULLISH" : "BEARISH"))));
   const quoteAvailable = quoteValidation?.valid === true && Number.isFinite(quoteValidation.spread);
+  const spreadAtr = quoteAvailable && Number.isFinite(frames.M5?.atr14) && frames.M5.atr14 > 0
+    ? quoteValidation.spread / frames.M5.atr14 : null;
+  const spreadAtrLimit = market === "EURUSD" ? 0.12 : market === "BTCUSD" ? 0.18 : market === "XAUUSD" ? 0.15 : null;
   const volatilityAvailable = Number.isFinite(frames.M5?.atr14) && frames.M5.atr14 > 0 &&
     Number.isFinite(frames.M5?.atrBaseline) && frames.M5.atrBaseline > 0;
   const atrRatio = volatilityAvailable ? frames.M5.atr14 / frames.M5.atrBaseline : null;
@@ -70,7 +73,12 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
     component("M15_momentum", WEIGHTS.m15Momentum, momentumPass, momentumAvailable, { rsi14: m15.rsi14 ?? null, macdHistogram: m15.macdHistogram ?? null }),
     component("M5_closed_candle_trigger", WEIGHTS.m5Trigger, triggerPass, triggerAvailable, { confirmed: triggerAvailable ? triggerPass : null }),
     component("liquidity_and_SMC", WEIGHTS.liquidityStructure, liquidityPass, structureAvailable || Boolean(pressure), { bos: structure.bos ?? null, sweep: structure.sweep ?? null, pressure: pressure?.direction ?? "UNAVAILABLE" }),
-    component("quote_and_spread", WEIGHTS.quoteQuality, spreadVerified === true, quoteAvailable, { spread: quoteValidation.spread ?? null, spreadAtr: quoteValidation.spreadAtr ?? null }),
+    component("quote_and_spread", WEIGHTS.quoteQuality, spreadVerified === true, quoteAvailable, {
+      spread: quoteValidation.spread ?? null,
+      spreadAtr,
+      spreadAtrLimit,
+      passed: spreadVerified === true
+    }),
     component("volatility_and_session", WEIGHTS.volatilitySession, volatilityPass, volatilityAvailable, { atrRatio })
   ];
   const score = components.reduce((sum, item) => sum + item.points, 0);
@@ -90,7 +98,14 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   }
   if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");
   if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
-  if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
+  if (!spreadVerified) {
+    hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
+    if (spreadAtr !== null && spreadAtrLimit !== null && spreadAtr > spreadAtrLimit) {
+      hardBlockers.push("Spread/ATR " + spreadAtr.toFixed(4) + " exceeds " + market + " limit " + spreadAtrLimit);
+    } else if (spreadAtr === null) {
+      hardBlockers.push("Spread/ATR could not be calculated from a valid quote and M5 ATR");
+    }
+  }
   if (!triggerAvailable || !triggerPass) hardBlockers.push("Required closed M5 entry trigger is not confirmed");
   const status = hardBlockers.length ? "REJECTED"
     : score >= 75 && coverage >= 70 ? "ELIGIBLE_FOR_RISK_GATE"
