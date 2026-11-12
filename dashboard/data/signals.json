@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T14:04:28.740Z",
-  "generatedAtSlovenia": "2026-11-12 15:04:28",
+  "generatedAt": "2026-11-12T14:06:48.983Z",
+  "generatedAtSlovenia": "2026-11-12 15:06:48",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-12T14:03:32.000Z",
-    "timestampUtc": "2026-11-12T14:03:32.000Z",
-    "timestampSlovenia": "2026-11-12T15:03:32+01:00",
+    "id": "2026-11-12T14:05:48.000Z",
+    "timestampUtc": "2026-11-12T14:05:48.000Z",
+    "timestampSlovenia": "2026-11-12T15:05:48+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-12T14:03:32.000Z",
-  "sourceReportAgeSeconds": 57,
+  "sourceReportGeneratedAt": "2026-11-12T14:05:48.000Z",
+  "sourceReportAgeSeconds": 61,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -18,20 +18,20 @@
       "label": "EUR/USD",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "SELL",
+      "candidate": "BUY",
       "candidateStatus": "NO_VALID_DIRECTIONAL_PLAN",
       "candidatePlan": null,
-      "score": "80/100 / 100%",
+      "score": "35/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10919,
-        "ask": 1.10925,
+        "bid": 1.1092,
+        "ask": 1.10926,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492233000,
-        "ageMs": 3313,
+        "timestamp": 1794492373000,
+        "ageMs": 2248,
         "validated": true
       },
       "agents": {
@@ -43,26 +43,28 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "Macro/event-risk hard gate is active",
           "Required closed M5 entry trigger is not confirmed",
+          "Weighted evidence did not meet the candidate-advancement criteria",
+          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
+          "M15_momentum: FAIL — {\"rsi14\":51.339805477237924,\"macdHistogram\":-0.00009055192426236697}",
+          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "Layer 2 verification did not pass",
-          "Economic/news risk is MEDIUM",
-          "Risk manager veto: ECONOMIC_CALENDAR_MEDIUM",
           "M5 closed candle does not confirm the higher-timeframe direction",
+          "M5 buyer/seller pressure proxy conflicts with trend",
+          "Independent market-intelligence direction conflicts with candidate",
           "Closed M5 entry trigger is not confirmed",
-          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.498 ATR from planned entry; maximum is 0.2",
+          "Live-quote risk/reward is below 1:2",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:04:28.740Z",
-      "generatedAtSlovenia": "2026-11-12 15:04:28",
+      "generatedAt": "2026-11-12T14:06:48.983Z",
+      "generatedAtSlovenia": "2026-11-12 15:06:48",
       "analysisCycle": {
-        "id": "2026-11-12T14:03:32.000Z",
-        "timestampUtc": "2026-11-12T14:03:32.000Z",
-        "timestampSlovenia": "2026-11-12T15:03:32+01:00",
+        "id": "2026-11-12T14:05:48.000Z",
+        "timestampUtc": "2026-11-12T14:05:48.000Z",
+        "timestampSlovenia": "2026-11-12T15:05:48+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -73,17 +75,17 @@
       "candidate": "SELL",
       "candidateStatus": "NO_VALID_DIRECTIONAL_PLAN",
       "candidatePlan": null,
-      "score": "80/100 / 100%",
+      "score": "100/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 72371.68,
-        "ask": 72372.17,
+        "bid": 72349.17,
+        "ask": 72349.18,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492249778,
-        "ageMs": 227,
+        "timestamp": 1794492391520,
+        "ageMs": 170,
         "validated": true
       },
       "agents": {
@@ -92,28 +94,22 @@
         "entryVerificationApproved": false
       },
       "verification": {
-        "layer2": "REJECTED",
+        "layer2": "PASSED",
         "layer3": "REJECTED",
         "blockers": [
-          "Macro/event-risk hard gate is active",
-          "Required closed M5 entry trigger is not confirmed",
-          "Layer 2 verification did not pass",
-          "Economic/news risk is MEDIUM",
-          "Risk manager veto: ECONOMIC_CALENDAR_MEDIUM",
+          "BTC 10-second microstructure feed: feed returned HTTP 404",
           "H1 squeeze momentum is not strengthening in a clear direction",
-          "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:04:28.740Z",
-      "generatedAtSlovenia": "2026-11-12 15:04:28",
+      "generatedAt": "2026-11-12T14:06:48.983Z",
+      "generatedAtSlovenia": "2026-11-12 15:06:48",
       "analysisCycle": {
-        "id": "2026-11-12T14:03:32.000Z",
-        "timestampUtc": "2026-11-12T14:03:32.000Z",
-        "timestampSlovenia": "2026-11-12T15:03:32+01:00",
+        "id": "2026-11-12T14:05:48.000Z",
+        "timestampUtc": "2026-11-12T14:05:48.000Z",
+        "timestampSlovenia": "2026-11-12T15:05:48+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -130,11 +126,11 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3892.562,
-        "ask": 3892.73,
+        "bid": 3889.016,
+        "ask": 3889.184,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794492265000,
-        "ageMs": 3578,
+        "timestamp": 1794492406000,
+        "ageMs": 2837,
         "validated": true
       },
       "agents": {
@@ -148,25 +144,30 @@
         "blockers": [
           "Macro/event-risk hard gate is active",
           "Required closed M5 entry trigger is not confirmed",
+          "Weighted evidence did not meet the candidate-advancement criteria",
+          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
+          "volatility_and_session: FAIL — {\"atrRatio\":2.4820385589496916}",
           "Layer 2 verification did not pass",
+          "Calendar feed is available; no relevant event is inside the configured protection window.",
           "Economic/news risk is HIGH",
           "Risk manager veto: ECONOMIC_CALENDAR_HIGH",
-          "A medium-impact event is inside the active protection window.",
+          "Recent high-impact headlines require caution; elevated H1 volatility (ATR14/baseline 1.89); secondary calendar is unavailable; risk veto remains active until both checks are clear.",
           "Gold M5 trigger candle does not confirm H1/M15 direction",
           "Closed M5 entry trigger is not confirmed",
           "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.273 ATR from planned entry; maximum is 0.2",
+          "Executable-side quote is 0.271 ATR from planned entry; maximum is 0.2",
+          "Live-quote risk/reward is below 1:2",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T14:04:28.740Z",
-      "generatedAtSlovenia": "2026-11-12 15:04:28",
+      "generatedAt": "2026-11-12T14:06:48.983Z",
+      "generatedAtSlovenia": "2026-11-12 15:06:48",
       "analysisCycle": {
-        "id": "2026-11-12T14:03:32.000Z",
-        "timestampUtc": "2026-11-12T14:03:32.000Z",
-        "timestampSlovenia": "2026-11-12T15:03:32+01:00",
+        "id": "2026-11-12T14:05:48.000Z",
+        "timestampUtc": "2026-11-12T14:05:48.000Z",
+        "timestampSlovenia": "2026-11-12T15:05:48+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
