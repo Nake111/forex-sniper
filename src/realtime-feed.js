@@ -234,7 +234,10 @@ const server = http.createServer(async (request, response) => {
                 observedSpread: quote.observedSpread ?? null,
                 quoteAgeMs: quote.quoteAgeMs ?? null,
                 validation: quote.validation ?? "UNKNOWN",
+                estimatedSpreadAndSlippageBps: quote.costs?.estimatedSpreadAndSlippageBps ?? null,
                 estimatedRoundTripCostBps: quote.costs?.estimatedRoundTripCostBps ?? null,
+                estimatedCommissionBpsRoundTrip: quote.costs?.estimatedCommissionBpsRoundTrip ?? null,
+                commissionIncludedInRoundTripEstimate: quote.costs?.commissionIncludedInRoundTripEstimate ?? false,
                 estimatedSlippageBpsPerSide: quote.costs?.estimatedSlippageBpsPerSide ?? null,
                 observedSlippage: quote.costs?.observedSlippage ?? null
               }
