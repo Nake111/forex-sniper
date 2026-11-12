@@ -194,6 +194,7 @@ async function main() {
   console.log("COST MODEL:", COST_MODEL.model);
   if (COST_MODEL.spreadBps !== null) {
     console.log(`Spread assumption (round trip): ${COST_MODEL.spreadBps} bps`);
+    console.log("Spread basis:", COST_MODEL.spreadSource);
     console.log(`Slippage assumption (each side): ${COST_MODEL.slippageBpsPerSide} bps`);
     console.log(`Commission assumption (round trip): ${COST_MODEL.commissionBps} bps`);
   }
