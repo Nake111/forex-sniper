@@ -86,10 +86,9 @@ export async function updateSecondBrain({
       const high = Number(candle.high), low = Number(candle.low);
       const stopHit = record.side === "BUY" ? low <= record.stopLoss : high >= record.stopLoss;
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
-      if (!stopHit && !targetHit) continue;
       const ambiguous = stopHit && targetHit;
       const barsSinceSignal = validCandles.filter(item => candleTime(item) > Number(record.signalCandleAt ?? record.createdAt)).length;
-      const timedOut = !stopHit && !targetHit && barsSinceSignal >= 288;
+      const timedOut = !stopHit && !targetHit && barsSinceSignal >= 180;
       if (!stopHit && !targetHit && !timedOut) continue;
       const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : stopHit ? "LOSS" : "TIMEOUT";
       const resolutionPrice = ambiguous ? null : targetHit ? record.takeProfit : stopHit ? record.stopLoss : Number(candle.close);
@@ -205,7 +204,7 @@ export async function updateSecondBrain({
         takeProfit: finite(plan.takeProfit) ? plan.takeProfit : null,
         riskReward: finite(plan.riskReward) ? plan.riskReward : null,
         quoteEvidence, outcome: "PENDING",
-        outcomeMethod: "Subsequent closed-candle high/low proxy; 288 M5 bars maximum; timeout marked at closing price; not a broker fill",
+        outcomeMethod: "Subsequent closed-candle high/low proxy; 180 M5 bars maximum; timeout marked at closing price; not a broker fill",
         strategy: { ...strategyAttribution }
       });
     }
