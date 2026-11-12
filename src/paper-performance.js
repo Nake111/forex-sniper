@@ -38,7 +38,7 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
   };
   return {
     schemaVersion: 1, generatedAt, mode: "PAPER_RESEARCH_ONLY",
-    methodology: "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 288 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is included only when configured. No broker fills are assumed.",
+    methodology: "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is included only when configured. No broker fills are assumed.",
     totals: summarize(records),
     byStrategy: groupBy(row => row.strategy?.strategyId ?? "LEGACY_UNATTRIBUTED"),
     byMarket: groupBy(row => row.market),
