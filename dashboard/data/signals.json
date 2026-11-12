@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T08:47:13.344Z",
-  "sourceReportGeneratedAt": "2026-11-12T08:46:46.000Z",
-  "sourceReportAgeSeconds": 27,
+  "generatedAt": "2026-11-12T11:56:07.104Z",
+  "sourceReportGeneratedAt": "2026-11-12T11:55:37.000Z",
+  "sourceReportAgeSeconds": 30,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -10,18 +10,18 @@
       "label": "EUR/USD",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "BUY",
-      "score": "45/100 / 100%",
+      "candidate": "SELL",
+      "score": "50/100 / 100%",
       "entry": null,
       "stopLoss": null,
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10893,
-        "ask": 1.10899,
+        "bid": 1.10884,
+        "ask": 1.1089,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794473222000,
-        "ageMs": 3800,
+        "timestamp": 1794484552000,
+        "ageMs": 2562,
         "validated": true
       },
       "agents": {
@@ -33,27 +33,26 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
           "Fresh bid/ask and market-specific spread/ATR check did not pass",
           "Required closed M5 entry trigger is not confirmed",
           "Layer 2 verification did not pass",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "EURUSD spread/ATR 0.1541 exceeds the 0.12 limit",
+          "EURUSD spread/ATR 0.1892 exceeds the 0.12 limit",
           "No directional candidate",
           "M5 closed candle does not confirm the higher-timeframe direction",
           "Independent market-intelligence direction conflicts with candidate",
-          "Stop-loss or take-profit is on the wrong side of entry",
+          "Closed M5 entry trigger is not confirmed",
           "Cannot verify entry distance against the live bid/ask and ATR",
           "No BUY/SELL candidate to verify",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
           "Trade plan direction conflicts with candidate",
-          "Spread/ATR 0.1541 exceeds EURUSD limit 0.12",
+          "Spread/ATR 0.1892 exceeds EURUSD limit 0.12",
           "Executable entry distance from live bid/ask cannot be verified",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T08:47:13.344Z"
+      "generatedAt": "2026-11-12T11:56:07.104Z"
     },
     "BTCUSD": {
       "label": "BTC/USD",
@@ -66,10 +65,10 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 73421.3,
-        "ask": 73421.4,
+        "bid": 72697.2,
+        "ask": 72697.3,
         "source": "Kraken public ticker order book",
-        "timestamp": 1794473228600,
+        "timestamp": 1794484563673,
         "ageMs": 0,
         "validated": true
       },
@@ -79,17 +78,23 @@
         "entryVerificationApproved": false
       },
       "verification": {
-        "layer2": "PASSED",
+        "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
+          "A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction",
+          "Layer 2 verification did not pass",
+          "No directional candidate",
+          "Independent market-intelligence direction conflicts with candidate",
+          "Cannot verify entry distance against the live bid/ask and ATR",
+          "No BUY/SELL candidate to verify",
           "Independent signal approval agent did not approve this direction",
-          "Executable-side quote is 0.517 ATR from planned entry; maximum is 0.25",
-          "Live-quote risk/reward is below 1:2",
+          "market-intelligence agent did not independently confirm this direction",
+          "Trade plan direction conflicts with candidate",
+          "Executable entry distance from live bid/ask cannot be verified",
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T08:47:13.344Z"
+      "generatedAt": "2026-11-12T11:56:07.104Z"
     },
     "XAUUSD": {
       "label": "XAU/USD (Gold)",
@@ -102,11 +107,11 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3940.304,
-        "ask": 3940.472,
+        "bid": 3944.839,
+        "ask": 3945.007,
         "source": "Railway continuous realtime feed",
-        "timestamp": 1794473230000,
-        "ageMs": 3254,
+        "timestamp": 1794484564000,
+        "ageMs": 2918,
         "validated": true
       },
       "agents": {
@@ -133,7 +138,7 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "generatedAt": "2026-11-12T08:47:13.344Z"
+      "generatedAt": "2026-11-12T11:56:07.104Z"
     }
   }
 }
