@@ -129,8 +129,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm run publish:data
-          node --input-type=module -e 'import { readFile } from "node:fs/promises"; const s = JSON.parse(await readFile("dashboard/data/latest.json", "utf8")); if (s.validation?.status !== "PASS") throw new Error("Dashboard candle snapshot is not PASS: " + s.validation?.status);'
+          CYCLE_UTC="$(sed -n 's/^Analysis cycle UTC: //p' "$REPORT_PATH" | head -n 1)"
+          CYCLE_SLOVENIA="$(sed -n 's/^Analysis cycle Slovenia: //p' "$REPORT_PATH" | head -n 1)"
+          test -n "$CYCLE_UTC" && test -n "$CYCLE_SLOVENIA"
+          ANALYSIS_CYCLE_UTC="$CYCLE_UTC" ANALYSIS_CYCLE_SLOVENIA="$CYCLE_SLOVENIA" npm run publish:data
+          node --input-type=module -e '
+            import { readFile } from "node:fs/promises";
+            const [s, q] = await Promise.all([
+              readFile("dashboard/data/latest.json", "utf8").then(JSON.parse),
+              readFile("dashboard/data/signals.json", "utf8").then(JSON.parse)
+            ]);
+            const expected = ["EURUSD", "BTCUSD", "XAUUSD"];
+            const id = q.analysisCycle?.id;
+            if (!id || s.analysisCycle?.id !== id) throw new Error("Dashboard and signal analysis cycles differ");
+            if (q.analysisCycle?.timeZone !== "Europe/Ljubljana" || s.analysisCycle?.timeZone !== "Europe/Ljubljana") throw new Error("Incorrect analysis timezone");
+            for (const market of expected) {
+              if (!q.markets?.[market] || q.markets[market].analysisCycle?.id !== id) throw new Error(market + " missing or mismatched signal cycle");
+            }
+            if (Object.keys(q.markets).length !== expected.length) throw new Error("Signal publication has unexpected or missing markets");
+            if (s.validation?.status !== "PASS") throw new Error("Dashboard candle snapshot is not PASS: " + s.validation?.status);
+            console.log("SYNC VERIFIED:", id, "| Europe/Ljubljana | EURUSD + BTCUSD + XAUUSD");
+          '
           snapshot="$(mktemp)"
           brain_snapshot="$(mktemp)"
           signal_snapshot="$(mktemp)"
