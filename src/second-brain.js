@@ -53,7 +53,7 @@ export async function updateSecondBrain({
   market, candles = [], signal = "NO TRADE", candidate = "HOLD", plan = null,
   quote = null, quoteValidation = {}, vwap = {}, agents = {}, llm = {},
   macro = {}, frames = {}, marketIntelligence = {}, approval = {},
-  verification = {}, decisionLayers = {},
+  verification = {}, decisionLayers = {}, strategyAttribution = {},
   path = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl",
   now = Date.now()
 }) {
@@ -88,8 +88,11 @@ export async function updateSecondBrain({
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
       if (!stopHit && !targetHit) continue;
       const ambiguous = stopHit && targetHit;
-      const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : "LOSS";
-      const resolutionPrice = ambiguous ? null : targetHit ? record.takeProfit : record.stopLoss;
+      const barsSinceSignal = validCandles.filter(item => candleTime(item) > Number(record.signalCandleAt ?? record.createdAt)).length;
+      const timedOut = !stopHit && !targetHit && barsSinceSignal >= 288;
+      if (!stopHit && !targetHit && !timedOut) continue;
+      const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : stopHit ? "LOSS" : "TIMEOUT";
+      const resolutionPrice = ambiguous ? null : targetHit ? record.takeProfit : stopHit ? record.stopLoss : Number(candle.close);
       const entry = Number(record.indicativeEntry);
       const stop = Number(record.stopLoss);
       const riskDistance = Math.abs(entry - stop);
@@ -113,8 +116,8 @@ export async function updateSecondBrain({
         ? spreadAndSlippageR + commissionR : null;
       newEvents.push({
         eventId: `OUTCOME:${signalId}`, eventType: "PAPER_OUTCOME",
-        signalId, market, outcome,
-        resolvedAt: at, resolutionPrice,
+        signalId, market, outcome, strategy: record.strategy ?? {},
+        resolvedAt: at, resolutionPrice, barsHeld: barsSinceSignal,
         grossR: round(grossR, 4),
         estimatedSpreadAndSlippageCostPrice: round(spreadAndSlippagePrice),
         estimatedSpreadAndSlippageCostR: round(spreadAndSlippageR, 4),
@@ -202,7 +205,8 @@ export async function updateSecondBrain({
         takeProfit: finite(plan.takeProfit) ? plan.takeProfit : null,
         riskReward: finite(plan.riskReward) ? plan.riskReward : null,
         quoteEvidence, outcome: "PENDING",
-        outcomeMethod: "Subsequent closed-candle high/low proxy; not a broker fill"
+        outcomeMethod: "Subsequent closed-candle high/low proxy; 288 M5 bars maximum; timeout marked at closing price; not a broker fill",
+        strategy: { ...strategyAttribution }
       });
     }
   }
@@ -222,6 +226,7 @@ export async function updateSecondBrain({
     marketSignals: marketSignals.length, resolved: wins + losses,
     wins, losses, pending: Math.max(0, marketSignals.length - marketOutcomes.length),
     ambiguous: marketOutcomes.filter(event => event.outcome === "AMBIGUOUS").length,
+    timeouts: marketOutcomes.filter(event => event.outcome === "TIMEOUT").length,
     winRatePct: wins + losses ? Number((wins / (wins + losses) * 100).toFixed(1)) : null,
     quoteEvidence
   };
