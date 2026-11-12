@@ -20,13 +20,13 @@ export function runSignalApprovalAgent({
   }
   if (!quoteValidation?.valid) blockers.push(quoteValidation?.reason ?? "Fresh bid/ask quote is not validated");
   if (!quote?.snapshotId || quoteValidation?.snapshotId !== quote.snapshotId) blockers.push("Quote snapshot identity is missing or inconsistent");
-  if (quote && quoteValidation && ["bid", "ask", "timestamp", "receivedAt", "source", "venue"].some(key => quoteValidation[key] !== quote[key])) {
+  if (quote && quoteValidation && ["bid", "ask", "timestamp", "receivedAt", "source", "venue", "timestampQuality"].some(key => quoteValidation[key] !== quote[key])) {
     blockers.push("Quote values do not match the approved snapshot");
   }
-  if (quote && (!Number.isFinite(quote.timestamp) || !Number.isFinite(quote.receivedAt) ||
-      now - quote.timestamp < -2_000 || now - quote.receivedAt < 0 ||
-      now - quote.timestamp > 15_000 || now - quote.receivedAt > 15_000)) {
-    blockers.push("Quote snapshot expired or has invalid timestamps before approval");
+  const quoteAgeAtApproval = Number.isFinite(quoteValidation?.ageMs) && Number.isFinite(quoteValidation?.checkedAt)
+    ? quoteValidation.ageMs + Math.max(0, now - quoteValidation.checkedAt) : null;
+  if (!quote || quote.timestampQuality !== "PROVIDER_TIMESTAMP" || quoteAgeAtApproval === null || quoteAgeAtApproval < 0 || quoteAgeAtApproval > 15_000) {
+    blockers.push("Quote snapshot expired or lacks a fresh provider-supplied timestamp at approval");
   }
   if (!quote || !Number.isFinite(quote.bid) || !Number.isFinite(quote.ask)) blockers.push("Bid/ask quote missing");
   else if ((candidate === "BUY" && plan && quote.ask <= 0) || (candidate === "SELL" && plan && quote.bid <= 0)) blockers.push("Executable-side quote is invalid");
