@@ -1,7 +1,15 @@
 name: Forex Sniper Live Candle Refresh
 
+run-name: Forex Sniper Signal Request — ${{ inputs.request_id || 'manual' }}
+
 on:
   workflow_dispatch:
+    inputs:
+      request_id:
+        description: "Optional ChatGPT/Railway request correlation ID"
+        required: false
+        type: string
+        default: manual
   push:
     branches: [main]
     paths:
