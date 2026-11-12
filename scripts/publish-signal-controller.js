@@ -140,6 +140,17 @@ for (const market of markets) {
   };
 }
 
+const expectedMarkets = ["EURUSD", "BTCUSD", "XAUUSD"];
+for (const id of expectedMarkets) {
+  if (!output.markets[id]) throw new Error("Missing market in synchronized publication: " + id);
+  if (output.markets[id].analysisCycle?.id !== analysisCycle.id) {
+    throw new Error(id + " analysis cycle does not match shared cycle");
+  }
+}
+if (Object.keys(output.markets).length !== expectedMarkets.length) {
+  throw new Error("Unexpected market set; refusing partial or mixed-cycle publication");
+}
+
 await mkdir("dashboard/data", { recursive: true });
 const destination = "dashboard/data/signals.json";
 const temporary = destination + ".tmp";
