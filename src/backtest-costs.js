@@ -1,7 +1,7 @@
 const DEFAULTS = Object.freeze({
-  EURUSD: { spreadBps: 0.3, slippageBps: 0.1, commissionBps: 0 },
-  BTCUSD: { spreadBps: 6, slippageBps: 2, commissionBps: 0 },
-  XAUUSD: { spreadBps: 6, slippageBps: 2, commissionBps: 0 }
+  EURUSD: { spreadBps: 0.55, slippageBps: 0.1, commissionBps: 0, spreadSource: "201 Railway heartbeat samples; p95 reference spread 0.541 bps" },
+  BTCUSD: { spreadBps: 0.22, slippageBps: 2, commissionBps: 0, spreadSource: "201 Coinbase WebSocket heartbeat samples; p95 reference spread 0.213 bps" },
+  XAUUSD: { spreadBps: 0.43, slippageBps: 2, commissionBps: 0, spreadSource: "201 Biquote MT5 heartbeat samples; p95 reference spread 0.427 bps" }
 });
 
 function readNonNegative(env, key, fallback) {
@@ -26,7 +26,7 @@ export function resolveBacktestCosts(market, env = process.env) {
   const spreadBps = readNonNegative(env, "BACKTEST_SPREAD_BPS", defaults.spreadBps);
   const slippageBpsPerSide = readNonNegative(env, "BACKTEST_SLIPPAGE_BPS", defaults.slippageBps);
   const commissionBps = readNonNegative(env, "BACKTEST_COMMISSION_BPS", defaults.commissionBps);
-  return { market, spreadBps, slippageBpsPerSide, commissionBps,
+  return { market, spreadBps, slippageBpsPerSide, commissionBps, spreadSource: defaults.spreadSource,
     roundTripCostBps: spreadBps + 2 * slippageBpsPerSide + commissionBps,
     model: "SPREAD_PLUS_TWO_SIDED_SLIPPAGE_PLUS_COMMISSION" };
 }
