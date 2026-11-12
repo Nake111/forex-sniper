@@ -516,15 +516,20 @@ async function analyseMarket(market, macroContext) {
   const approvalBlockers = executionBlockers.filter(reason =>
     /calendar|economic|news window|stale|bid\/ask|spread|BTC 10-second|Coinbase/i.test(reason)
   );
+  // Keep the immutable Layer 1 direction through independent approval.
+  // The old flow replaced a valid BUY/SELL discovery with HOLD whenever the
+  // weighted score was below threshold, then passed HOLD to both agents. This
+  // generated misleading "No directional candidate" and direction-conflict
+  // blockers instead of evaluating the actual candidate and its real failures.
   const approval = runSignalApprovalAgent({
-    candidate, marketReview, plan, quoteValidation, quote: spreadQuote,
+    candidate: directionalCandidate, marketReview, plan, quoteValidation, quote: spreadQuote,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
     entryAtr: results.M5.atr14,
     executionBlockers: approvalBlockers
   });
   console.log("AGENT 2 — INDEPENDENT SIGNAL APPROVAL:", JSON.stringify(approval));
   const verification = runEntryVerificationAgent({
-    market: market.symbol, candidate, plan, quote: spreadQuote,
+    market: market.symbol, candidate: directionalCandidate, plan, quote: spreadQuote,
     quoteValidation, entryAtr: results.M5.atr14,
     marketReview, approval, dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0
   });
@@ -535,7 +540,9 @@ async function analyseMarket(market, macroContext) {
     spreadVerified, weightedScore
   });
   console.log("LAYER 2 — INDEPENDENT VERIFICATION:", JSON.stringify(verificationLayer));
-  const riskClear = approval.approved && verification.approved && !calendarBlocked && !goldMacroBlocked &&
+  const riskClear = verificationLayer.status === "PASSED" &&
+    approval.approved && verification.approved &&
+    !calendarBlocked && !goldMacroBlocked &&
     !macroContext.dataStale && !goldNewsWindow?.blockNewEntries;
   const executionLayer = buildExecutionLayer({
     discovery: discoveryLayer, verification: verificationLayer, plan, quote: spreadQuote,
