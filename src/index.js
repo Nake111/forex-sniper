@@ -572,7 +572,17 @@ async function analyseMarket(market, macroContext) {
       marketIntelligence: marketReview,
       decisionLayers: { discovery: discoveryLayer, weightedScore, verification: verificationLayer, execution: executionLayer },
       approval,
-      verification
+      verification,
+      strategyAttribution: {
+        profile: SIGNAL_PROFILE,
+        strategyId: tieredReport?.setupType ?? "CORE_MULTI_TIMEFRAME",
+        strategyName: tieredReport?.setupType ?? "Core multi-timeframe",
+        setupTier: tieredReport?.tier ?? null,
+        session: results.M5.sessionContext?.primary ?? "UNKNOWN",
+        marketRegime: results.M5.regime ?? "UNKNOWN",
+        weightedScore: weightedScore.score,
+        scoreCoverage: weightedScore.coverage
+      }
     });
     console.log("SECOND BRAIN MEMORY:", JSON.stringify(brain));
   } catch (error) {
