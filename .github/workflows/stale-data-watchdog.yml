@@ -6,8 +6,6 @@ on:
     paths:
       - ".github/workflows/stale-data-watchdog.yml"
       - "scripts/stale-data-watchdog.js"
-      - "dashboard/data/latest.json"
-      - "dashboard/data/signals.json"
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
@@ -22,32 +20,46 @@ permissions:
 jobs:
   watchdog:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout latest published snapshot
         uses: actions/checkout@v4
-      - name: Check freshness, provider health and shared analysis cycle
-        id: watchdog
-        continue-on-error: true
-        run: node scripts/stale-data-watchdog.js
-        env:
-          WATCHDOG_MAX_SIGNAL_AGE_MS: "600000"
-          WATCHDOG_MAX_CANDLE_AGE_MS: "600000"
-          WATCHDOG_MAX_QUOTE_AGE_MS: "15000"
-      - name: Publish fail-closed decisions when any data gate fails
-        if: always()
+      - name: Recheck and publish fail-closed decisions with race-safe retries
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- dashboard/data/signals.json; then
-            echo "No watchdog publication change required."
-          else
+          set -euo pipefail
+          blocked=false
+          published=false
+          for attempt in 1 2 3 4 5; do
+            echo "Watchdog publish attempt $attempt/5"
+            git fetch origin "$GITHUB_REF_NAME"
+            git reset --hard "origin/$GITHUB_REF_NAME"
+            if node scripts/stale-data-watchdog.js; then
+              blocked=false
+            else
+              blocked=true
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add dashboard/data/signals.json
-            git commit -m "Watchdog fail-closed stale market signals"
-            git push origin "HEAD:$GITHUB_REF_NAME"
+            if git diff --cached --quiet; then
+              echo "No signal file changes required."
+              published=true
+              break
+            fi
+            git commit -m "Watchdog freshness check and fail-closed signal status"
+            if git push origin "HEAD:$GITHUB_REF_NAME"; then
+              published=true
+              break
+            fi
+            echo "Branch advanced during watchdog publication; rechecking latest data."
+          done
+          if [ "$published" != true ]; then
+            echo "Could not publish watchdog result after five attempts." >&2
+            exit 1
           fi
-      - name: Fail run visibly when watchdog blocks signals
-        if: steps.watchdog.outcome == 'failure'
-        run: |
-          echo "Watchdog blocked stale or inconsistent market data. Signals were fail-closed."
-          exit 1
+          if [ "$blocked" = true ]; then
+            echo "Watchdog blocked stale or inconsistent market data. Affected signals are NO APPROVED TRADE."
+            exit 1
+          fi
+          echo "Watchdog PASS: latest provider data and shared snapshot are fresh."
