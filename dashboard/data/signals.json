@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T17:42:47.161Z",
-  "generatedAtSlovenia": "2026-11-12 18:42:47",
+  "generatedAt": "2026-11-12T17:48:32.766Z",
+  "generatedAtSlovenia": "2026-11-12 18:48:32",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-12T17:41:45.000Z",
-    "timestampUtc": "2026-11-12T17:41:45.000Z",
-    "timestampSlovenia": "2026-11-12T18:41:45+01:00",
+    "id": "2026-11-12T17:47:50.000Z",
+    "timestampUtc": "2026-11-12T17:47:50.000Z",
+    "timestampSlovenia": "2026-11-12T18:47:50+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-12T17:41:45.000Z",
-  "sourceReportAgeSeconds": 62,
+  "sourceReportGeneratedAt": "2026-11-12T17:47:50.000Z",
+  "sourceReportAgeSeconds": 43,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -24,15 +24,15 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 1.10524,
-        "signalReferenceEntry": 1.10528,
+        "entry": 1.10474,
+        "signalReferenceEntry": 1.10475,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 1.10631,
-        "takeProfit": 1.10323,
-        "riskReward": "1:1.89",
-        "riskRewardValue": 1.887586317648848,
+        "stopLoss": 1.10533,
+        "takeProfit": 1.1036,
+        "riskReward": "1:1.95",
+        "riskRewardValue": 1.9488054607516525,
         "entryTriggerConfirmed": true,
-        "stopMethod": "MARKET_STRUCTURE"
+        "stopMethod": "MARKET_SPECIFIC_ATR"
       },
       "score": "90/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
@@ -60,12 +60,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10524,
-        "ask": 1.1053,
+        "bid": 1.10474,
+        "ask": 1.1048,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794505328000,
+        "timestamp": 1794505693000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1956,
+        "ageMs": 1131,
         "validated": true
       },
       "agents": {
@@ -78,60 +78,60 @@
         "layer3": "REJECTED",
         "blockers": [
           "Fresh bid/ask and market-specific spread/ATR check did not pass",
+          "Spread/ATR 0.1458 exceeds EURUSD limit 0.12",
           "Weighted evidence did not meet the candidate-advancement criteria",
-          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":null}",
+          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.14583333333319842,\"spreadAtrLimit\":0.12,\"passed\":false}",
           "Layer 2 verification did not pass",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "EURUSD spread/ATR 0.1516 exceeds the 0.12 limit",
+          "EURUSD spread/ATR 0.1458 exceeds the 0.12 limit",
           "Risk/reward is below 1:2",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Spread/ATR 0.1516 exceeds EURUSD limit 0.12",
           "Live-quote risk/reward is below 1:2",
           "Executable-side reward/risk is below 1:2"
         ]
       },
-      "generatedAt": "2026-11-12T17:42:47.161Z",
-      "generatedAtSlovenia": "2026-11-12 18:42:47",
+      "generatedAt": "2026-11-12T17:48:32.766Z",
+      "generatedAtSlovenia": "2026-11-12 18:48:32",
       "analysisCycle": {
-        "id": "2026-11-12T17:41:45.000Z",
-        "timestampUtc": "2026-11-12T17:41:45.000Z",
-        "timestampSlovenia": "2026-11-12T18:41:45+01:00",
+        "id": "2026-11-12T17:47:50.000Z",
+        "timestampUtc": "2026-11-12T17:47:50.000Z",
+        "timestampSlovenia": "2026-11-12T18:47:50+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
     "BTCUSD": {
       "label": "BTC/USD",
-      "decision": "NO APPROVED TRADE",
-      "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "BUY",
-      "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
-      "signalGrade": "B",
-      "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
+      "decision": "SELL",
+      "status": "PAPER_SIGNAL_APPROVED",
+      "candidate": "SELL",
+      "candidateStatus": "APPROVED_PAPER_SIGNAL",
+      "signalGrade": "A",
+      "signalGradeMeaning": "All paper-approval gates passed; still not a broker order",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 71719.94,
-        "signalReferenceEntry": 71743.1,
-        "entryReference": "ASK (validated executable-side quote)",
-        "stopLoss": 71550.63,
-        "takeProfit": 72128.03,
-        "riskReward": "1:2.41",
-        "riskRewardValue": 2.4103787793771327,
-        "entryTriggerConfirmed": false,
+        "status": "PAPER_SIGNAL_APPROVED",
+        "entry": 71687.37,
+        "signalReferenceEntry": 71653.7,
+        "entryReference": "BID (validated executable-side quote)",
+        "stopLoss": 71817.5,
+        "takeProfit": 71326.1,
+        "riskReward": "1:2.78",
+        "riskRewardValue": 2.7762314455686647,
+        "entryTriggerConfirmed": true,
         "stopMethod": "MARKET_STRUCTURE"
       },
-      "score": "55/100 candidate strength · 100% evidence coverage",
+      "score": "100/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
-        "score": 55,
+        "score": 100,
         "maxScore": 100,
         "evidenceCoveragePct": 100,
         "label": "Candidate strength",
         "interpretation": "Heuristic points, not trade probability"
       },
       "paperApproval": {
-        "status": "NOT_APPROVED",
-        "approved": false,
-        "decision": "NO APPROVED TRADE"
+        "status": "APPROVED",
+        "approved": true,
+        "decision": "SELL"
       },
       "brokerExecution": {
         "status": "NOT_CONNECTED_PAPER_ONLY",
@@ -141,46 +141,35 @@
           "Broker execution venue/account is not connected and verified"
         ]
       },
-      "entry": null,
-      "stopLoss": null,
-      "takeProfit": null,
-      "riskReward": null,
+      "entry": 71687.37,
+      "stopLoss": 71817.5,
+      "takeProfit": 71326.1,
+      "riskReward": "1:2.78",
       "quote": {
-        "bid": 71719.93,
-        "ask": 71719.94,
+        "bid": 71687.37,
+        "ask": 71687.38,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794505345345,
+        "timestamp": 1794505700393,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1203,
+        "ageMs": 1652,
         "validated": true
       },
       "agents": {
-        "marketIntelligenceApproved": false,
-        "signalApprovalApproved": false,
-        "entryVerificationApproved": false
+        "marketIntelligenceApproved": true,
+        "signalApprovalApproved": true,
+        "entryVerificationApproved": true
       },
       "verification": {
-        "layer2": "REJECTED",
-        "layer3": "REJECTED",
-        "blockers": [
-          "Required closed M5 entry trigger is not confirmed",
-          "Weighted evidence did not meet the candidate-advancement criteria",
-          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
-          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "Layer 2 verification did not pass",
-          "M15 buyer/seller pressure proxy conflicts with H1 release",
-          "Independent market-intelligence direction conflicts with candidate",
-          "Closed M5 entry trigger is not confirmed",
-          "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction"
-        ]
+        "layer2": "PASSED",
+        "layer3": "PAPER SIGNAL APPROVED",
+        "blockers": []
       },
-      "generatedAt": "2026-11-12T17:42:47.161Z",
-      "generatedAtSlovenia": "2026-11-12 18:42:47",
+      "generatedAt": "2026-11-12T17:48:32.766Z",
+      "generatedAtSlovenia": "2026-11-12 18:48:32",
       "analysisCycle": {
-        "id": "2026-11-12T17:41:45.000Z",
-        "timestampUtc": "2026-11-12T17:41:45.000Z",
-        "timestampSlovenia": "2026-11-12T18:41:45+01:00",
+        "id": "2026-11-12T17:47:50.000Z",
+        "timestampUtc": "2026-11-12T17:47:50.000Z",
+        "timestampSlovenia": "2026-11-12T18:47:50+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -194,13 +183,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 3875.01,
-        "signalReferenceEntry": 3873.49,
+        "entry": 3874,
+        "signalReferenceEntry": 3873.76,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 3885.23,
-        "takeProfit": 3849.99,
-        "riskReward": "1:2.45",
-        "riskRewardValue": 2.4479342481837123,
+        "stopLoss": 3885.18,
+        "takeProfit": 3850.91,
+        "riskReward": "1:2.07",
+        "riskRewardValue": 2.066862518820613,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
@@ -230,12 +219,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3875.011,
-        "ask": 3875.179,
+        "bid": 3874.004,
+        "ask": 3874.172,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794505365000,
+        "timestamp": 1794505712000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 2060,
+        "ageMs": 650,
         "validated": true
       },
       "agents": {
@@ -254,23 +243,20 @@
           "Layer 2 verification did not pass",
           "Calendar feed is available; no relevant event is inside the configured protection window.",
           "Economic/news risk is HIGH",
-          "Risk manager veto: ECONOMIC_CALENDAR_HIGH",
           "Recent high-impact headlines require caution; elevated H1 volatility (ATR14/baseline 1.63); secondary calendar is unavailable; risk veto remains active until both checks are clear.",
           "Gold M5 trigger candle does not confirm H1/M15 direction",
           "Gold buyer/seller pressure proxy conflicts with trend",
           "Closed M5 entry trigger is not confirmed",
-          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.321 ATR from signal reference entry; maximum is 0.2"
+          "market-intelligence agent did not independently confirm this direction"
         ]
       },
-      "generatedAt": "2026-11-12T17:42:47.161Z",
-      "generatedAtSlovenia": "2026-11-12 18:42:47",
+      "generatedAt": "2026-11-12T17:48:32.766Z",
+      "generatedAtSlovenia": "2026-11-12 18:48:32",
       "analysisCycle": {
-        "id": "2026-11-12T17:41:45.000Z",
-        "timestampUtc": "2026-11-12T17:41:45.000Z",
-        "timestampSlovenia": "2026-11-12T18:41:45+01:00",
+        "id": "2026-11-12T17:47:50.000Z",
+        "timestampUtc": "2026-11-12T17:47:50.000Z",
+        "timestampSlovenia": "2026-11-12T18:47:50+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
