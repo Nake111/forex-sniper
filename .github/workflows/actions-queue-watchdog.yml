@@ -65,6 +65,7 @@ jobs:
               ["queued", "in_progress"].includes(run.status)
             );
 
+            let cancelledStaleRefreshId = null;
             if (active?.status === "queued" &&
                 now - Date.parse(active.created_at) >= staleAfterMs) {
               const { data: jobsData } = await github.rest.actions.listJobsForWorkflowRun({
@@ -72,14 +73,14 @@ jobs:
               });
               if (jobsData.jobs.length === 0) {
                 await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: active.id });
+                cancelledStaleRefreshId = active.id;
                 core.warning(`Cancelled stalled queued market refresh ${active.id}`);
               }
             }
 
             const stillActive = refreshRuns.find(run =>
               ["queued", "in_progress"].includes(run.status) &&
-              !(run.id === active?.id && active.status === "queued" &&
-                now - Date.parse(active.created_at) >= staleAfterMs)
+              run.id !== cancelledStaleRefreshId
             );
             if (stillActive) {
               core.info(`Market refresh ${stillActive.id} is already ${stillActive.status}; no duplicate dispatch.`);
