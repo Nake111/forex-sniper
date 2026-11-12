@@ -30,3 +30,17 @@ test("parses Atom entries with mixed-case publication tags", () => {
  const ideas=parsePublicIdeaFeed(atom,{market:"BTCUSD",sourceUrl:"https://ideas.example.com/atom.xml",now});
  assert.equal(ideas.length,1); assert.equal(ideas[0].direction,"BUY");
 });
+
+test("uses the free TradingView public ideas feed when no custom feeds are configured", async () => {
+ const now=Date.parse("2026-11-12T12:00:00Z");
+ const xml=`<rss><channel><item><title>EUR/USD BUY setup</title><description>Public technical idea</description><pubDate>Thu, 12 Nov 2026 11:30:00 GMT</pubDate><link>https://www.tradingview.com/chart/abc/</link></item></channel></rss>`;
+ let requestedUrl="";
+ const result=await fetchPublicTraderEvidence("EURUSD",{
+  feedUrls:undefined,now,
+  fetchImpl:async url=>{requestedUrl=url;return {ok:true,status:200,text:async()=>xml};}
+ });
+ assert.equal(requestedUrl,"https://www.tradingview.com/feed/");
+ assert.equal(result.total,1);
+ assert.equal(result.ideas[0].direction,"BUY");
+ assert.equal(result.mayOverrideValidation,false);
+});
