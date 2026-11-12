@@ -276,8 +276,8 @@ async function downloadOne(market, timeframe) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
   let merged = mergeCandles(previous, incoming, cutoff);
-  if (provider === "Twelve Data" || provider === "FinancialData.Net M1 → M5") {
-    console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is too short for a cold start; supplementing from Dukascopy.");
+  if ((provider === "Twelve Data" || provider === "FinancialData.Net M1 → M5") && merged.length < 100) {
+    console.warn(market.label + " " + timeframe.toUpperCase() + ": supplemental provider history is too short for a cold start; adding Dukascopy baseline candles.");
     const fallback = await fetchDukascopyHistory(market, timeframe, from, to);
     merged = mergeCandles(merged, fallback, cutoff);
     provider = provider + " + Dukascopy baseline history";
@@ -286,7 +286,7 @@ async function downloadOne(market, timeframe) {
     throw new Error(`Not enough merged ${market.label} ${timeframe.toUpperCase()} candles: ${merged.length}`);
   }
   await atomicWrite(path, merged);
-  console.log(`${market.label} ${timeframe.toUpperCase()}: fetched ${incoming.length}, merged ${merged.length}, added/updated ${Math.max(0, merged.length - previous.length)}; saved ${path}${useKraken ? " (Kraken XBT/USD spot; provider returns a rolling window)" : " (Dukascopy)"}.`);
+  console.log(`${market.label} ${timeframe.toUpperCase()}: fetched ${incoming.length}, merged ${merged.length}, added/updated ${Math.max(0, merged.length - previous.length)}; saved ${path} (provider: ${provider}).`);
 }
 
 async function runWithConcurrency(tasks, concurrency) {
