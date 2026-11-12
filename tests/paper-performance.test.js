@@ -7,8 +7,8 @@ test("groups approved paper signal outcomes by strategy, market and session", ()
     { eventType: "PAPER_SIGNAL", signalId: "s1", market: "EURUSD", side: "BUY", strategy: { strategyId: "ORB", session: "LONDON", profile: "balanced" } },
     { eventType: "PAPER_SIGNAL", signalId: "s2", market: "EURUSD", side: "SELL", strategy: { strategyId: "ORB", session: "LONDON", profile: "balanced" } },
     { eventType: "PAPER_SIGNAL", signalId: "s3", market: "BTCUSD", side: "BUY", strategy: { strategyId: "VWAP", session: "NEW_YORK", profile: "strict" } },
-    { eventType: "PAPER_OUTCOME", signalId: "s1", outcome: "WIN", grossR: 2, netEstimatedR: 1.8 },
-    { eventType: "PAPER_OUTCOME", signalId: "s2", outcome: "LOSS", grossR: -1, netEstimatedR: -1.2 }
+    { eventType: "PAPER_OUTCOME", signalId: "s1", outcome: "WIN", grossR: 2, netEstimatedR: null, netEstimatedRExcludingCommission: 1.8 },
+    { eventType: "PAPER_OUTCOME", signalId: "s2", outcome: "LOSS", grossR: -1, netEstimatedR: null, netEstimatedRExcludingCommission: -1.2 }
   ];
   const report = buildPaperPerformance(events, "2026-11-12T00:00:00.000Z");
   assert.equal(report.totals.signals, 3);
