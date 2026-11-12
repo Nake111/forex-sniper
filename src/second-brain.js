@@ -1,24 +1,20 @@
-import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
-const LIMIT = 3000;
 const finite = Number.isFinite;
+const round = (value, digits = 8) => finite(value) ? Number(value.toFixed(digits)) : null;
 
-async function readJournal(path) {
+async function readEvents(path) {
   try {
     const raw = await readFile(path, "utf8");
-    return raw.split("\n").filter(Boolean).map(line => JSON.parse(line));
+    return raw.split("\n").filter(Boolean).map((line, index) => {
+      try { return JSON.parse(line); }
+      catch { throw new Error(`Paper journal has invalid JSON at line ${index + 1}; refusing to overwrite evidence`); }
+    });
   } catch (error) {
     if (error.code === "ENOENT") return [];
     throw error;
   }
-}
-
-async function writeJournal(path, records) {
-  await mkdir(dirname(path), { recursive: true });
-  const temporary = path + ".tmp";
-  await writeFile(temporary, records.slice(-LIMIT).map(record => JSON.stringify(record)).join("\n") + "\n");
-  await rename(temporary, path);
 }
 
 function candleTime(candle) {
@@ -27,113 +23,158 @@ function candleTime(candle) {
   return finite(value) ? (value < 1e12 ? value * 1000 : value) : NaN;
 }
 
+function estimateCost(market, midpoint) {
+  const suffix = market.toUpperCase();
+  const slippageBpsRaw = process.env[`PAPER_ESTIMATED_SLIPPAGE_BPS_${suffix}`];
+  const commissionBpsRaw = process.env[`PAPER_ESTIMATED_COMMISSION_BPS_${suffix}`];
+  const slippageBps = slippageBpsRaw === undefined ? null : Number(slippageBpsRaw);
+  const commissionBps = commissionBpsRaw === undefined ? null : Number(commissionBpsRaw);
+  const validSlip = finite(slippageBps) && slippageBps >= 0 ? slippageBps : null;
+  const validCommission = finite(commissionBps) && commissionBps >= 0 ? commissionBps : null;
+  return {
+    estimatedSlippageBps: validSlip,
+    estimatedSlippagePrice: validSlip !== null && finite(midpoint) ? round(midpoint * validSlip / 10000) : null,
+    estimatedCommissionBps: validCommission,
+    estimatedCommissionPrice: validCommission !== null && finite(midpoint) ? round(midpoint * validCommission / 10000) : null,
+    observedSlippage: null,
+    executionFill: null,
+    actualCommission: null,
+    note: "Estimated costs are assumptions; observed slippage, fills and broker commission are unavailable without an execution venue."
+  };
+}
+
 /**
- * Persistent, append-only research memory for the Forex Sniper.
- * It stores the evidence behind each decision and resolves paper setups only
- * when later closed candles touch a stored stop or target. It never places orders.
+ * Append-only paper research journal. Signal and outcome events are immutable:
+ * later candle resolution is recorded as a separate event, never by rewriting
+ * historical evidence. No orders are placed.
  */
 export async function updateSecondBrain({
-  market, candles = [], signal = "HOLD", candidate = "HOLD", plan = null, quote = null, quoteValidation = {},
-  vwap = {}, agents = {}, llm = {}, macro = {}, frames = {}, marketIntelligence = {}, approval = {}, verification = {}, decisionLayers = {}, path = "data/second-brain.jsonl",
+  market, candles = [], signal = "NO TRADE", candidate = "HOLD", plan = null,
+  quote = null, quoteValidation = {}, vwap = {}, agents = {}, llm = {},
+  macro = {}, frames = {}, marketIntelligence = {}, approval = {},
+  verification = {}, decisionLayers = {},
+  path = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl",
   now = Date.now()
 }) {
-  const records = await readJournal(path);
-  const validCandles = candles.filter(c => [c.open, c.high, c.low, c.close].every(v => finite(Number(v))) &&
-    finite(candleTime(c))).sort((a, b) => candleTime(a) - candleTime(b));
+  const events = await readEvents(path);
+  const validCandles = candles.filter(c =>
+    [c.open, c.high, c.low, c.close].every(v => finite(Number(v))) &&
+    finite(candleTime(c))
+  ).sort((a, b) => candleTime(a) - candleTime(b));
+  const signals = new Map();
+  const resolved = new Set();
+  const eventIds = new Set();
 
-  // Resolve previously recorded paper setups with candles strictly after entry.
-  for (const record of records) {
-    if (record.market !== market || record.kind !== "SIGNAL" || record.outcome !== "PENDING") continue;
+  for (const event of events) {
+    if (event.eventId) eventIds.add(event.eventId);
+    if (event.eventType === "PAPER_SIGNAL") signals.set(event.signalId, event);
+    // Backward compatibility for the original v1 mutable journal records.
+    if (event.kind === "SIGNAL" && event.key) signals.set(event.key, {
+      ...event, signalId: event.key, signalCandleAt: event.candleAt ?? event.createdAt,
+      side: event.side, stopLoss: event.stopLoss, takeProfit: event.takeProfit
+    });
+    if (event.eventType === "PAPER_OUTCOME" && event.signalId) resolved.add(event.signalId);
+  }
+
+  const newEvents = [];
+  for (const [signalId, record] of signals) {
+    if (resolved.has(signalId) || record.market !== market) continue;
     for (const candle of validCandles) {
-      if (candleTime(candle) <= record.createdAt) continue;
+      const at = candleTime(candle);
+      if (at <= Number(record.signalCandleAt ?? record.createdAt)) continue;
       const high = Number(candle.high), low = Number(candle.low);
       const stopHit = record.side === "BUY" ? low <= record.stopLoss : high >= record.stopLoss;
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
-      if (stopHit && targetHit) {
-        record.outcome = "AMBIGUOUS";
-        record.resolvedAt = candleTime(candle);
-        record.resolutionNote = "Stop and target both touched in the same candle; sequence unknown";
-        break;
-      } else if (stopHit || targetHit) {
-        record.outcome = targetHit ? "WIN" : "LOSS";
-        record.resolvedAt = candleTime(candle);
-        record.resolutionPrice = targetHit ? record.takeProfit : record.stopLoss;
-        break;
-      }
+      if (!stopHit && !targetHit) continue;
+      const ambiguous = stopHit && targetHit;
+      newEvents.push({
+        eventId: `OUTCOME:${signalId}`, eventType: "PAPER_OUTCOME",
+        signalId, market, outcome: ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : "LOSS",
+        resolvedAt: at, resolutionPrice: ambiguous ? null : targetHit ? record.takeProfit : record.stopLoss,
+        resolutionMethod: "Subsequent closed-candle high/low proxy; stop-first when both levels touch",
+        actualFill: null, observedSlippage: null
+      });
+      resolved.add(signalId);
+      break;
     }
   }
 
-  const timeframeSummary = Object.fromEntries(["M5", "M15", "H1", "H4"].map(key => {
-    const frame = frames[key] ?? {};
-    return [key, {
-      close: finite(frame.close) ? frame.close : null,
-      regime: frame.regime ?? "UNKNOWN",
-      rsi14: finite(frame.rsi14) ? frame.rsi14 : null,
-      adx14: finite(frame.adx14) ? frame.adx14 : null,
-      vwap: finite(frame.vwap) ? frame.vwap : null,
-      poc: finite(frame.poc) ? frame.poc : null,
-      bos: frame.structure?.bos ?? "NONE",
-      sweep: frame.structure?.sweep ?? "NONE"
-    }];
-  }));
-  const side = ["BUY", "SELL"].includes(signal) && plan ? signal : null;
   const latest = validCandles.at(-1);
-  const key = market + ":" + now;
-  if (!records.some(record => record.key === key)) {
-    records.push({
-      key, kind: side ? "SIGNAL" : "OBSERVATION", market, createdAt: now,
-      side: side ?? "NO_TRADE",
-      entry: side ? plan.entry : null,
-      stopLoss: side ? plan.stopLoss : null,
-      takeProfit: side ? plan.takeProfit : null,
-      riskReward: side ? plan.riskReward : null,
-      outcome: side ? "PENDING" : null,
-      close: latest ? Number(latest.close) : null,
-      candleAt: latest ? candleTime(latest) : null,
-      vwap: {
-        consensus: vwap.signal ?? "HOLD", buys: vwap.buys ?? 0, sells: vwap.sells ?? 0,
-        strategies: (vwap.strategies ?? []).map(item => ({ name: item.name, signal: item.signal }))
-      },
-      agents: {
-        decision: agents.portfolioManager?.decision ?? "UNKNOWN",
-        votes: (agents.agents ?? []).map(agent => ({
-          name: agent.name, direction: agent.direction, weight: agent.weight
-        }))
-      },
-      llm: { status: llm.status ?? "NOT_CONFIGURED", decision: llm.decision ?? "UNKNOWN" },
-      marketIntelligence: { agent: marketIntelligence.agent ?? "UNAVAILABLE", direction: marketIntelligence.direction ?? null, approved: marketIntelligence.approved === true, blockers: marketIntelligence.blockers ?? [], orderFlow: marketIntelligence.orderFlow ?? null, eventRisk: marketIntelligence.eventRisk ?? null },
-      approval: { agent: approval.agent ?? "UNAVAILABLE", decision: approval.decision ?? "UNKNOWN", approved: approval.approved === true, blockers: approval.blockers ?? [] },
-      verification: { agent: verification.agent ?? "UNAVAILABLE", decision: verification.decision ?? "UNKNOWN", approved: verification.approved === true, blockers: verification.blockers ?? [] },
-      decisionLayers: { discovery: decisionLayers.discovery?.candidate ?? null, verification: decisionLayers.verification?.status ?? null, execution: decisionLayers.execution?.decision ?? null },
-      quoteEvidence: {
-        provider: quote?.source ?? null, venue: quote?.venue ?? null,
-        bid: finite(quote?.bid) ? quote.bid : null, ask: finite(quote?.ask) ? quote.ask : null,
-        observedSpread: finite(quoteValidation.spread) ? quoteValidation.spread : null,
-        quoteTimestamp: finite(quote?.timestamp) ? quote.timestamp : null,
-        receivedAt: finite(quote?.receivedAt) ? quote.receivedAt : null,
-        quoteAgeMs: finite(quote?.timestamp) ? Math.max(0, now - quote.timestamp) : null,
-        validation: quoteValidation.valid === true ? "VALID" : "INVALID_OR_UNAVAILABLE",
-        spreadAtr: finite(quoteValidation.spreadAtr) ? quoteValidation.spreadAtr : null,
-        estimatedSlippage: null, observedSlippage: null,
-        executionFill: null, note: "Reference quote only; no broker fill or observed slippage available"
-      },
+  const candleAt = latest ? candleTime(latest) : null;
+  const quoteTimestamp = finite(quote?.timestamp) ? quote.timestamp : null;
+  const quoteReceivedAt = finite(quote?.receivedAt) ? quote.receivedAt : null;
+  const midpoint = finite(quote?.bid) && finite(quote?.ask) ? (quote.bid + quote.ask) / 2 : null;
+  const observedSpread = finite(quoteValidation?.spread) ? quoteValidation.spread :
+    finite(quote?.bid) && finite(quote?.ask) ? quote.ask - quote.bid : null;
+  const spreadAtr = finite(observedSpread) && finite(frames?.M5?.atr14) && frames.M5.atr14 > 0
+    ? observedSpread / frames.M5.atr14 : null;
+  const quoteAgeMs = finite(quoteTimestamp) ? Math.max(0, now - quoteTimestamp) : null;
+  const quoteEvidence = {
+    provider: quote?.source ?? null, venue: quote?.venue ?? null,
+    bid: round(quote?.bid), ask: round(quote?.ask), midpoint: round(midpoint),
+    observedSpread: round(observedSpread), quoteTimestamp, receivedAt: quoteReceivedAt,
+    quoteAgeMs, timestampQuality: quote?.timestampQuality ?? null,
+    validation: quoteValidation?.valid === true ? "VALID" : "INVALID_OR_UNAVAILABLE",
+    validationReason: quoteValidation?.reason ?? null, spreadAtr: round(spreadAtr, 6),
+    costs: estimateCost(market, midpoint)
+  };
+
+  const observationId = `OBS:${market}:${candleAt ?? "NO_CANDLE"}:${quoteTimestamp ?? "NO_QUOTE"}`;
+  if (!eventIds.has(observationId)) {
+    newEvents.push({
+      eventId: observationId, eventType: "PAPER_OBSERVATION", market,
+      observedAt: now, candleAt, close: latest ? Number(latest.close) : null,
       candidateDirection: ["BUY", "SELL"].includes(candidate) ? candidate : "NONE",
-      outcomeMethod: "Subsequent closed-candle high/low proxy; not a broker fill",
-      macro: { eventRisk: macro.eventRisk ?? "UNKNOWN", dataStale: macro.dataStale === true },
-      timeframes: timeframeSummary
+      decision: signal, quoteEvidence,
+      gateEvidence: {
+        marketIntelligence: { approved: marketIntelligence.approved === true, blockers: marketIntelligence.blockers ?? [] },
+        approval: { decision: approval.decision ?? "UNKNOWN", approved: approval.approved === true, blockers: approval.blockers ?? [] },
+        verification: { decision: verification.decision ?? "UNKNOWN", approved: verification.approved === true, blockers: verification.blockers ?? [] },
+        discovery: decisionLayers.discovery?.candidate ?? null,
+        verificationLayer: decisionLayers.verification?.status ?? null,
+        executionLayer: decisionLayers.execution?.decision ?? null
+      },
+      macroRisk: macro.eventRisk ?? "UNKNOWN",
+      timeframes: Object.fromEntries(["M5", "M15", "H1", "H4"].map(key => {
+        const frame = frames[key] ?? {};
+        return [key, { close: frame.close ?? null, rsi14: frame.rsi14 ?? null,
+          adx14: frame.adx14 ?? null, regime: frame.regime ?? "UNKNOWN" }];
+      }))
     });
   }
 
-  await writeJournal(path, records);
-  const outcomes = records.filter(record => record.market === market && record.kind === "SIGNAL" &&
-    ["WIN", "LOSS", "AMBIGUOUS", "PENDING"].includes(record.outcome));
-  const wins = outcomes.filter(record => record.outcome === "WIN").length;
-  const losses = outcomes.filter(record => record.outcome === "LOSS").length;
+  if (["BUY", "SELL"].includes(signal) && plan && finite(candleAt)) {
+    const signalId = `SIGNAL:${market}:${signal}:${candleAt}`;
+    if (!eventIds.has(signalId) && !signals.has(signalId)) {
+      newEvents.push({
+        eventId: signalId, eventType: "PAPER_SIGNAL", signalId, market, side: signal,
+        createdAt: now, signalCandleAt: candleAt,
+        indicativeEntry: finite(plan.entry) ? plan.entry : null,
+        stopLoss: finite(plan.stopLoss) ? plan.stopLoss : null,
+        takeProfit: finite(plan.takeProfit) ? plan.takeProfit : null,
+        riskReward: finite(plan.riskReward) ? plan.riskReward : null,
+        quoteEvidence, outcome: "PENDING",
+        outcomeMethod: "Subsequent closed-candle high/low proxy; not a broker fill"
+      });
+    }
+  }
+
+  if (newEvents.length) {
+    await mkdir(dirname(path), { recursive: true });
+    await appendFile(path, newEvents.map(event => JSON.stringify(event)).join("\n") + "\n", { encoding: "utf8", flag: "a" });
+  }
+
+  const allEvents = [...events, ...newEvents];
+  const marketSignals = allEvents.filter(event => event.eventType === "PAPER_SIGNAL" && event.market === market);
+  const marketOutcomes = allEvents.filter(event => event.eventType === "PAPER_OUTCOME" && event.market === market);
+  const wins = marketOutcomes.filter(event => event.outcome === "WIN").length;
+  const losses = marketOutcomes.filter(event => event.outcome === "LOSS").length;
   return {
-    stored: true, records: records.length, marketSignals: outcomes.length,
-    resolved: wins + losses, wins, losses,
+    stored: true, appendOnly: true, path, appendedEvents: newEvents.length,
+    marketSignals: marketSignals.length, resolved: wins + losses,
+    wins, losses, pending: Math.max(0, marketSignals.length - marketOutcomes.length),
+    ambiguous: marketOutcomes.filter(event => event.outcome === "AMBIGUOUS").length,
     winRatePct: wins + losses ? Number((wins / (wins + losses) * 100).toFixed(1)) : null,
-    pending: outcomes.filter(record => record.outcome === "PENDING").length,
-    ambiguous: outcomes.filter(record => record.outcome === "AMBIGUOUS").length
+    quoteEvidence
   };
 }
