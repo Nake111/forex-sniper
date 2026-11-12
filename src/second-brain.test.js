@@ -31,7 +31,7 @@ test("paper journal is append-only, stores validated quote evidence, and resolve
     assert.equal(duplicate.marketSignals, 1);
 
     const second = await updateSecondBrain({
-      ...args, now: 1_000_000,
+      ...args, signal: "NO TRADE", now: 1_000_000,
       candles: [
         { timestamp: 800, open: 1.1, high: 1.101, low: 1.099, close: 1.1 },
         { timestamp: 1500, open: 1.1, high: 1.121, low: 1.095, close: 1.115 }
