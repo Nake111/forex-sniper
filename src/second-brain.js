@@ -96,21 +96,36 @@ export async function updateSecondBrain({
       const grossR = !ambiguous && finite(entry) && finite(stop) && riskDistance > 0
         ? (record.side === "BUY" ? resolutionPrice - entry : entry - resolutionPrice) / riskDistance
         : null;
-      const estimatedCostBps = Number(record.quoteEvidence?.costs?.estimatedRoundTripCostBps);
+      const spreadAndSlippageBps = record.quoteEvidence?.costs?.estimatedSpreadAndSlippageBps;
+      const commissionBps = record.quoteEvidence?.costs?.estimatedCommissionBpsRoundTrip;
       const midpoint = Number(record.quoteEvidence?.midpoint);
-      const estimatedCostPrice = finite(estimatedCostBps) && estimatedCostBps >= 0 && finite(midpoint) && midpoint > 0
-        ? midpoint * estimatedCostBps / 10_000 : null;
-      const estimatedCostR = estimatedCostPrice !== null && riskDistance > 0
-        ? estimatedCostPrice / riskDistance : null;
+      const spreadAndSlippagePrice = finite(spreadAndSlippageBps) && spreadAndSlippageBps >= 0 && finite(midpoint) && midpoint > 0
+        ? midpoint * spreadAndSlippageBps / 10_000 : null;
+      const commissionPrice = finite(commissionBps) && commissionBps >= 0 && finite(midpoint) && midpoint > 0
+        ? midpoint * commissionBps / 10_000 : null;
+      const spreadAndSlippageR = spreadAndSlippagePrice !== null && riskDistance > 0
+        ? spreadAndSlippagePrice / riskDistance : null;
+      const commissionR = commissionPrice !== null && riskDistance > 0
+        ? commissionPrice / riskDistance : null;
+      const allInCostPrice = spreadAndSlippagePrice !== null && commissionPrice !== null
+        ? spreadAndSlippagePrice + commissionPrice : null;
+      const allInCostR = spreadAndSlippageR !== null && commissionR !== null
+        ? spreadAndSlippageR + commissionR : null;
       newEvents.push({
         eventId: `OUTCOME:${signalId}`, eventType: "PAPER_OUTCOME",
         signalId, market, outcome,
         resolvedAt: at, resolutionPrice,
         grossR: round(grossR, 4),
-        estimatedRoundTripCostPrice: round(estimatedCostPrice),
-        estimatedCostR: round(estimatedCostR, 4),
-        netEstimatedR: grossR !== null && estimatedCostR !== null ? round(grossR - estimatedCostR, 4) : null,
-        estimatedCostMethod: "Signal-time observed spread plus configured estimated two-sided slippage and commission; not observed execution cost",
+        estimatedSpreadAndSlippageCostPrice: round(spreadAndSlippagePrice),
+        estimatedSpreadAndSlippageCostR: round(spreadAndSlippageR, 4),
+        estimatedCommissionCostPrice: round(commissionPrice),
+        estimatedCommissionCostR: round(commissionR, 4),
+        estimatedAllInCostPrice: round(allInCostPrice),
+        estimatedAllInCostR: round(allInCostR, 4),
+        netEstimatedRExcludingCommission: grossR !== null && spreadAndSlippageR !== null
+          ? round(grossR - spreadAndSlippageR, 4) : null,
+        netEstimatedR: grossR !== null && allInCostR !== null ? round(grossR - allInCostR, 4) : null,
+        estimatedCostMethod: "Signal-time observed spread plus configured estimated two-sided slippage; commission kept separate and all-in cost remains unavailable until commission is configured",
         resolutionMethod: "Subsequent closed-candle high/low proxy; stop-first when both levels touch",
         rCalculationMethod: "Indicative plan entry and stop distance; not an actual fill",
         actualFill: null, observedSlippage: null, actualCommission: null
@@ -134,10 +149,13 @@ export async function updateSecondBrain({
   const observedSpreadBps = finite(observedSpread) && finite(midpoint) && midpoint > 0
     ? observedSpread / midpoint * 10000 : null;
   costEstimate.observedSpreadBps = round(observedSpreadBps, 4);
-  costEstimate.estimatedRoundTripCostBps = finite(observedSpreadBps) &&
+  costEstimate.estimatedSpreadAndSlippageBps = finite(observedSpreadBps) &&
     finite(costEstimate.estimatedSlippageBpsPerSide)
-    ? round(observedSpreadBps + 2 * costEstimate.estimatedSlippageBpsPerSide +
-      (costEstimate.estimatedCommissionBpsRoundTrip ?? 0), 4) : null;
+    ? round(observedSpreadBps + 2 * costEstimate.estimatedSlippageBpsPerSide, 4) : null;
+  costEstimate.commissionIncludedInRoundTripEstimate = finite(costEstimate.estimatedCommissionBpsRoundTrip);
+  costEstimate.estimatedRoundTripCostBps = costEstimate.commissionIncludedInRoundTripEstimate &&
+    finite(costEstimate.estimatedSpreadAndSlippageBps)
+    ? round(costEstimate.estimatedSpreadAndSlippageBps + costEstimate.estimatedCommissionBpsRoundTrip, 4) : null;
   const quoteEvidence = {
     provider: quote?.source ?? null, venue: quote?.venue ?? null,
     bid: round(quote?.bid), ask: round(quote?.ask), midpoint: round(midpoint),
