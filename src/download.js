@@ -254,7 +254,7 @@ async function downloadOne(market, timeframe) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
   let merged = mergeCandles(previous, incoming, cutoff);
-  if (merged.length < 100 && provider === "Twelve Data") {
+  if (provider === "Twelve Data") {
     console.warn(market.label + " " + timeframe.toUpperCase() + ": Twelve Data history is too short for a cold start; supplementing from Dukascopy.");
     const fallback = await fetchDukascopyHistory(market, timeframe, from, to);
     merged = mergeCandles(merged, fallback, cutoff);
