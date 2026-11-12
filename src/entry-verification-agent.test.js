@@ -7,10 +7,10 @@ const base = {
   candidate: "BUY",
   plan: { direction: "BUY", entry: 1.10000, stopLoss: 1.09900, takeProfit: 1.10210, entryTriggerConfirmed: true },
   quote: { market: "EURUSD", bid: 1.10000, ask: 1.10002, timestamp: 1_799_999_999_000,
-    receivedAt: 1_799_999_999_000, source: "test", venue: "reference", snapshotId: "eur-test" },
+    receivedAt: 1_799_999_999_000, source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "eur-test" },
   quoteValidation: { valid: true, ageMs: 100, spread: 0.00002, snapshotId: "eur-test",
     bid: 1.10000, ask: 1.10002, timestamp: 1_799_999_999_000, receivedAt: 1_799_999_999_000,
-    source: "test", venue: "reference" },
+    source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", checkedAt: 1_800_000_000_000 },
   entryAtr: 0.001,
   marketReview: { approved: true, direction: "BUY" },
   approval: { approved: true, decision: "BUY" },
@@ -71,9 +71,9 @@ test("uses BTC-specific spread and entry deviation limits", () => {
     ...base, market: "BTCUSD", candidate: "BUY",
     plan: { direction: "BUY", entry: 100, stopLoss: 98, takeProfit: 105, entryTriggerConfirmed: true },
     quote: { market: "BTCUSD", bid: 100, ask: 100.1, timestamp: 1_799_999_999_000,
-      receivedAt: 1_799_999_999_000, source: "test", venue: "reference", snapshotId: "btc-test" },
+      receivedAt: 1_799_999_999_000, source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "btc-test" },
     quoteValidation: { valid: true, ageMs: 100, snapshotId: "btc-test", bid: 100, ask: 100.1,
-      timestamp: 1_799_999_999_000, receivedAt: 1_799_999_999_000, source: "test", venue: "reference" },
+      timestamp: 1_799_999_999_000, receivedAt: 1_799_999_999_000, source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", checkedAt: 1_800_000_000_000 },
     entryAtr: 1
   });
   assert.equal(result.approved, true);

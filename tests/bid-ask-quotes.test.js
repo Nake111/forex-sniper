@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  fetchBidAskQuotes, normalizeKrakenTicker, validateBidAskQuote
+  fetchBidAskQuotes, fetchRealtimeFeedQuotes, normalizeKrakenTicker, validateBidAskQuote
 } from "../src/bid-ask-quotes.js";
 import {
   fetchBiquoteQuote, normalizeBiquoteTick, validateBiquoteTick
@@ -26,6 +26,41 @@ test("rejects crossed, stale and missing quotes", () => {
   assert.equal(validateBidAskQuote({ ...quote, ask: 1.09 }, { now }).valid, false);
   assert.equal(validateBidAskQuote({ ...quote, timestamp: now - 20_000 }, { now }).valid, false);
   assert.equal(validateBidAskQuote(null, { now }).valid, false);
+});
+
+test("realtime feed validates provider time against feed clock, not runner clock", async () => {
+  const now = Date.now();
+  const feedServerTime = now + 4_000;
+  const quote = { market: "BTCUSD", bid: 70_000, ask: 70_001, timestamp: feedServerTime - 500,
+    receivedAt: feedServerTime - 400, source: "Coinbase Exchange BTC-USD ticker WebSocket",
+    venue: "Coinbase Exchange", timestampQuality: "PROVIDER_TIMESTAMP", tradeable: true };
+  const result = await fetchRealtimeFeedQuotes({
+    url: "https://feed.example", now, markets: ["BTCUSD"],
+    fetchImpl: async () => ({ ok: true, json: async () => ({
+      updatedAt: feedServerTime, quotes: { BTCUSD: quote },
+      markets: { BTCUSD: { status: "FRESH", ageMs: 500, timestamp: quote.timestamp, bid: quote.bid, ask: quote.ask } }
+    }) })
+  });
+  assert.equal(result.status, "COMPLETE");
+  assert.equal(result.quotes.BTCUSD.feedServerTime, feedServerTime);
+  assert.equal(result.errors.length, 0);
+});
+
+test("realtime feed rejects receive-time-only BTC quotes and unhealthy feed snapshots", async () => {
+  const now = Date.now();
+  const feedServerTime = now;
+  const quote = { market: "BTCUSD", bid: 70_000, ask: 70_001, timestamp: now,
+    receivedAt: now, source: "Kraken public ticker order book", venue: "Kraken",
+    timestampQuality: "RECEIVED_AT_ONLY", tradeable: true };
+  const result = await fetchRealtimeFeedQuotes({
+    url: "https://feed.example", now, markets: ["BTCUSD"],
+    fetchImpl: async () => ({ ok: true, json: async () => ({
+      updatedAt: feedServerTime, quotes: { BTCUSD: quote },
+      markets: { BTCUSD: { status: "FRESH", ageMs: 0, timestamp: quote.timestamp, bid: quote.bid, ask: quote.ask } }
+    }) })
+  });
+  assert.equal(result.status, "UNAVAILABLE");
+  assert.match(result.errors[0], /provider timestamp unavailable/);
 });
 
 test("fetchBidAskQuotes uses Kraken public ticker without credentials for BTCUSD", async () => {

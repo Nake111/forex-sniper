@@ -12,11 +12,13 @@ export function createQuoteSnapshot(quote, market, now = Date.now()) {
   if (!quote || !Number.isFinite(quote.timestamp) || !Number.isFinite(quote.receivedAt)) {
     blockers.push("Provider timestamp and local receive timestamp are required");
   }
+  if (quote?.timestampQuality !== "PROVIDER_TIMESTAMP") blockers.push("Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient");
   if (!quote?.source || typeof quote.source !== "string" || !quote?.venue) {
     blockers.push("Quote provider source and venue are required");
   }
-  const ageMs = quote && Number.isFinite(quote.timestamp) ? now - quote.timestamp : null;
-  const receiveAgeMs = quote && Number.isFinite(quote.receivedAt) ? now - quote.receivedAt : null;
+  const clockNow = Number.isFinite(quote?.feedServerTime) ? quote.feedServerTime : now;
+  const ageMs = quote && Number.isFinite(quote.timestamp) ? clockNow - quote.timestamp : null;
+  const receiveAgeMs = quote && Number.isFinite(quote.receivedAt) ? clockNow - quote.receivedAt : null;
   if (ageMs !== null && (ageMs < -2_000 || ageMs > maxAgeMs)) blockers.push("Provider quote timestamp is future-dated or stale");
   if (receiveAgeMs !== null && (receiveAgeMs < 0 || receiveAgeMs > maxAgeMs)) blockers.push("Locally received quote is future-dated or stale");
   const valid = blockers.length === 0;
@@ -27,10 +29,11 @@ export function createQuoteSnapshot(quote, market, now = Date.now()) {
     receiveAgeMs: receiveAgeMs === null ? null : Math.max(0, receiveAgeMs),
     quote: frozenQuote,
     validation: { valid, snapshotId, ageMs: ageMs === null ? null : Math.max(0, ageMs), spread: valid ? quote.ask - quote.bid : null,
-      reason: blockers.join("; ") || null, timestampQuality: quote?.timestampQuality ?? "UNKNOWN",
+      reason: blockers.join("; ") || null,
       bid: valid ? quote.bid : null, ask: valid ? quote.ask : null,
       timestamp: valid ? quote.timestamp : null, receivedAt: valid ? quote.receivedAt : null,
-      source: valid ? quote.source : null, venue: valid ? quote.venue : null },
+      source: valid ? quote.source : null, venue: valid ? quote.venue : null,
+      timestampQuality: valid ? quote.timestampQuality : null, checkedAt: now },
     blockers
   };
 }
@@ -41,10 +44,11 @@ export function validateQuoteSnapshot(snapshot, quote, now = Date.now()) {
   }
   if (snapshot.market !== quote.market) return { valid: false, reason: "Quote snapshot market mismatch" };
   const frozen = snapshot.quote;
-  if (!frozen || ["bid", "ask", "timestamp", "receivedAt", "source", "venue"].some(key => frozen[key] !== quote[key])) {
+  if (!frozen || ["bid", "ask", "timestamp", "receivedAt", "source", "venue", "timestampQuality", "feedServerTime"].some(key => frozen[key] !== quote[key])) {
     return { valid: false, reason: "Quote values changed after snapshot creation" };
   }
-  if (now - quote.timestamp > snapshot.maxAgeMs || now - quote.receivedAt > snapshot.maxAgeMs) {
+  const ageAtApproval = snapshot.validation.ageMs + Math.max(0, now - snapshot.validation.checkedAt);
+  if (ageAtApproval > snapshot.maxAgeMs) {
     return { valid: false, reason: "Quote snapshot expired before approval" };
   }
   return { valid: true, snapshotId: snapshot.snapshotId };

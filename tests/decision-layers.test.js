@@ -79,9 +79,10 @@ test("valid paper setup is distinct from executable broker order", () => {
 test("manual paper signal approval does not require a broker account", () => {
   const timestamp = Date.now() - 500;
   const quote = { market: "EURUSD", bid: 1.1000, ask: 1.1001, timestamp, receivedAt: timestamp,
-    source: "test", venue: "reference", snapshotId: "paper-test-snapshot" };
+    source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "paper-test-snapshot" };
   const quoteValidation = { valid: true, spread: 0.0001, snapshotId: quote.snapshotId,
-    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue };
+    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue,
+    timestampQuality: quote.timestampQuality, ageMs: 500, checkedAt: Date.now() };
   const approval = runSignalApprovalAgent({
     candidate: "BUY",
     marketReview: { market: "EURUSD", direction: "BUY", approved: true, blockers: [] },
@@ -102,9 +103,10 @@ test("manual paper signal approval does not require a broker account", () => {
 test("manual paper approval still rejects real market-risk blockers", () => {
   const timestamp = Date.now() - 500;
   const quote = { market: "EURUSD", bid: 1.0999, ask: 1.1000, timestamp, receivedAt: timestamp,
-    source: "test", venue: "reference", snapshotId: "blocked-test-snapshot" };
+    source: "test", venue: "reference", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "blocked-test-snapshot" };
   const quoteValidation = { valid: true, spread: 0.0001, snapshotId: quote.snapshotId,
-    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue };
+    bid: quote.bid, ask: quote.ask, timestamp, receivedAt: timestamp, source: quote.source, venue: quote.venue,
+    timestampQuality: quote.timestampQuality, ageMs: 500, checkedAt: Date.now() };
   const approval = runSignalApprovalAgent({
     candidate: "SELL",
     marketReview: { market: "EURUSD", direction: "SELL", approved: true, blockers: [] },
