@@ -87,7 +87,7 @@ export async function updateSecondBrain({
       const stopHit = record.side === "BUY" ? low <= record.stopLoss : high >= record.stopLoss;
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
       const ambiguous = stopHit && targetHit;
-      const barsSinceSignal = validCandles.filter(item => candleTime(item) > Number(record.signalCandleAt ?? record.createdAt)).length;
+      const barsSinceSignal = validCandles.filter(item => candleTime(item) > Number(record.signalCandleAt ?? record.createdAt) && candleTime(item) <= at).length;
       const timedOut = !stopHit && !targetHit && barsSinceSignal >= 180;
       if (!stopHit && !targetHit && !timedOut) continue;
       const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : stopHit ? "LOSS" : "TIMEOUT";
