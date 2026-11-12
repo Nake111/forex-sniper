@@ -22,6 +22,9 @@ on:
       - "tests/twelve-data-quotes.test.js"
       - "src/btc-live-microstructure.js"
       - "src/second-brain.js"
+      - "src/paper-performance.js"
+      - "scripts/publish-paper-performance.js"
+      - "tests/paper-performance.test.js"
       - "second-brain.test.js"
       - "src/economic-calendar.js"
       - "src/macro.js"
@@ -169,6 +172,7 @@ jobs:
             git reset --hard "origin/$GITHUB_REF_NAME"
             cp "$snapshot" dashboard/data/latest.json
             cp "$signal_snapshot" dashboard/data/signals.json
+            cp "$performance_snapshot" dashboard/data/paper-performance.json
             mkdir -p data
             cp "$brain_snapshot" data/second-brain.jsonl
             git add dashboard/data/latest.json dashboard/data/signals.json dashboard/data/paper-performance.json data/second-brain.jsonl
