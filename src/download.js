@@ -1,7 +1,7 @@
 import { getHistoricalRates } from "dukascopy-node";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 
-const DATA_DIR = (process.env.DATA_DIR ?? "data").replace(/\\/+$/, "");
+const DATA_DIR = process.env.DATA_DIR ?? "data";
 const DAYS_BACK = Number(process.env.DATA_DAYS_BACK ?? 180);
 const OVERLAP_DAYS = Number(process.env.DATA_OVERLAP_DAYS ?? 3);
 const MARKETS = [
