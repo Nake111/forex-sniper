@@ -195,7 +195,7 @@ function brainSnapshot() {
   };
 }
 
-const server = http.createServer((request, response) => {
+const server = http.createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", "http://localhost");
   response.setHeader("Access-Control-Allow-Origin", "*");
   response.setHeader("Cache-Control", "no-store");
