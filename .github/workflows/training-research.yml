@@ -1,0 +1,65 @@
+name: Training-only strategy experiments
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: forex-sniper-training-research
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  training:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      BACKTEST_START_RATIO: "0"
+      BACKTEST_END_RATIO: "0.7"
+      DUKASCOPY_BATCH_SIZE: "10"
+      DUKASCOPY_BATCH_PAUSE_MS: "100"
+      DUKASCOPY_REQUEST_INTERVAL_MS: "100"
+      DUKASCOPY_RETRY_COUNT: "2"
+      DUKASCOPY_RATE_LIMIT_RETRIES: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Validate source and tests
+        run: npm run check && npm test
+      - name: Download training history
+        run: npm run download
+        env:
+          DATA_DAYS_BACK: "180"
+          DATA_OVERLAP_DAYS: "3"
+          DOWNLOAD_CONCURRENCY: "3"
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+      - name: Validate historical coverage
+        run: node scripts/validate-history-coverage.js
+        env:
+          DATA_DAYS_BACK: "180"
+      - name: Compare predeclared profiles and session filters on training segment only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research-results
+          echo "TRAINING ONLY: chronological first 70%; final 30% is not loaded into any experiment window." | tee research-results/training-matrix.txt
+          for market in EURUSD BTCUSD XAUUSD; do
+            for profile in balanced strict advanced institutional; do
+              for session in ALL LONDON NEW_YORK LONDON_NEW_YORK_OVERLAP TOKYO SYDNEY OFF_SESSION; do
+                echo "===== market=$market profile=$profile session=$session =====" | tee -a research-results/training-matrix.txt
+                MARKET="$market" SIGNAL_PROFILE="$profile" BACKTEST_SESSION="$session" node src/backtest.js 2>&1 | tee -a research-results/training-matrix.txt
+              done
+            done
+          done
+          echo "Training experiments complete. No holdout result is included in this artifact." | tee -a research-results/training-matrix.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: forex-sniper-training-experiments
+          path: research-results/
+          retention-days: 30
