@@ -43,7 +43,7 @@ function classifyItem(item, market, sourceUrl, now, maxAgeMs) {
   return {
     market, direction: buy ? "BUY" : "SELL", timestamp: new Date(timestamp).toISOString(),
     source: feed.hostname, url: article.toString(), title: title.slice(0, 240),
-    evidenceType: "PUBLIC_RSS_IDEA_MENTION", sourceVerified: true, traderIdentityVerified: false
+    evidenceType: "PUBLIC_RSS_IDEA_MENTION", httpsSourceConfigured: true, traderIdentityVerified: false
   };
 }
 export function parsePublicIdeaFeed(xml, { market, sourceUrl, now = Date.now(), maxAgeMs = 24 * 60 * 60 * 1000 } = {}) {
@@ -56,11 +56,11 @@ export function summarizePublicTraderEvidence(ideas = []) {
   const buy = unique.filter(idea => idea.direction === "BUY").length;
   const sell = unique.filter(idea => idea.direction === "SELL").length;
   return {
-    status: unique.length ? "ADVISORY_PUBLIC_IDEAS_FOUND" : "NO_VERIFIED_PUBLIC_IDEAS",
+    status: unique.length ? "ADVISORY_PUBLIC_IDEAS_FOUND" : "NO_MATCHING_PUBLIC_IDEAS",
     total: unique.length, buy, sell,
     consensus: buy > sell ? "BUY" : sell > buy ? "SELL" : "MIXED_OR_NONE",
     ideas: unique, mayOverrideValidation: false,
-    identityWarning: "Feed publication and source domain are checked; individual trader identity and performance are not verified."
+    identityWarning: "Configured HTTPS feed and same-host article link are checked; publisher authenticity, trader identity and performance are not independently verified."
   };
 }
 export async function fetchPublicTraderEvidence(market, {
