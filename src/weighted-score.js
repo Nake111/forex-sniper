@@ -96,10 +96,11 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
     : score >= 75 && coverage >= 70 ? "ELIGIBLE_FOR_RISK_GATE"
       : score >= 65 && coverage >= 70 ? "WATCHLIST" : "REJECTED";
   return {
-    market, direction: side ?? "NO SETUP", score, coverage, maxScore: 100,
+    market, direction: side ?? "NO SETUP", score, candidateStrength: score, coverage, maxScore: 100,
+    decision: "CANDIDATE_ONLY", approved: false, riskApprovalRequired: true,
     threshold: { eligible: 75, watchlist: 65, minimumCoverage: 70 },
     components, hardBlockers, advisories, status,
-    note: "Weighted score is a research filter, not a probability of winning. Hard risk gates always override it."
+    note: "Candidate strength only; this score never approves a trade. Independent quote, news, entry and risk gates must approve separately."
   };
 }
 
