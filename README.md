@@ -12,6 +12,42 @@ A Node.js market-analysis and paper-signal project for EUR/USD, BTC/USD and XAU/
 
 Safety: this project is analysis-only. It does not connect to Vantage or place live orders. A BUY/SELL output is not a guarantee of profitability. Validate performance with realistic spreads, commissions, slippage and out-of-sample testing before risking money.
 
+## ChatGPT "run signal" integration
+
+A Railway Function named `forex-sniper-chat-action-bridge` provides the authenticated API for a Custom GPT Action. It requests the existing GitHub Actions pipeline, tracks that exact run by request ID, and returns a fail-closed view of the published paper signals.
+
+**Bridge URL:** https://forex-sniper-chat-action-bridge-production.up.railway.app
+
+### Required one-time secrets
+
+Set these two variables on the Railway service (Railway → project `forex-sniper-live-feed` → service `forex-sniper-chat-action-bridge` → Variables):
+
+1. `CHATGPT_ACTION_SECRET`: generate a long random secret (at least 32 random bytes). This is the Bearer key used by the Custom GPT Action.
+2. `GITHUB_ACTIONS_TOKEN`: a fine-grained GitHub token scoped only to `Nake111/forex-sniper`, with **Actions: Read and write** and **Contents: Read-only**. It is used only to dispatch the existing workflow, inspect its run, and read `dashboard/data/signals.json`. Never commit it or paste it into a chat.
+
+After setting variables, wait for Railway to redeploy the function. The endpoints intentionally return HTTP 503 until both secrets exist.
+
+### Configure the Custom GPT Action
+
+1. Create or edit a Custom GPT and open **Configure → Actions → Create new action**.
+2. Import `docs/chatgpt-action-openapi.yaml`.
+3. Set Authentication to **API Key → Bearer**, and enter the same value used for Railway's `CHATGPT_ACTION_SECRET`.
+4. Save the action. Add the operating instructions from `docs/chatgpt-gpt-instructions.md` to the GPT's Instructions.
+5. Test `POST /run-signal`, poll `GET /status/{request_id}` until the workflow completes, then call `GET /latest`.
+
+The normal chat cannot invoke this endpoint until it is running inside the Custom GPT with the Action configured. Do not claim a workflow was triggered unless the API returns a request ID. A completed workflow with a failed conclusion is not a fresh signal.
+
+### Safety contract
+
+- Markets: EUR/USD, BTC/USD and XAU/USD.
+- Mode: `PAPER_RESEARCH_ONLY`; no broker integration or live orders.
+- The API only returns BUY/SELL when the published market decision, explicit paper approval, analysis-cycle identity, fresh provider-timestamped bid/ask, quote validation and watchdog state all pass.
+- Otherwise it returns `NO APPROVED TRADE` with blockers and null entry/stop/target levels.
+- A paper plan is a timestamped reference, not a broker-executable price. Recheck price and spread manually before any independent decision.
+- Never bypass calendar, spread, trigger, quote, data or risk gates.
+
+OpenAPI Action schema: [docs/chatgpt-action-openapi.yaml](docs/chatgpt-action-openapi.yaml). GPT operating instructions: [docs/chatgpt-gpt-instructions.md](docs/chatgpt-gpt-instructions.md).
+
 ## Economic calendar status
 
 The automated economic calendar uses the public, no-key ShowMyTrades calendar endpoint:
@@ -136,15 +172,13 @@ A HOLD / NO TRADE result remains correct when confirmation or risk checks fail. 
 
 The browser dashboard is available in dashboard/. Its supplemental BTC quant view uses public market-data streams. Deterministic votes are indicators, not proof of profitability. Paper trading only; no live orders, wallet connection, deposits or withdrawals are supported.
 
-
 ## Investing.com secondary reference
 
 The dashboard includes manual links to Investing.com for EUR/USD, Bitcoin and gold as an independent visual cross-check. This is not an automated data feed: Investing.com states it does not offer a public API. The project does not scrape its pages or feed displayed quotes into agent calculations. A reviewer should compare the same instrument, quote type and timestamp; any discrepancy is a data-quality warning only. Existing validated candle providers remain the engine's source of market data. Do not use this reference panel to override candle freshness, economic-calendar, consensus or risk gates.
 
-
 ## Optional 24/7 quote monitor
 
-The legacy Railway-hosted quote monitor may still be deployed separately for diagnostics, but it is not a dependency of the GitHub signal workflow. The scheduled analysis obtains market quotes directly from Biquote (EUR/USD and XAU/USD) and Coinbase Exchange (BTC/USD), with Twelve Data as a validated fallback. The workflow does not set `REALTIME_FEED_URL`. The signal engine still fails closed when no fresh provider-timestamped quote is available.
+The legacy Railway-hosted quote monitor may still be deployed separately for diagnostics, but it is not a dependency of the GitHub signal workflow. The scheduled analysis obtains market quotes directly from Biquote (EUR/USD and XAU/USD) and Coinbase Exchange (BTC/USD), with Twelve Data as a validated fallback. The workflow does not set REALTIME_FEED_URL. The signal engine still fails closed when no fresh provider-timestamped quote is available.
 
 ## Manual execution mode (user executes)
 
@@ -160,14 +194,12 @@ Forex Sniper is configured for **manual execution by the user**. No broker conne
 
 This is the intended operating mode until the user explicitly requests and separately configures a broker integration.
 
-
 ## Fast stale-data recovery and public idea context
 
 Before final indicator calculation, the signal pipeline checks the latest closed M5, M15, H1 and H4 candles. If one or more frames are stale, it invokes the existing provider-backed incremental downloader for that market, retries at most twice with a bounded timeout, reloads all frames and recomputes the complete downstream analysis. If freshness is not restored, the stale-data gate remains blocked; a refresh never approves a trade by itself.
 
-Optional public idea corroboration can be enabled with the repository/environment variable `PUBLIC_TRADER_RSS_URLS`, containing up to three comma-separated HTTPS RSS/Atom feed URLs from public market-idea publishers. The parser accepts recent, unambiguous mentions for EUR/USD, BTC/USD or XAU/USD and same-host HTTPS article links. Without configured feeds, the report explicitly shows `NOT_CONFIGURED`.
+Optional public idea corroboration can be enabled with the repository/environment variable PUBLIC_TRADER_RSS_URLS, containing up to three comma-separated HTTPS RSS/Atom feed URLs from public market-idea publishers. The parser accepts recent, unambiguous mentions for EUR/USD, BTC/USD or XAU/USD and same-host HTTPS article links. Without configured feeds, the report explicitly shows NOT_CONFIGURED.
 
 Public-feed direction counts are context only. A publisher domain and article timestamp can be checked, but individual trader identity, track record, entry quality and profitability are not verified. This evidence never changes the engine candidate and cannot override quote, calendar, timeframe, entry, spread, stop-loss, risk/reward or approval gates. Do not put private or paid feed credentials in a public repository; use encrypted repository secrets or deployment environment variables.
 
-
-The public-idea research adapter uses the free public TradingView Trading Ideas RSS feed (`https://www.tradingview.com/feed/`) by default, so it can operate without an API key or paid subscription. Set `PUBLIC_TRADER_RSS_URLS` to override the default with up to three comma-separated HTTPS RSS/Atom feeds. Feed mentions are unverified public commentary, not verified trades or a validated trader track record; the evidence is advisory only.
+The public-idea research adapter uses the free public TradingView Trading Ideas RSS feed (https://www.tradingview.com/feed/) by default, so it can operate without an API key or paid subscription. Set PUBLIC_TRADER_RSS_URLS to override the default with up to three comma-separated HTTPS RSS/Atom feeds. Feed mentions are unverified public commentary, not verified trades or a validated trader track record; the evidence is advisory only.
