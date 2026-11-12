@@ -25,21 +25,22 @@ function candleTime(candle) {
 
 function estimateCost(market, midpoint) {
   const suffix = market.toUpperCase();
+  const defaults = { EURUSD: 0.1, BTCUSD: 2, XAUUSD: 2 };
   const slippageBpsRaw = process.env[`PAPER_ESTIMATED_SLIPPAGE_BPS_${suffix}`];
   const commissionBpsRaw = process.env[`PAPER_ESTIMATED_COMMISSION_BPS_${suffix}`];
-  const slippageBps = slippageBpsRaw === undefined ? null : Number(slippageBpsRaw);
+  const slippageBps = slippageBpsRaw === undefined ? defaults[suffix] ?? null : Number(slippageBpsRaw);
   const commissionBps = commissionBpsRaw === undefined ? null : Number(commissionBpsRaw);
   const validSlip = finite(slippageBps) && slippageBps >= 0 ? slippageBps : null;
   const validCommission = finite(commissionBps) && commissionBps >= 0 ? commissionBps : null;
   return {
-    estimatedSlippageBps: validSlip,
-    estimatedSlippagePrice: validSlip !== null && finite(midpoint) ? round(midpoint * validSlip / 10000) : null,
-    estimatedCommissionBps: validCommission,
-    estimatedCommissionPrice: validCommission !== null && finite(midpoint) ? round(midpoint * validCommission / 10000) : null,
+    estimatedSlippageBpsPerSide: validSlip,
+    estimatedSlippagePricePerSide: validSlip !== null && finite(midpoint) ? round(midpoint * validSlip / 10000) : null,
+    estimatedCommissionBpsRoundTrip: validCommission,
+    estimatedCommissionPriceRoundTrip: validCommission !== null && finite(midpoint) ? round(midpoint * validCommission / 10000) : null,
     observedSlippage: null,
     executionFill: null,
     actualCommission: null,
-    note: "Estimated costs are assumptions; observed slippage, fills and broker commission are unavailable without an execution venue."
+    note: "Default slippage assumptions per side: EURUSD 0.1 bps, BTCUSD 2 bps, XAUUSD 2 bps; override with PAPER_ESTIMATED_SLIPPAGE_BPS_<MARKET>. Estimated only, not observed fills. Commission is null unless configured."
   };
 }
 
