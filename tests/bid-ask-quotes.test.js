@@ -19,7 +19,7 @@ test("normalizes Kraken XBT/USD order-book bid/ask without claiming provider tim
   assert.equal(quote.ask, 70000.2);
   assert.equal(quote.timestampQuality, "RECEIVED_AT_ONLY");
   assert.equal(validateBidAskQuote(quote, { now }).valid, false);
-  assert.match(validateBidAskQuote(quote, { now }).reason, /provider-supplied quote timestamp/);
+  assert.match(validateBidAskQuote(quote, { now }).reason, /Provider-supplied quote timestamp/);
 });
 
 test("rejects crossed, stale and missing quotes", () => {
