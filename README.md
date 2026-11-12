@@ -159,3 +159,12 @@ Forex Sniper is configured for **manual execution by the user**. No broker conne
 - Keep all existing signal, quote-freshness, calendar, entry-confirmation and risk gates unchanged. Manual execution is not permission to bypass a rejected signal or force a BUY/SELL.
 
 This is the intended operating mode until the user explicitly requests and separately configures a broker integration.
+
+
+## Fast stale-data recovery and public idea context
+
+Before final indicator calculation, the signal pipeline checks the latest closed M5, M15, H1 and H4 candles. If one or more frames are stale, it invokes the existing provider-backed incremental downloader for that market, retries at most twice with a bounded timeout, reloads all frames and recomputes the complete downstream analysis. If freshness is not restored, the stale-data gate remains blocked; a refresh never approves a trade by itself.
+
+Optional public idea corroboration can be enabled with the repository/environment variable `PUBLIC_TRADER_RSS_URLS`, containing up to three comma-separated HTTPS RSS/Atom feed URLs from public market-idea publishers. The parser accepts recent, unambiguous mentions for EUR/USD, BTC/USD or XAU/USD and same-host HTTPS article links. Without configured feeds, the report explicitly shows `NOT_CONFIGURED`.
+
+Public-feed direction counts are context only. A publisher domain and article timestamp can be checked, but individual trader identity, track record, entry quality and profitability are not verified. This evidence never changes the engine candidate and cannot override quote, calendar, timeframe, entry, spread, stop-loss, risk/reward or approval gates. Do not put private or paid feed credentials in a public repository; use encrypted repository secrets or deployment environment variables.
