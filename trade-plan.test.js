@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { finalAction, tradePlan } from "./src/trade-plan.js";
+import { finalAction, repriceIndicativePlan, tradePlan } from "./src/trade-plan.js";
 
 const market = { close: 1.12390, atr14: 0.000374, lastCandle: { open: 1.12370, high: 1.12400, low: 1.12360, close: 1.12390 } };
 const sellMarket = { close: 1.12370, atr14: market.atr14, lastCandle: { open: 1.12400, high: 1.12410, low: 1.12360, close: 1.12370 } };
@@ -45,4 +45,35 @@ test("Missing or directionally invalid M5 entry trigger blocks a plan", () => {
 test("Invalid ATR or missing confirmation blocks a plan", () => {
   assert.equal(tradePlan("BUY", { ...market, atr14: 0 }, { status: "H1 ALIGNED" }), null);
   assert.equal(tradePlan("BUY", market, null), null);
+});
+
+const buyPlan = {
+  market: "EURUSD", direction: "BUY", entry: 1.1, stopLoss: 1.098, takeProfit: 1.104,
+  riskReward: "1:2.0", riskRewardValue: 2, executable: false
+};
+
+test("reprice uses the ask for a buy and keeps stop and target", () => {
+  const priced = repriceIndicativePlan(buyPlan, { bid: 1.09998, ask: 1.10002 });
+  assert.equal(priced.liveEntry, 1.10002);
+  assert.equal(priced.indicativeEntry, 1.1);
+  assert.equal(priced.stopLoss, 1.098);
+  assert.equal(priced.takeProfit, 1.104);
+  assert.equal(priced.repriceStatus, "REPRICED");
+  assert.ok(priced.riskRewardValue < 2);
+  assert.equal(priced.executable, false);
+});
+
+test("reprice uses the bid for a sell", () => {
+  const priced = repriceIndicativePlan({
+    ...buyPlan, direction: "SELL", entry: 1.1, stopLoss: 1.102, takeProfit: 1.096
+  }, { bid: 1.09998, ask: 1.10002 });
+  assert.equal(priced.liveEntry, 1.09998);
+  assert.ok(priced.riskRewardValue < 2);
+});
+
+test("reprice invalidates a crossed quote and a quote through the stop", () => {
+  assert.equal(repriceIndicativePlan(buyPlan, { bid: 1.11, ask: 1.10 }).repriceStatus, "INVALIDATED");
+  const through = repriceIndicativePlan(buyPlan, { bid: 1.0974, ask: 1.0975 });
+  assert.equal(through.repriceStatus, "INVALIDATED");
+  assert.equal(through.riskRewardValue, null);
 });
