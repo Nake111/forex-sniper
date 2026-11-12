@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T17:09:12.783Z",
+  "generatedAt": "2026-11-12T17:13:40.657Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
-    "signals": 0,
+    "signals": 1,
     "resolved": 0,
-    "pending": 0,
+    "pending": 1,
     "wins": 0,
     "losses": 0,
     "timeouts": 0,
@@ -18,9 +18,94 @@
     "profitFactor": 0,
     "sampleWarning": "Small sample: do not rank this strategy as proven."
   },
-  "byStrategy": {},
-  "byMarket": {},
-  "bySession": {},
-  "byProfile": {},
-  "records": []
+  "byStrategy": {
+    "TREND_CONTINUATION": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    }
+  },
+  "byMarket": {
+    "EURUSD": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    }
+  },
+  "bySession": {
+    "NEW_YORK": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    }
+  },
+  "byProfile": {
+    "balanced": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    }
+  },
+  "records": [
+    {
+      "signalId": "SIGNAL:EURUSD:SELL:1794503100000",
+      "market": "EURUSD",
+      "side": "SELL",
+      "createdAt": 1794503586706,
+      "strategy": {
+        "profile": "balanced",
+        "strategyId": "TREND_CONTINUATION",
+        "strategyName": "TREND_CONTINUATION",
+        "setupTier": "A+",
+        "session": "NEW_YORK",
+        "marketRegime": "BEAR_TREND",
+        "weightedScore": 100,
+        "scoreCoverage": 100
+      },
+      "outcome": "PENDING",
+      "resolvedAt": null,
+      "grossR": null,
+      "netEstimatedR": null
+    }
+  ]
 }
