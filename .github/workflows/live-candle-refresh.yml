@@ -22,6 +22,8 @@ on:
       - "src/entry-verification-agent.test.js"
       - "src/second-brain.js"
       - "src/download.js"
+      - "src/fdn-data.js"
+      - "tests/fdn-data.test.js"
       - "src/index.js"
       - "src/market-intelligence-agent.js"
       - "src/signal-approval-agent.js"
@@ -104,6 +106,8 @@ jobs:
           DOWNLOAD_CONCURRENCY: "6"
           BTC_DATA_PREFIX: "kraken-btcusd"
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          FDN_API_KEY: ${{ secrets.FDN_API_KEY }}
+          FDN_MAX_PAGES: "1"
           DUKASCOPY_BATCH_SIZE: "8"
           DUKASCOPY_BATCH_PAUSE_MS: "150"
           DUKASCOPY_REQUEST_INTERVAL_MS: "120"
