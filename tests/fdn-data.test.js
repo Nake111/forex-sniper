@@ -11,7 +11,7 @@ test("normalizes FinancialData.Net UTC minute candles and filters the open minut
     low: 1.099 + i * 0.0001, close: 1.1005 + i * 0.0001, volume: 10 + i
   }));
   const result = await fetchFdnMinuteCandles("EURUSD", {
-    apiKey: "test-key", now, fetchImpl: async url => {
+    apiKey: "  test-key  ", now, fetchImpl: async url => {
       assert.equal(new URL(url).searchParams.get("identifier"), "EURUSD");
       assert.equal(new URL(url).searchParams.get("key"), "test-key");
       return { ok: true, json: async () => rows };
@@ -38,4 +38,28 @@ test("resamples only complete consecutive M1 groups", () => {
 test("does not pretend unsupported markets have FDN minute coverage", async () => {
   const result = await fetchFdnMinuteCandles("XAUUSD", { apiKey: "test" });
   assert.equal(result.status, "UNSUPPORTED_MARKET");
+});
+
+
+test("diagnoses a minute-endpoint 401 separately from a rejected API key", async () => {
+  const requested = [];
+  const result = await fetchFdnMinuteCandles("BTCUSD", {
+    apiKey: " test-key ",
+    now: Date.parse("2026-11-12T12:05:30Z"),
+    fetchImpl: async url => {
+      const parsed = new URL(url);
+      requested.push(parsed.pathname);
+      if (parsed.pathname.endsWith("/crypto-minute-prices")) {
+        return { ok: false, status: 401 };
+      }
+      if (parsed.pathname.endsWith("/stock-symbols")) {
+        return { ok: true, status: 200, json: async () => [{ trading_symbol: "A" }] };
+      }
+      throw new Error("Unexpected endpoint");
+    }
+  });
+  assert.equal(result.status, "UNAVAILABLE");
+  assert.match(result.error, /API key accepted by the free stock-symbols endpoint/);
+  assert.deepEqual(requested, ["/api/v1/crypto-minute-prices", "/api/v1/stock-symbols"]);
+  assert.equal(result.error.includes("test-key"), false);
 });
