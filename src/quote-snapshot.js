@@ -27,7 +27,10 @@ export function createQuoteSnapshot(quote, market, now = Date.now()) {
     receiveAgeMs: receiveAgeMs === null ? null : Math.max(0, receiveAgeMs),
     quote: frozenQuote,
     validation: { valid, snapshotId, ageMs: ageMs === null ? null : Math.max(0, ageMs), spread: valid ? quote.ask - quote.bid : null,
-      reason: blockers.join("; ") || null, timestampQuality: quote?.timestampQuality ?? "UNKNOWN" },
+      reason: blockers.join("; ") || null, timestampQuality: quote?.timestampQuality ?? "UNKNOWN",
+      bid: valid ? quote.bid : null, ask: valid ? quote.ask : null,
+      timestamp: valid ? quote.timestamp : null, receivedAt: valid ? quote.receivedAt : null,
+      source: valid ? quote.source : null, venue: valid ? quote.venue : null },
     blockers
   };
 }
