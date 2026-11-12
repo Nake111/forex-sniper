@@ -46,8 +46,11 @@ test("paper journal is append-only, stores validated quote evidence, and resolve
     const outcome = saved.find(row => row.eventType === "PAPER_OUTCOME" && row.outcome === "WIN");
     assert.ok(outcome);
     assert.ok(outcome.grossR > 1.9);
-    assert.ok(outcome.estimatedCostR > 0);
-    assert.ok(outcome.netEstimatedR < outcome.grossR);
+    assert.ok(outcome.estimatedSpreadAndSlippageCostR > 0);
+    assert.ok(outcome.netEstimatedRExcludingCommission < outcome.grossR);
+    assert.equal(outcome.estimatedCommissionCostR, null);
+    assert.equal(outcome.estimatedAllInCostR, null);
+    assert.equal(outcome.netEstimatedR, null);
     assert.equal(outcome.actualFill, null);
     assert.equal(outcome.observedSlippage, null);
   } finally {
