@@ -7,11 +7,26 @@ const text = await readFile(reportPath, "utf8");
 const now = Date.now();
 const maxReportAgeMs = Number(process.env.MAX_SIGNAL_REPORT_AGE_MS ?? 10 * 60 * 1000);
 const generatedMatch = text.match(/Generated UTC:\s*(.+)/);
+const cycleUtcMatch = text.match(/Analysis cycle UTC:\s*(.+)/);
+const cycleSloveniaMatch = text.match(/Analysis cycle Slovenia:\s*(.+)/);
+const timezoneMatch = text.match(/Analysis timezone:\s*(.+)/);
 const generatedAt = generatedMatch ? new Date(generatedMatch[1].trim().replace(" ", "T") + "Z") : null;
+const analysisCycleAt = cycleUtcMatch ? new Date(cycleUtcMatch[1].trim()) : null;
+const analysisCycleSlovenia = cycleSloveniaMatch?.[1]?.trim() ?? null;
 if (!generatedAt || !Number.isFinite(generatedAt.getTime())) {
   throw new Error("Signal report has no valid Generated UTC timestamp");
 }
+if (!analysisCycleAt || !Number.isFinite(analysisCycleAt.getTime()) ||
+    !analysisCycleSlovenia || timezoneMatch?.[1]?.trim() !== "Europe/Ljubljana") {
+  throw new Error("Signal report is missing the shared Europe/Ljubljana analysis-cycle timestamp");
+}
 const reportAgeMs = now - generatedAt.getTime();
+const analysisCycle = {
+  id: analysisCycleAt.toISOString(),
+  timestampUtc: analysisCycleAt.toISOString(),
+  timestampSlovenia: analysisCycleSlovenia,
+  timeZone: "Europe/Ljubljana"
+};
 if (reportAgeMs < -60_000 || reportAgeMs > maxReportAgeMs) {
   throw new Error(`Signal report is stale or future-dated: age=${reportAgeMs}ms`);
 }
@@ -42,6 +57,9 @@ function numberAfter(section, label) {
 const output = {
   schemaVersion: 1,
   generatedAt: new Date(now).toISOString(),
+  generatedAtSlovenia: new Date(now).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),
+  timeZone: "Europe/Ljubljana",
+  analysisCycle,
   sourceReportGeneratedAt: generatedAt.toISOString(),
   sourceReportAgeSeconds: Math.round(reportAgeMs / 1000),
   refreshTarget: "5 minutes; GitHub Actions schedule can be delayed",
@@ -116,7 +134,9 @@ for (const market of markets) {
         ...(verification.blockers ?? [])
       ].filter((value, index, all) => typeof value === "string" && all.indexOf(value) === index)
     },
-    generatedAt: new Date(now).toISOString()
+    generatedAt: new Date(now).toISOString(),
+    generatedAtSlovenia: new Date(now).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),
+    analysisCycle
   };
 }
 
