@@ -122,3 +122,30 @@ test("manual paper approval still rejects real market-risk blockers", () => {
   assert.equal(approval.approved, false);
   assert.ok(approval.blockers.includes("High-impact economic calendar event"));
 });
+
+
+test("weighted rejection exposes failed components without erasing the candidate", () => {
+  const discovery = buildDiscoveryLayer({ market: "BTCUSD", candidate: "SELL", frames });
+  const verification = buildVerificationLayer({
+    discovery,
+    marketReview: { approved: false, direction: null, blockers: ["M5 trigger missing"] },
+    deterministicFallback: { approved: false, reasons: ["spread too wide"] },
+    agentGate: { approved: false, reasons: ["agent disagreement"] },
+    staleTimeframes: [],
+    macroBlocked: false,
+    spreadVerified: false,
+    weightedScore: {
+      status: "REJECTED", score: 60, coverage: 100,
+      hardBlockers: ["Required closed M5 entry trigger is not confirmed"],
+      components: [
+        { name: "M5_closed_candle_trigger", status: "FAIL", detail: { confirmed: false } },
+        { name: "quote_and_spread", status: "FAIL", detail: { spreadAtr: 0.2 } }
+      ]
+    }
+  });
+  assert.equal(verification.candidate, "SELL");
+  assert.equal(verification.status, "REJECTED");
+  assert.ok(verification.blockers.some(reason => reason.includes("M5_closed_candle_trigger: FAIL")));
+  assert.ok(verification.blockers.some(reason => reason.includes("quote_and_spread: FAIL")));
+  assert.equal(verification.blockers.some(reason => reason === "No directional candidate"), false);
+});
