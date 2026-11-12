@@ -95,7 +95,13 @@
           "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 1.146 ATR from signal reference entry; maximum is 0.2"
+          "Executable-side quote is 1.146 ATR from signal reference entry; maximum is 0.2",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-12T19:19:33.414Z",
@@ -177,7 +183,13 @@
           "M15 buyer/seller pressure proxy conflicts with H1 release",
           "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction"
+          "market-intelligence agent did not independently confirm this direction",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-12T19:19:33.414Z",
@@ -267,7 +279,9 @@
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
           "Executable-side quote is 0.258 ATR from signal reference entry; maximum is 0.2"
-        ]
+        ],
+        "watchdog": "PASS",
+        "watchdogFailures": []
       },
       "generatedAt": "2026-11-12T19:19:33.414Z",
       "generatedAtSlovenia": "2026-11-12 20:19:33",
@@ -276,6 +290,37 @@
         "timestampUtc": "2026-11-12T19:18:44.000Z",
         "timestampSlovenia": "2026-11-12T20:18:44+01:00",
         "timeZone": "Europe/Ljubljana"
+      }
+    }
+  },
+  "watchdog": {
+    "checkedAt": "2026-11-12T19:19:44.562Z",
+    "status": "BLOCKED",
+    "thresholds": {
+      "maxSignalAgeMs": 600000,
+      "maxCandleAgeMs": 600000,
+      "maxQuoteAgeMs": 15000
+    },
+    "globalFailures": [],
+    "markets": {
+      "EURUSD": {
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 284562,
+        "quoteAgeMs": 35562
+      },
+      "BTCUSD": {
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 284562,
+        "quoteAgeMs": 18364
+      },
+      "XAUUSD": {
+        "issues": [],
+        "candleAgeMs": 284562,
+        "quoteAgeMs": 12562
       }
     }
   }
