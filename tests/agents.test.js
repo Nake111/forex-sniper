@@ -97,10 +97,10 @@ test("approval agent rejects missing quote and accepts only complete paper check
   const plan = { entry: 1.1, stopLoss: 1.099, takeProfit: 1.102, riskRewardValue: 2, entryTriggerConfirmed: true };
   const timestamp = Date.now() - 500;
   const quote = { market: "EURUSD", bid: 1.1, ask: 1.1001, timestamp, receivedAt: timestamp,
-    source: "test", venue: "test", snapshotId: "eur-test-snapshot" };
+    source: "test", venue: "test", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "eur-test-snapshot" };
   const base = { candidate: "BUY", marketReview, plan, quote,
     quoteValidation: { valid: true, spread: 0.0001, snapshotId: quote.snapshotId, bid: quote.bid, ask: quote.ask,
-      timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue }, entryAtr: 0.01 };
+      timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue, timestampQuality: quote.timestampQuality, ageMs: 500, checkedAt: Date.now() }, entryAtr: 0.01 };
   assert.equal(runSignalApprovalAgent({ ...base, quote: null }).approved, false);
   assert.equal(runSignalApprovalAgent(base).decision, "BUY");
 });
@@ -114,9 +114,9 @@ test("BTC approval and entry verification use the same 0.25 ATR deviation limit"
   };
   const timestamp = Date.now() - 500;
   const quote = { market: "BTCUSD", bid: 100.21, ask: 100.22, timestamp, receivedAt: timestamp,
-    source: "test", venue: "test", snapshotId: "btc-test-snapshot" };
+    source: "test", venue: "test", timestampQuality: "PROVIDER_TIMESTAMP", snapshotId: "btc-test-snapshot" };
   const quoteValidation = { valid: true, spread: 0.01, ageMs: 100, snapshotId: quote.snapshotId, bid: quote.bid, ask: quote.ask,
-    timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue };
+    timestamp: quote.timestamp, receivedAt: quote.receivedAt, source: quote.source, venue: quote.venue, timestampQuality: quote.timestampQuality, ageMs: 500, checkedAt: Date.now() };
   const approval = runSignalApprovalAgent({
     candidate: "BUY", marketReview, plan, quote, quoteValidation, entryAtr: 1
   });
