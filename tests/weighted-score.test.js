@@ -52,3 +52,24 @@ test("score never overrides a missing mandatory M5 trigger", () => {
   assert.ok(result.hardBlockers.some(reason => reason.includes("M5")));
   assert.equal(result.status, "REJECTED");
 });
+
+test("EURUSD missing venue tick-volume is advisory, not a hard A1 veto", () => {
+  const result = scoreCandidate({
+    market: "EURUSD", direction: "BUY", frames: bullish,
+    marketReview: { m5: { confirmed: true }, orderFlow: { direction: "BUY", strength: 3 } },
+    quoteValidation: { valid: true, spread: 0.0001 }, spreadVerified: true,
+    a1Heart: { status: "UNAVAILABLE", direction: "HOLD" }
+  });
+  assert.equal(result.hardBlockers.some(reason => reason.startsWith("A1 HEART")), false);
+  assert.ok(result.advisories.some(reason => reason.includes("tick-volume")));
+});
+
+test("BTCUSD still requires a ready A1 HEART setup", () => {
+  const result = scoreCandidate({
+    market: "BTCUSD", direction: "BUY", frames: bullish,
+    marketReview: { m5: { confirmed: true }, orderFlow: { direction: "BUY", strength: 3 } },
+    quoteValidation: { valid: true, spread: 0.1 }, spreadVerified: true,
+    a1Heart: { status: "UNAVAILABLE", direction: "HOLD" }
+  });
+  assert.ok(result.hardBlockers.some(reason => reason.startsWith("A1 HEART")));
+});

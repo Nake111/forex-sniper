@@ -78,7 +78,16 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const coverage = availableWeight;
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
-  if (a1Heart?.status !== "READY" || a1Heart?.direction !== side) hardBlockers.push("A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction");
+  const advisories = [];
+  // Spot FX feeds often publish OHLC candles without reliable volume. Do not
+  // manufacture volume or let a missing FX volume field veto every EUR/USD
+  // setup; keep A1 HEART explicitly unavailable/advisory until a real
+  // tick-volume source is supplied. BTC and XAU retain the full A1 hard gate.
+  if (market === "EURUSD" && a1Heart?.status === "UNAVAILABLE") {
+    advisories.push("A1 HEART not scored: EUR/USD feed has insufficient usable venue tick-volume; no volume is inferred or fabricated.");
+  } else if (a1Heart?.status !== "READY" || a1Heart?.direction !== side) {
+    hardBlockers.push("A1 HEART opening-range breakout, volume-profile pullback and absorption confirmation not ready for this direction");
+  }
   if (macroBlocked) hardBlockers.push("Macro/event-risk hard gate is active");
   if (staleTimeframes.length) hardBlockers.push("Stale timeframe data: " + staleTimeframes.join(", "));
   if (!spreadVerified) hardBlockers.push("Fresh bid/ask and market-specific spread/ATR check did not pass");
@@ -89,7 +98,7 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   return {
     market, direction: side ?? "NO SETUP", score, coverage, maxScore: 100,
     threshold: { eligible: 75, watchlist: 65, minimumCoverage: 70 },
-    components, hardBlockers, status,
+    components, hardBlockers, advisories, status,
     note: "Weighted score is a research filter, not a probability of winning. Hard risk gates always override it."
   };
 }
