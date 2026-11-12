@@ -52,9 +52,17 @@ function quality(candles, tf, now) {
 }
 async function main() {
   const now = Date.now();
+  const cycleUtc = process.env.ANALYSIS_CYCLE_UTC;
+  const cycleSlovenia = process.env.ANALYSIS_CYCLE_SLOVENIA;
+  const cycleDate = cycleUtc ? new Date(cycleUtc) : null;
+  if (!cycleDate || !Number.isFinite(cycleDate.getTime()) || !cycleSlovenia) {
+    throw new Error("Missing shared Europe/Ljubljana analysis cycle; refusing dashboard publication");
+  }
+  const analysisCycle = { id: cycleDate.toISOString(), timestampUtc: cycleDate.toISOString(),
+    timestampSlovenia: cycleSlovenia, timeZone: "Europe/Ljubljana" };
   const snapshot = { schemaVersion: 1, generatedAt: new Date(now).toISOString(),
     generatedAtSlovenia: new Date(now).toLocaleString("sv-SE", { timeZone: "Europe/Ljubljana", hour12: false }),
-    timeZone: "Europe/Ljubljana",
+    timeZone: "Europe/Ljubljana", analysisCycle,
     refreshTarget: "5 minutes (GitHub Actions; not a tick stream)", markets: {},
     validation: { status: "PASS", checks: ["valid OHLC", "closed candles only", "sorted and deduplicated timestamps", "minimum 60 bars", "freshness thresholds", "recent interval gaps"] } };
   for (const market of MARKETS) {
