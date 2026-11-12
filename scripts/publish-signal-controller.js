@@ -101,12 +101,32 @@ for (const market of markets) {
     Number.isFinite(entry) && Number.isFinite(stopLoss) &&
     Number.isFinite(takeProfit) && Number.isFinite(riskReward) &&
     riskReward >= 2;
+  const candidate = lineValue(section, "DIRECTIONAL CANDIDATE:") ?? "UNKNOWN";
+  const candidateIsDirectional = candidate === "BUY" || candidate === "SELL";
+  const candidatePlanGeometryValid = candidateIsDirectional &&
+    Number.isFinite(entry) && Number.isFinite(stopLoss) && Number.isFinite(takeProfit) &&
+    (candidate === "BUY"
+      ? stopLoss < entry && takeProfit > entry
+      : stopLoss > entry && takeProfit < entry) &&
+    Number.isFinite(riskReward) && riskReward >= 2;
+  const entryTriggerConfirmed = lineValue(section, "M5 ENTRY TRIGGER CONFIRMED:") === "true";
+  const candidatePlan = candidatePlanGeometryValid ? {
+    status: "INDICATIVE_ONLY_NOT_APPROVED",
+    entry,
+    stopLoss,
+    takeProfit,
+    riskReward,
+    entryTriggerConfirmed,
+    stopMethod: lineValue(section, "STOP METHOD:") ?? "UNSPECIFIED"
+  } : null;
 
   output.markets[market.id] = {
     label: market.id === "XAUUSD" ? "XAU/USD (Gold)" : market.id === "EURUSD" ? "EUR/USD" : "BTC/USD",
     decision: paperApproved ? action : "NO APPROVED TRADE",
     status: paperApproved ? "PAPER_SIGNAL_APPROVED" : "REJECTED_OR_UNVERIFIED",
-    candidate: lineValue(section, "DIRECTIONAL CANDIDATE:") ?? "UNKNOWN",
+    candidate,
+    candidateStatus: paperApproved ? "APPROVED_PAPER_SIGNAL" : candidatePlan ? "WATCHLIST_ONLY_NOT_APPROVED" : "NO_VALID_DIRECTIONAL_PLAN",
+    candidatePlan,
     score: scoreRaw ?? null,
     entry: paperApproved ? entry : null,
     stopLoss: paperApproved ? stopLoss : null,
