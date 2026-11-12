@@ -5,11 +5,13 @@ const btcPrefix = (process.env.BTC_DATA_PREFIX ?? "btcusd").toLowerCase();
 const now = Date.now();
 const cutoff = now - daysBack * 86_400_000;
 const tolerance = 3 * 86_400_000;
+const marketFilter = process.env.MARKET_FILTER?.toUpperCase();
 const markets = [
   { market: "EURUSD", prefix: "eurusd" },
   { market: "BTCUSD", prefix: btcPrefix },
   { market: "XAUUSD", prefix: "xauusd" }
-];
+].filter(item => !marketFilter || item.market === marketFilter);
+if (!markets.length) throw new Error("No markets selected for history coverage validation");
 
 for (const { market, prefix } of markets) {
   for (const timeframe of ["m5", "m15", "h1"]) {
