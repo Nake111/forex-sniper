@@ -210,7 +210,7 @@ const server = http.createServer(async (request, response) => {
     const journalPath = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl";
     try {
       const [info, raw] = await Promise.all([stat(journalPath), readFile(journalPath, "utf8")]);
-      const events = raw.split(/\\r?\\n/).filter(Boolean).map((line, index) => {
+      const events = raw.split("\n").filter(Boolean).map((line, index) => {
         try { return JSON.parse(line); }
         catch { throw new Error(`Invalid JSON in paper journal at line ${index + 1}`); }
       });
