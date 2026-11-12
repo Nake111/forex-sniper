@@ -67,12 +67,14 @@ test("EURUSD missing venue tick-volume is advisory, not a hard A1 veto", () => {
   assert.ok(result.advisories.some(reason => reason.includes("tick-volume")));
 });
 
-test("BTCUSD still requires a ready A1 HEART setup", () => {
+test("BTCUSD can advance independent candidates when A1 HEART is not ready", () => {
   const result = scoreCandidate({
     market: "BTCUSD", direction: "BUY", frames: bullish,
     marketReview: { m5: { confirmed: true }, orderFlow: { direction: "BUY", strength: 3 } },
     quoteValidation: { valid: true, spread: 0.1 }, spreadVerified: true,
     a1Heart: { status: "UNAVAILABLE", direction: "HOLD" }
   });
-  assert.ok(result.hardBlockers.some(reason => reason.startsWith("A1 HEART")));
+  assert.equal(result.hardBlockers.some(reason => reason.startsWith("A1 HEART")), false);
+  assert.ok(result.advisories.some(reason => reason.includes("A1 HEART")));
+  assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
 });
