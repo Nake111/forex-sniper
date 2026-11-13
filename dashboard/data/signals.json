@@ -94,7 +94,17 @@
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.32307692307665636,\"spreadAtrLimit\":0.12,\"passed\":false}",
           "Layer 2 verification did not pass",
-          "Executable-side reward/risk is below 1:2"
+          "Executable-side reward/risk is below 1:2",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T20:24:08.917Z",
@@ -179,7 +189,17 @@
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "Layer 2 verification did not pass"
+          "Layer 2 verification did not pass",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T20:24:08.917Z",
@@ -264,7 +284,17 @@
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "Layer 2 verification did not pass"
+          "Layer 2 verification did not pass",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T20:24:08.917Z",
@@ -274,6 +304,44 @@
         "timestampUtc": "2026-11-13T20:23:43.000Z",
         "timestampSlovenia": "2026-11-13T21:23:43+01:00",
         "timeZone": "Europe/Ljubljana"
+      }
+    }
+  },
+  "watchdog": {
+    "checkedAt": "2026-11-13T21:36:29.573Z",
+    "status": "BLOCKED",
+    "thresholds": {
+      "maxSignalAgeMs": 600000,
+      "maxCandleAgeMs": 600000,
+      "maxQuoteAgeMs": 15000
+    },
+    "globalFailures": [
+      "Signal publication is missing, stale, or future-dated"
+    ],
+    "markets": {
+      "EURUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 4589573,
+        "quoteAgeMs": 4363573
+      },
+      "BTCUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 4589573,
+        "quoteAgeMs": 4349493
+      },
+      "XAUUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 4589573,
+        "quoteAgeMs": 4341573
       }
     }
   }
