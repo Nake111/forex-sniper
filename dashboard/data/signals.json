@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T19:59:29.901Z",
-  "generatedAtSlovenia": "2026-11-12 20:59:29",
+  "generatedAt": "2026-11-13T02:57:12.636Z",
+  "generatedAtSlovenia": "2026-11-13 03:57:12",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-12T19:59:00.000Z",
-    "timestampUtc": "2026-11-12T19:59:00.000Z",
-    "timestampSlovenia": "2026-11-12T20:59:00+01:00",
+    "id": "2026-11-13T02:56:50.000Z",
+    "timestampUtc": "2026-11-13T02:56:50.000Z",
+    "timestampSlovenia": "2026-11-13T03:56:50+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-12T19:59:00.000Z",
-  "sourceReportAgeSeconds": 30,
+  "sourceReportGeneratedAt": "2026-11-13T02:56:50.000Z",
+  "sourceReportAgeSeconds": 23,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -23,20 +23,20 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_NOT_APPROVED",
-        "entry": 1.10556,
-        "signalReferenceEntry": 1.10541,
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+        "entry": 1.10597,
+        "signalReferenceEntry": 1.10595,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 1.10563,
-        "takeProfit": 1.10497,
-        "riskReward": "1:8.25",
-        "riskRewardValue": 8.252481143326504,
-        "entryTriggerConfirmed": true,
+        "stopLoss": 1.10641,
+        "takeProfit": 1.10502,
+        "riskReward": "1:2.14",
+        "riskRewardValue": 2.13505691684292,
+        "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
-      "score": "90/100 candidate strength · 100% evidence coverage",
+      "score": "50/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
-        "score": 90,
+        "score": 50,
         "maxScore": 100,
         "evidenceCoveragePct": 100,
         "label": "Candidate strength",
@@ -60,12 +60,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.10556,
-        "ask": 1.10562,
+        "bid": 1.10597,
+        "ask": 1.10603,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794513556000,
+        "timestamp": 1794538621000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 3871,
+        "ageMs": 5020,
         "validated": true
       },
       "agents": {
@@ -78,34 +78,27 @@
         "layer3": "REJECTED",
         "blockers": [
           "Fresh bid/ask and market-specific spread/ATR check did not pass",
-          "Spread/ATR 0.2252 exceeds EURUSD limit 0.12",
+          "Spread/ATR 0.2968 exceeds EURUSD limit 0.12",
+          "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
-          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.22520107238588025,\"spreadAtrLimit\":0.12,\"passed\":false}",
+          "M15_momentum: FAIL — {\"rsi14\":50.98395509901225,\"macdHistogram\":0.0000964705716909654}",
+          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
+          "quote_and_spread: FAIL — {\"spread\":0.00006000000000017103,\"spreadAtr\":0.29681978798672354,\"spreadAtrLimit\":0.12,\"passed\":false}",
           "Layer 2 verification did not pass",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "EURUSD spread/ATR 0.2252 exceeds the 0.12 limit",
-          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
+          "EURUSD spread/ATR 0.2968 exceeds the 0.12 limit",
+          "M5 closed candle does not confirm the higher-timeframe direction",
+          "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.563 ATR from signal reference entry; maximum is 0.2",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
-        ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
+          "market-intelligence agent did not independently confirm this direction"
         ]
       },
-      "generatedAt": "2026-11-12T19:59:29.901Z",
-      "generatedAtSlovenia": "2026-11-12 20:59:29",
+      "generatedAt": "2026-11-13T02:57:12.636Z",
+      "generatedAtSlovenia": "2026-11-13 03:57:12",
       "analysisCycle": {
-        "id": "2026-11-12T19:59:00.000Z",
-        "timestampUtc": "2026-11-12T19:59:00.000Z",
-        "timestampSlovenia": "2026-11-12T20:59:00+01:00",
+        "id": "2026-11-13T02:56:50.000Z",
+        "timestampUtc": "2026-11-13T02:56:50.000Z",
+        "timestampSlovenia": "2026-11-13T03:56:50+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -119,13 +112,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 71613.25,
-        "signalReferenceEntry": 71604.4,
+        "entry": 70276.43,
+        "signalReferenceEntry": 70184.8,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 71806.55,
-        "takeProfit": 71200.09,
-        "riskReward": "1:2.14",
-        "riskRewardValue": 2.137349237318287,
+        "stopLoss": 70495.57,
+        "takeProfit": 69563.26,
+        "riskReward": "1:3.25",
+        "riskRewardValue": 3.2544035776213964,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -155,12 +148,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 71613.25,
-        "ask": 71613.26,
+        "bid": 70276.43,
+        "ask": 70276.44,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794513562751,
+        "timestamp": 1794538627122,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1513,
+        "ageMs": 1564,
         "validated": true
       },
       "agents": {
@@ -177,25 +170,17 @@
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "Layer 2 verification did not pass",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
-        ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
+          "Executable-side quote is 0.531 ATR from signal reference entry; maximum is 0.25"
         ]
       },
-      "generatedAt": "2026-11-12T19:59:29.901Z",
-      "generatedAtSlovenia": "2026-11-12 20:59:29",
+      "generatedAt": "2026-11-13T02:57:12.636Z",
+      "generatedAtSlovenia": "2026-11-13 03:57:12",
       "analysisCycle": {
-        "id": "2026-11-12T19:59:00.000Z",
-        "timestampUtc": "2026-11-12T19:59:00.000Z",
-        "timestampSlovenia": "2026-11-12T20:59:00+01:00",
+        "id": "2026-11-13T02:56:50.000Z",
+        "timestampUtc": "2026-11-13T02:56:50.000Z",
+        "timestampSlovenia": "2026-11-13T03:56:50+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -208,15 +193,15 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 3884.15,
-        "signalReferenceEntry": 3883.81,
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+        "entry": 3909.16,
+        "signalReferenceEntry": 3909.23,
         "entryReference": "ASK (validated executable-side quote)",
-        "stopLoss": 3877.4,
-        "takeProfit": 3896.63,
-        "riskReward": "1:1.85",
-        "riskRewardValue": 1.8485288602150698,
-        "entryTriggerConfirmed": true,
+        "stopLoss": 3904.27,
+        "takeProfit": 3919.13,
+        "riskReward": "1:2.04",
+        "riskRewardValue": 2.039547356860469,
+        "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
       "score": "55/100 candidate strength · 100% evidence coverage",
@@ -245,12 +230,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3883.981,
-        "ask": 3884.149,
+        "bid": 3908.993,
+        "ask": 3909.161,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794513569000,
+        "timestamp": 1794538632000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 656,
+        "ageMs": 528,
         "validated": true
       },
       "agents": {
@@ -262,79 +247,26 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "Macro/event-risk hard gate is active",
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "Layer 2 verification did not pass",
-          "Calendar feed is available; no relevant event is inside the configured protection window.",
           "Economic/news risk is HIGH",
-          "Recent high-impact headlines require caution; elevated H1 volatility (ATR14/baseline 1.84); secondary calendar is unavailable; risk veto remains active until both checks are clear.",
+          "Gold H1 and M15 trend do not align",
           "Gold M5 trigger candle does not confirm H1/M15 direction",
-          "Independent market-intelligence direction conflicts with candidate",
-          "Risk/reward is below 1:2",
+          "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2",
-          "Executable-side reward/risk is below 1:2",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
-        ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
+          "market-intelligence agent did not independently confirm this direction"
         ]
       },
-      "generatedAt": "2026-11-12T19:59:29.901Z",
-      "generatedAtSlovenia": "2026-11-12 20:59:29",
+      "generatedAt": "2026-11-13T02:57:12.636Z",
+      "generatedAtSlovenia": "2026-11-13 03:57:12",
       "analysisCycle": {
-        "id": "2026-11-12T19:59:00.000Z",
-        "timestampUtc": "2026-11-12T19:59:00.000Z",
-        "timestampSlovenia": "2026-11-12T20:59:00+01:00",
+        "id": "2026-11-13T02:56:50.000Z",
+        "timestampUtc": "2026-11-13T02:56:50.000Z",
+        "timestampSlovenia": "2026-11-13T03:56:50+01:00",
         "timeZone": "Europe/Ljubljana"
-      }
-    }
-  },
-  "watchdog": {
-    "checkedAt": "2026-11-13T00:36:09.871Z",
-    "status": "BLOCKED",
-    "thresholds": {
-      "maxSignalAgeMs": 600000,
-      "maxCandleAgeMs": 600000,
-      "maxQuoteAgeMs": 15000
-    },
-    "globalFailures": [
-      "Signal publication is missing, stale, or future-dated"
-    ],
-    "markets": {
-      "EURUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 16869871,
-        "quoteAgeMs": 16613871
-      },
-      "BTCUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 16869871,
-        "quoteAgeMs": 16607120
-      },
-      "XAUUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 16869871,
-        "quoteAgeMs": 16600871
       }
     }
   }
