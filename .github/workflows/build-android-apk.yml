@@ -1,5 +1,6 @@
 name: Build private Android APK
 
+# Rebuild after correcting Expo SDK validation and embedding the JS bundle.
 on:
   workflow_dispatch:
   push:
@@ -43,7 +44,7 @@ jobs:
           ./gradlew assembleRelease
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          unzip -l "$APK" | grep -E 'assets/index.android.bundle|assets/.+\.bundle' 
+          unzip -l "$APK" | grep -E 'assets/index.android.bundle|assets/.+\\.bundle'
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
