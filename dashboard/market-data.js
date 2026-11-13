@@ -89,8 +89,6 @@
           :"Candidate "+(item.candidate||"unknown");
         const planText=item.candidatePlan
           ?(item.signalGrade==="A"?"Approved paper entry ":"Indicative entry — NOT APPROVED ")+item.candidatePlan.entry+" ("+(item.candidatePlan.entryReference??"quote")+") · SL "+item.candidatePlan.stopLoss+" · TP "+item.candidatePlan.takeProfit+" · R:R "+item.candidatePlan.riskReward
-          :"Entry / SL / TP unavailable: no complete validated quote-based plan";
-          ?"Entry "+item.entry+" ("+(item.candidatePlan?.entryReference??"quote")+") · SL "+item.stopLoss+" · TP "+item.takeProfit+" · R:R "+item.riskReward
           :strength+"\\n"+((item.verification?.blockers||[]).slice(0,3).join("; ")||"Independent approval not passed");
         details.textContent=planText;
         const quote=document.createElement("div");quote.style.cssText="font-size:10px;color:#8291a8;margin-top:8px";
