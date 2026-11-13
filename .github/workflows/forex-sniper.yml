@@ -2,15 +2,17 @@ name: Forex Sniper Analysis
 
 on:
   schedule:
-    - cron: "0 2 * * 0"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
+# Never interrupt an active analysis. GitHub keeps at most one pending run
+# per concurrency group, so a slow run can cause skipped schedule slots.
 concurrency:
-  group: forex-sniper-${{ github.ref }}
-  cancel-in-progress: true
+  group: forex-sniper-main
+  cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   analyse:
@@ -18,20 +20,55 @@ jobs:
     timeout-minutes: 45
     env:
       BTC_DATA_PREFIX: kraken-btcusd
+      MAX_SIGNAL_REPORT_AGE_MS: "3600000"
+      MAX_PUBLICATION_AGE_MS: "900000"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
       - name: Install dependencies
         run: npm install
+
       - name: Check syntax
-        run: npm run check
+        run: |
+          npm run check
+          node --check scripts/verify-publication.js
+
       - name: Run tests
         run: npm test
-      - name: Download recent candles for prompt signal analysis
+
+      - name: Publication watchdog preflight
+        continue-on-error: true
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const path = 'dashboard/data/signals.json';
+          try {
+            const previous = JSON.parse(await readFile(path, 'utf8'));
+            const stamp = Date.parse(previous.generatedAt ?? '');
+            const age = Date.now() - stamp;
+            if (!Number.isFinite(stamp)) {
+              console.error('WATCHDOG ALERT: existing dashboard publication has no valid timestamp.');
+            } else if (age > 12 * 60 * 1000) {
+              console.error('WATCHDOG ALERT: last dashboard publication is stale; age minutes=' + (age / 60000).toFixed(1));
+            } else if (age < -60000) {
+              console.error('WATCHDOG ALERT: last dashboard publication is future-dated.');
+            } else {
+              console.log('WATCHDOG OK: last publication age minutes=' + (age / 60000).toFixed(1));
+            }
+          } catch {
+            console.error('WATCHDOG ALERT: no prior dashboard publication exists yet.');
+          }
+          NODE
+
+      - name: Download recent candles for signal analysis
         run: npm run download
         env:
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
@@ -43,7 +80,7 @@ jobs:
           DUKASCOPY_RETRY_COUNT: "2"
           DUKASCOPY_RATE_LIMIT_RETRIES: "3"
 
-      - name: Generate signal report
+      - name: Generate synchronized multi-market signal report
         run: |
           set -o pipefail
           npm start 2>&1 | tee signals.txt
@@ -51,7 +88,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           LLM_TIMEOUT_MS: "8000"
-      - name: Upload signal report immediately
+
+      - name: Upload raw analysis report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -59,17 +97,31 @@ jobs:
           path: signals.txt
           if-no-files-found: warn
           retention-days: 14
-      - name: Download 180-day history for strategy validation
-        run: npm run download
+
+      - name: Publish latest decisions and blockers
+        run: node scripts/publish-signal-controller.js signals.txt
         env:
-          DATA_DAYS_BACK: "180"
-          DOWNLOAD_CONCURRENCY: "3"
-          BTC_DATA_PREFIX: btcusd
-          DUKASCOPY_BATCH_SIZE: "10"
-          DUKASCOPY_BATCH_PAUSE_MS: "100"
-          DUKASCOPY_REQUEST_INTERVAL_MS: "100"
-          DUKASCOPY_RETRY_COUNT: "2"
-          DUKASCOPY_RATE_LIMIT_RETRIES: "3"
-      # HOLDOUT SAFETY: do not evaluate the final chronological 30% repeatedly.
-      # Candidate tuning must use only the first 70%; a frozen holdout is evaluated once
-      # after the candidate configuration and its hash are committed.
+          MAX_SIGNAL_REPORT_AGE_MS: "3600000"
+
+      - name: Verify dashboard publication
+        run: node scripts/verify-publication.js dashboard/data/signals.json
+        env:
+          MAX_PUBLICATION_AGE_MS: "900000"
+
+      - name: Commit verified dashboard data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard/data/signals.json
+          if git diff --cached --quiet; then
+            echo "Dashboard data is unchanged; no commit required."
+          else
+            git commit -m "Publish verified Forex Sniper signals"
+            git push origin HEAD:main
+          fi
+
+      - name: Verify committed dashboard data
+        run: |
+          git show HEAD:dashboard/data/signals.json > /tmp/published-signals.json
+          cmp dashboard/data/signals.json /tmp/published-signals.json
+          node scripts/verify-publication.js /tmp/published-signals.json
