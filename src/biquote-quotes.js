@@ -66,21 +66,33 @@ export function validateBiquoteTick(quote, { now = Date.now(), maxAgeMs = 15_000
 
 export async function fetchBiquoteQuote(market, {
   fetchImpl = fetch,
-  timeoutMs = 5_000
+  timeoutMs = 1_500,
+  attempts = 3,
+  retryDelayMs = 300
 } = {}) {
   if (!SYMBOLS[market]) return { quote: null, error: "Unsupported Biquote market: " + market };
-  try {
-    const response = await fetchImpl(
-      "https://biquote.io/api/" + SYMBOLS[market] + "?allowStale=false",
-      { signal: AbortSignal.timeout(timeoutMs) }
-    );
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    const payload = await response.json();
-    const quote = normalizeBiquoteTick(payload);
-    const validation = validateBiquoteTick(quote);
-    if (!validation.valid) throw new Error(validation.reason);
-    return { quote, error: null };
-  } catch (error) {
-    return { quote: null, error: "Biquote " + market + " request failed: " + error.message };
+  let lastError = "No quote attempt completed";
+  for (let attempt = 1; attempt <= Math.max(1, attempts); attempt++) {
+    try {
+      const response = await fetchImpl(
+        "https://biquote.io/api/" + SYMBOLS[market] + "?allowStale=false",
+        { signal: AbortSignal.timeout(timeoutMs) }
+      );
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const payload = await response.json();
+      const quote = normalizeBiquoteTick(payload);
+      const validation = validateBiquoteTick(quote);
+      if (validation.valid) return { quote, error: null };
+      lastError = validation.reason;
+    } catch (error) {
+      lastError = error.message;
+    }
+    if (attempt < attempts) {
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    }
   }
+  return {
+    quote: null,
+    error: "Biquote " + market + " request failed after " + attempts + " attempts: " + lastError
+  };
 }
