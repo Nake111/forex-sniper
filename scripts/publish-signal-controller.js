@@ -177,9 +177,14 @@ for (const market of markets) {
       layer2: layer2.status ?? "UNKNOWN",
       layer3: layer3.decision ?? "UNKNOWN",
       blockers: [
+        ...(marketReview.blockers ?? []),
+        ...(approval.blockers ?? []),
+        ...(verification.blockers ?? []),
         ...(layer2.blockers ?? []),
         ...(layer3.paperBlockers ?? layer3.blockers ?? []),
-        ...(verification.blockers ?? [])
+        ...(!paperApproved && !marketReview.blockers?.length && !approval.blockers?.length &&
+          !verification.blockers?.length && !layer2.blockers?.length && !layer3.paperBlockers?.length &&
+          !layer3.blockers?.length ? ["One or more independent approval gates did not pass"] : [])
       ].filter((value, index, all) => typeof value === "string" &&
         !String(value).toLowerCase().includes("broker execution venue/account") && all.indexOf(value) === index)
     },
