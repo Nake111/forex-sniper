@@ -93,7 +93,17 @@
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.16901408450689373,\"spreadAtrLimit\":0.12,\"passed\":false}",
           "volatility_and_session: FAIL — {\"atrRatio\":2.248868778281013}",
-          "Layer 2 verification did not pass"
+          "Layer 2 verification did not pass",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T06:50:33.342Z",
@@ -178,7 +188,17 @@
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "Layer 2 verification did not pass",
-          "Executable-side reward/risk is below 1:2"
+          "Executable-side reward/risk is below 1:2",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T06:50:33.342Z",
@@ -256,7 +276,17 @@
           "Economic/news risk is HIGH",
           "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
-          "Executable-side quote is 0.353 ATR from signal reference entry; maximum is 0.2"
+          "Executable-side quote is 0.353 ATR from signal reference entry; maximum is 0.2",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
+        ],
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
       "generatedAt": "2026-11-13T06:50:33.342Z",
@@ -266,6 +296,44 @@
         "timestampUtc": "2026-11-13T06:50:05.000Z",
         "timestampSlovenia": "2026-11-13T07:50:05+01:00",
         "timeZone": "Europe/Ljubljana"
+      }
+    }
+  },
+  "watchdog": {
+    "checkedAt": "2026-11-13T07:18:28.832Z",
+    "status": "BLOCKED",
+    "thresholds": {
+      "maxSignalAgeMs": 600000,
+      "maxCandleAgeMs": 600000,
+      "maxQuoteAgeMs": 15000
+    },
+    "globalFailures": [
+      "Signal publication is missing, stale, or future-dated"
+    ],
+    "markets": {
+      "EURUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 1708832,
+        "quoteAgeMs": 1686832
+      },
+      "BTCUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 1708832,
+        "quoteAgeMs": 1683309
+      },
+      "XAUUSD": {
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 1708832,
+        "quoteAgeMs": 1676832
       }
     }
   }
