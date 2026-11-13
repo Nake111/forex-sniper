@@ -13,7 +13,7 @@ This is the native Android client for the existing Forex Sniper paper/research e
 
 ## Development
 
-Use Node.js 22.13+ for Expo SDK 58.
+Use Node.js 22.13+ and Java 17 for Expo SDK 58. The repository workflow builds a sideloadable debug APK automatically when mobile files change on the android-app branch.
 
 ```bash
 npm install
@@ -21,7 +21,7 @@ npx expo-doctor
 npx expo start
 ```
 
-Set `EXPO_PUBLIC_API_BASE_URL` to the deployed mobile gateway URL before connecting live data. The client deliberately does not call the existing protected ChatGPT bridge directly because embedding its shared bearer secret in an APK would expose it.
+The app uses the existing protected Railway bridge URL. Enter the bridge access key in the app on your phone; it is not embedded in the APK. The key is held only in app memory and must be entered again after restarting the app.\n\nThe existing Railway bridge requires two server-side variables: `CHATGPT_ACTION_SECRET` and `GITHUB_ACTIONS_TOKEN`. The Railway service inspection currently shows neither variable configured. Add them in Railway → forex-sniper-live-feed → forex-sniper-chat-action-bridge → Variables. Set the first to your private bridge key and the second to a GitHub token with Actions read/write and repository contents read access. Do not send either secret in chat or commit it to GitHub. Until those variables are configured, the bridge will return HTTP 503 and the app cannot retrieve or run signals.
 
 ## Android builds
 
