@@ -283,7 +283,7 @@ const server = http.createServer(async (request, response) => {
     const journalPath = process.env.QUOTE_HISTORY_PATH ?? `${process.env.DATA_DIR ?? "data"}/historical-bid-ask.jsonl`;
     try {
       const [info, raw] = await Promise.all([stat(journalPath), readFile(journalPath, "utf8")]);
-      const records = raw.split("\\n").filter(Boolean).map((line, index) => {
+      const records = raw.split("\n").filter(Boolean).map((line, index) => {
         try { return JSON.parse(line); }
         catch { throw new Error(`Invalid quote-history JSON at line ${index + 1}`); }
       });
