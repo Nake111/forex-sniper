@@ -3,9 +3,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 const BASE = "https://data-api.binance.vision/api/v3";
 const SYMBOL = "BTCUSDT";
 const WINDOWS = [
-  { interval: "5m", file: "data/online-btcusdt-m5.json", days: 14, keep: 20000 },
-  { interval: "15m", file: "data/online-btcusdt-m15.json", days: 30, keep: 10000 },
-  { interval: "1h", file: "data/online-btcusdt-h1.json", days: 90, keep: 5000 }
+  { interval: "5m", file: "data/online-btcusdt-m5.json", days: 14, keep: 20000, maxAgeMs: 8 * 60 * 1000 },
+  { interval: "15m", file: "data/online-btcusdt-m15.json", days: 30, keep: 10000, maxAgeMs: 18 * 60 * 1000 },
+  { interval: "1h", file: "data/online-btcusdt-h1.json", days: 90, keep: 5000, maxAgeMs: 70 * 60 * 1000 }
 ];
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -100,9 +100,14 @@ async function syncInterval(config, now) {
   if (merged.length < 220) {
     throw new Error(`${config.interval}: only ${merged.length} closed candles; need at least 220`);
   }
+  const newest = merged.at(-1);
+  const candleAgeMs = now - Number(newest.closeTime);
+  if (!Number.isFinite(candleAgeMs) || candleAgeMs < 0 || candleAgeMs > config.maxAgeMs) {
+    throw new Error(`${config.interval}: newest CLOSED candle is stale or invalid (age ${Math.round(candleAgeMs / 1000)}s; limit ${Math.round(config.maxAgeMs / 1000)}s)`);
+  }
   await writeFile(config.file, JSON.stringify(merged) + "\n");
-  console.log(`${config.interval}: ${merged.length} closed candles; added ${fresh.length}; latest ${new Date(merged.at(-1).timestamp).toISOString()}`);
-  return merged.at(-1);
+  console.log(`${config.interval}: ${merged.length} closed candles; added ${fresh.length}; latest close ${new Date(newest.closeTime).toISOString()}; age ${Math.round(candleAgeMs / 1000)}s`);
+  return newest;
 }
 
 async function main() {
