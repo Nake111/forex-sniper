@@ -21,7 +21,10 @@ export function evaluateAlphaPipResearch(candles, {
     researchOnly: true, voteWeight: 0, canApproveSignal: false
   };
   if (!Array.isArray(candles) || !candles.length ||
-      !Array.isArray(momentumPeriods) || momentumPeriods.some(p => !Number.isInteger(p) || p < 1) ||
+      !Array.isArray(momentumPeriods) || momentumPeriods.length === 0 ||
+      !Number.isInteger(minimumAligned) || minimumAligned < 1 || minimumAligned > momentumPeriods.length ||
+      !valid(minimumAtrExpansion) || Number(minimumAtrExpansion) <= 0 ||
+      momentumPeriods.some(p => !Number.isInteger(p) || p < 1) ||
       candles.length <= Math.max(...momentumPeriods) ||
       ![atr14, atrBaseline, ema20, ema50].every(valid) ||
       Number(atrBaseline) <= 0 || Number(atr14) <= 0) return unavailable;
