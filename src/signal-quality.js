@@ -54,7 +54,8 @@ export function buildAgentForecasts({ agents = [], market, candleAt, close, atr1
   return agents.filter(agent => agent && typeof agent.name === "string").map(agent => ({
     eventId: `AGENT_FORECAST:${market}:${agent.name}:${candleAt}`,
     eventType: "AGENT_FORECAST", market, agent: agent.name,
-    predictedSide: SIDES.has(agent.signal) ? agent.signal : "NO_SIGNAL",
+    predictedSide: SIDES.has(agent.signal) ? agent.signal
+      : SIDES.has(agent.direction) ? agent.direction : "NO_SIGNAL",
     forecastAt: candleAt, referenceClose: finite(close) ? close : null,
     referenceAtr: finite(atr14) ? atr14 : null, regime,
     evidence: agent.evidence ?? null, reason: agent.reason ?? null,
