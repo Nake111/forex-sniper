@@ -276,8 +276,17 @@ async function downloadOne(market, timeframe) {
     throw new Error(`No new ${market.label} ${timeframe.toUpperCase()} candles returned`);
   }
   let merged = mergeCandles(previous, incoming, cutoff);
-  if ((provider === "Twelve Data" || provider === "FinancialData.Net M1 → M5") && merged.length < 100) {
-    console.warn(market.label + " " + timeframe.toUpperCase() + ": supplemental provider history is too short for a cold start; adding Dukascopy baseline candles.");
+  const minimumCoverageStart = cutoff + 10 * 86_400_000;
+  const coverageStartsTooLate = merged.length > 0 &&
+    candleTimestamp(merged[0]) > minimumCoverageStart;
+  if (
+    (provider === "Twelve Data" || provider === "FinancialData.Net M1 → M5") &&
+    (merged.length < 100 || coverageStartsTooLate)
+  ) {
+    console.warn(
+      market.label + " " + timeframe.toUpperCase() +
+      ": supplemental provider history does not cover the required training window; adding Dukascopy baseline candles."
+    );
     const fallback = await fetchDukascopyHistory(market, timeframe, from, to);
     merged = mergeCandles(merged, fallback, cutoff);
     provider = provider + " + Dukascopy baseline history";
