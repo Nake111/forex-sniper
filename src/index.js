@@ -110,7 +110,7 @@ async function loadTrainingAgentOutcomes() {
   try {
     const raw = await readFile(path, "utf8");
     const training = [];
-    for (const line of raw.split("\\n")) {
+    for (const line of raw.split("\n")) {
       if (!line.trim()) continue;
       const event = JSON.parse(line);
       if (event.eventType !== "AGENT_FORECAST_OUTCOME") continue;
