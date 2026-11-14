@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { buildAgentForecasts, measureDirectionalAccuracy, classifyMarketRegime } from "./signal-quality.js";
 
 const finite = Number.isFinite;
 const round = (value, digits = 8) => finite(value) ? Number(value.toFixed(digits)) : null;
@@ -78,6 +79,18 @@ export async function updateSecondBrain({
   }
 
   const newEvents = [];
+  const forecastOutcomes = new Set(events.filter(e => e.eventType === "AGENT_FORECAST_OUTCOME").map(e => e.forecastId));
+  for (const forecast of events.filter(e => e.eventType === "AGENT_FORECAST" && e.market === market)) {
+    if (forecastOutcomes.has(forecast.eventId)) continue;
+    const future = validCandles.filter(c => candleTime(c) > Number(forecast.forecastAt));
+    if (future.length < forecast.outcomeHorizonBars) continue;
+    const resolution = future[forecast.outcomeHorizonBars - 1];
+    const delta = Number(resolution.close) - Number(forecast.referenceClose);
+    const threshold = Number(forecast.referenceAtr) > 0 ? Number(forecast.referenceAtr) * 0.25 : 0;
+    const actualDirection = delta > threshold ? "BUY" : delta < -threshold ? "SELL" : "FLAT";
+    newEvents.push({ eventId: "AGENT_OUTCOME:" + forecast.eventId, eventType: "AGENT_FORECAST_OUTCOME", forecastId: forecast.eventId, market, agent: forecast.agent, predictedSide: forecast.predictedSide, actualDirection, correct: forecast.predictedSide === actualDirection, falseSignal: ["BUY", "SELL"].includes(forecast.predictedSide) && forecast.predictedSide !== actualDirection, forecastRegime: forecast.regime, forecastAt: forecast.forecastAt, resolvedAt: candleTime(resolution), barsHeld: forecast.outcomeHorizonBars, referenceClose: forecast.referenceClose, resolutionClose: Number(resolution.close), move: round(delta), threshold: round(threshold) });
+    forecastOutcomes.add(forecast.eventId);
+  }
   for (const [signalId, record] of signals) {
     if (resolved.has(signalId) || record.market !== market) continue;
     for (const candle of validCandles) {
@@ -196,6 +209,15 @@ export async function updateSecondBrain({
     });
   }
 
+  if (finite(candleAt) && Array.isArray(githubAgentEvidence.agents)) {
+    const ranges = validCandles.slice(-20).map(c => Number(c.high) - Number(c.low)).filter(finite);
+    const rangeBaseline = ranges.length ? ranges.reduce((a,b)=>a+b,0) / ranges.length : null;
+    const current = latest ? { ...frames.M5, close: Number(latest.close), candleRange: Number(latest.high) - Number(latest.low) } : frames.M5;
+    const regime = classifyMarketRegime({ close: current?.close, ema20: current?.ema20, ema50: current?.ema50, ema200: current?.ema200, adx14: current?.adx14, atr14: current?.atr14, atrBaseline: current?.atrBaseline ?? rangeBaseline, candleRange: current?.candleRange, rangeBaseline });
+    const forecasts = buildAgentForecasts({ agents: githubAgentEvidence.agents, market, candleAt, close: current?.close, atr14: current?.atr14, regime });
+    for (const forecast of forecasts) if (!eventIds.has(forecast.eventId) && !events.some(e => e.eventId === forecast.eventId) && !newEvents.some(e => e.eventId === forecast.eventId)) newEvents.push(forecast);
+  }
+
   if (["BUY", "SELL"].includes(signal) && plan && finite(candleAt)) {
     const signalId = `SIGNAL:${market}:${signal}:${candleAt}`;
     if (!eventIds.has(signalId) && !signals.has(signalId)) {
@@ -203,6 +225,12 @@ export async function updateSecondBrain({
         eventId: signalId, eventType: "PAPER_SIGNAL", signalId, market, side: signal,
         createdAt: now, signalCandleAt: candleAt,
         indicativeEntry: finite(plan.entry) ? plan.entry : null,
+        executableSideQuote: signal === "BUY" ? quoteEvidence.ask : quoteEvidence.bid,
+        quoteAgeAtDecisionMs: quoteAgeMs,
+        observedSlippage: null,
+        actualFillPrice: null,
+        actualFillTimestamp: null,
+        estimatedSlippageBpsPerSide: costEstimate.estimatedSlippageBpsPerSide,
         signalReferenceEntry: finite(plan.signalReferenceEntry) ? plan.signalReferenceEntry : null,
         entryReference: plan.entryReference ?? null,
         stopLoss: finite(plan.stopLoss) ? plan.stopLoss : null,
@@ -222,6 +250,11 @@ export async function updateSecondBrain({
   }
 
   const allEvents = [...events, ...newEvents];
+  const agentPerformance = {};
+  for (const agent of [...new Set(allEvents.filter(e => e.eventType === "AGENT_FORECAST_OUTCOME" && e.market === market).map(e => e.agent))]) {
+    const rows = allEvents.filter(e => e.eventType === "AGENT_FORECAST_OUTCOME" && e.market === market && e.agent === agent);
+    agentPerformance[agent] = measureDirectionalAccuracy(rows);
+  }
   const marketSignals = allEvents.filter(event => event.eventType === "PAPER_SIGNAL" && event.market === market);
   const marketOutcomes = allEvents.filter(event => event.eventType === "PAPER_OUTCOME" && event.market === market);
   const wins = marketOutcomes.filter(event => event.outcome === "WIN").length;
@@ -233,6 +266,6 @@ export async function updateSecondBrain({
     ambiguous: marketOutcomes.filter(event => event.outcome === "AMBIGUOUS").length,
     timeouts: marketOutcomes.filter(event => event.outcome === "TIMEOUT").length,
     winRatePct: wins + losses ? Number((wins / (wins + losses) * 100).toFixed(1)) : null,
-    quoteEvidence
+    quoteEvidence, agentPerformance
   };
 }

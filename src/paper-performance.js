@@ -1,3 +1,5 @@
+import { measureDirectionalAccuracy } from "./signal-quality.js";
+
 const finite = Number.isFinite;
 const round = (value, digits = 4) => finite(value) ? Number(value.toFixed(digits)) : null;
 
@@ -51,8 +53,16 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
     totals: summarize(records),
     byStrategy: groupBy(row => row.strategy?.strategyId ?? "LEGACY_UNATTRIBUTED"),
     byMarket: groupBy(row => row.market),
+    bySide: {
+      BUY: summarize(records.filter(row => row.side === "BUY")),
+      SELL: summarize(records.filter(row => row.side === "SELL"))
+    },
     bySession: groupBy(row => row.strategy?.session ?? "UNKNOWN"),
     byProfile: groupBy(row => row.strategy?.profile ?? "UNKNOWN"),
+    agentAccountability: Object.fromEntries([...new Set(events.filter(event => event.eventType === "AGENT_FORECAST_OUTCOME").map(event => event.agent))].sort().map(agent => {
+      const rows = events.filter(event => event.eventType === "AGENT_FORECAST_OUTCOME" && event.agent === agent);
+      return [agent, measureDirectionalAccuracy(rows)];
+    })),
     records: records.map(row => ({
       signalId: row.signalId, market: row.market, side: row.side,
       createdAt: row.createdAt, strategy: row.strategy ?? { strategyId: "LEGACY_UNATTRIBUTED" },
