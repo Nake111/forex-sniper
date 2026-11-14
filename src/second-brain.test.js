@@ -79,3 +79,24 @@ test("paper journal records same-candle stop and target touches as ambiguous", a
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("paper journal records both five research adapters and internal specialist directions", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "sniper-brain-agents-"));
+  const path = join(dir, "memory.jsonl");
+  try {
+    await updateSecondBrain({
+      market: "EURUSD", path, now: 901_000,
+      candles: [{ timestamp: 800, open: 1.1, high: 1.101, low: 1.099, close: 1.1 }],
+      frames: { M5: { atr14: 0.001, ema50: 1.099, ema200: 1.098 } },
+      agents: { agents: [{ name: "Internal momentum analyst", direction: "BUY", evidence: "test direction" }] },
+      githubAgentEvidence: { agents: [{ name: "Five-agent SMC adapter", signal: "SELL", evidence: "test signal" }] }
+    });
+    const saved = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
+    const forecasts = saved.filter(row => row.eventType === "AGENT_FORECAST");
+    assert.equal(forecasts.length, 2);
+    assert.equal(forecasts.find(row => row.agent === "Internal momentum analyst").predictedSide, "BUY");
+    assert.equal(forecasts.find(row => row.agent === "Five-agent SMC adapter").predictedSide, "SELL");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
