@@ -48,6 +48,11 @@ function jsonLine(section, label) {
   try { return JSON.parse(raw); }
   catch { throw new Error(`Invalid JSON report evidence: ${label}`); }
 }
+function optionalJsonLine(section, label, fallback = null) {
+  const raw = lineValue(section, label);
+  if (!raw) return fallback;
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
 function numberAfter(section, label) {
   const raw = lineValue(section, label);
   if (raw === null) return null;
@@ -81,6 +86,8 @@ for (const market of markets) {
   const approval = jsonLine(section, "AGENT 2 — INDEPENDENT SIGNAL APPROVAL:");
   const verification = jsonLine(section, "AGENT 3 — INDEPENDENT LIVE ENTRY VERIFICATION:");
   const marketReview = jsonLine(section, "AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:");
+  const fiveDirectionalAgents = optionalJsonLine(section, "FIVE INDEPENDENT SIGNAL AGENTS:", []);
+  const fiveAgentConsensus = optionalJsonLine(section, "FIVE-AGENT CONSENSUS:", null);
   const quote = jsonLine(section, "BID/ASK MARKET QUOTE:");
   const layer2 = jsonLine(section, "LAYER 2 — INDEPENDENT VERIFICATION:");
   const layer3 = jsonLine(section, "LAYER 3 — EXECUTION APPROVAL:");
@@ -169,6 +176,8 @@ for (const market of markets) {
       validated: quoteValid
     },
     agents: {
+      fiveDirectionalAgents,
+      fiveAgentConsensus,
       marketIntelligenceApproved: marketReview.approved === true,
       signalApprovalApproved: approval.approved === true,
       entryVerificationApproved: verification.approved === true
