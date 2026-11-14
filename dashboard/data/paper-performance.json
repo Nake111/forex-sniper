@@ -1,36 +1,36 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T07:57:46.786Z",
+  "generatedAt": "2026-11-14T09:57:48.173Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
     "signals": 3,
-    "resolved": 2,
-    "pending": 1,
+    "resolved": 3,
+    "pending": 0,
     "wins": 0,
-    "losses": 2,
+    "losses": 3,
     "timeouts": 0,
     "ambiguous": 0,
     "winRatePct": 0,
     "averageGrossR": -1,
-    "averageNetEstimatedR": -1.1687,
-    "totalNetEstimatedR": -2.3374,
+    "averageNetEstimatedR": -1.1375,
+    "totalNetEstimatedR": -3.4125,
     "profitFactor": 0,
     "sampleWarning": "Small sample: do not rank this strategy as proven."
   },
   "byStrategy": {
     "PULLBACK_OR_REVERSAL": {
       "signals": 1,
-      "resolved": 0,
-      "pending": 1,
+      "resolved": 1,
+      "pending": 0,
       "wins": 0,
-      "losses": 0,
+      "losses": 1,
       "timeouts": 0,
       "ambiguous": 0,
-      "winRatePct": null,
-      "averageGrossR": null,
-      "averageNetEstimatedR": null,
-      "totalNetEstimatedR": null,
+      "winRatePct": 0,
+      "averageGrossR": -1,
+      "averageNetEstimatedR": -1.0751,
+      "totalNetEstimatedR": -1.0751,
       "profitFactor": 0,
       "sampleWarning": "Small sample: do not rank this strategy as proven."
     },
@@ -53,16 +53,16 @@
   "byMarket": {
     "BTCUSD": {
       "signals": 2,
-      "resolved": 1,
-      "pending": 1,
+      "resolved": 2,
+      "pending": 0,
       "wins": 0,
-      "losses": 1,
+      "losses": 2,
       "timeouts": 0,
       "ambiguous": 0,
       "winRatePct": 0,
       "averageGrossR": -1,
-      "averageNetEstimatedR": -1.2204,
-      "totalNetEstimatedR": -1.2204,
+      "averageNetEstimatedR": -1.1477,
+      "totalNetEstimatedR": -2.2955,
       "profitFactor": 0,
       "sampleWarning": "Small sample: do not rank this strategy as proven."
     },
@@ -85,16 +85,16 @@
   "bySession": {
     "LONDON": {
       "signals": 1,
-      "resolved": 0,
-      "pending": 1,
+      "resolved": 1,
+      "pending": 0,
       "wins": 0,
-      "losses": 0,
+      "losses": 1,
       "timeouts": 0,
       "ambiguous": 0,
-      "winRatePct": null,
-      "averageGrossR": null,
-      "averageNetEstimatedR": null,
-      "totalNetEstimatedR": null,
+      "winRatePct": 0,
+      "averageGrossR": -1,
+      "averageNetEstimatedR": -1.0751,
+      "totalNetEstimatedR": -1.0751,
       "profitFactor": 0,
       "sampleWarning": "Small sample: do not rank this strategy as proven."
     },
@@ -117,16 +117,16 @@
   "byProfile": {
     "balanced": {
       "signals": 3,
-      "resolved": 2,
-      "pending": 1,
+      "resolved": 3,
+      "pending": 0,
       "wins": 0,
-      "losses": 2,
+      "losses": 3,
       "timeouts": 0,
       "ambiguous": 0,
       "winRatePct": 0,
       "averageGrossR": -1,
-      "averageNetEstimatedR": -1.1687,
-      "totalNetEstimatedR": -2.3374,
+      "averageNetEstimatedR": -1.1375,
+      "totalNetEstimatedR": -3.4125,
       "profitFactor": 0,
       "sampleWarning": "Small sample: do not rank this strategy as proven."
     }
@@ -187,10 +187,10 @@
         "weightedScore": 100,
         "scoreCoverage": 100
       },
-      "outcome": "PENDING",
-      "resolvedAt": null,
-      "grossR": null,
-      "netEstimatedR": null
+      "outcome": "LOSS",
+      "resolvedAt": 1794649500000,
+      "grossR": -1,
+      "netEstimatedR": -1.0751
     }
   ]
 }
