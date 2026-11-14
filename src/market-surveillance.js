@@ -44,10 +44,10 @@ export function evaluateMarketSurveillance(candles, {
 
   const atrRatio = finite(atr14) && finite(atrBaseline) && Number(atrBaseline) > 0
     ? Number(atr14) / Number(atrBaseline) : null;
-  const compression = squeeze?.state === "SQUEEZE_ON" || atrRatio !== null && atrRatio <= 0.8
-    ? "COMPRESSION"
-    : squeeze?.previousState === "SQUEEZE_ON" && squeeze?.state === "SQUEEZE_RELEASED"
-      ? "RELEASED" : "NONE";
+  const compression = squeeze?.previousState === "SQUEEZE_ON" && squeeze?.state === "SQUEEZE_RELEASED"
+    ? "RELEASED"
+    : squeeze?.state === "SQUEEZE_ON" || atrRatio !== null && atrRatio <= 0.8
+      ? "COMPRESSION" : "NONE";
   const volatilityExpansion = compression === "RELEASED" ||
     atrRatio !== null && atrRatio >= expansionMultiplier;
 
