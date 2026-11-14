@@ -33,7 +33,7 @@ function component(name, weight, passed, available, detail) {
  * Weighted technical score. Missing inputs never earn points. Hard safety
  * gates are evaluated separately and cannot be overridden by the score.
  */
-export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false, macroBlocked = false, staleTimeframes = [], a1Heart = null }) {
+export function scoreCandidate({ market, direction, frames = {}, marketReview = {}, quoteValidation = {}, spreadVerified = false, macroBlocked = false, staleTimeframes = [], a1Heart = null, externalAgentConsensus = null }) {
   const side = SIDES.has(direction) ? direction : null;
   const h1 = sideOf(frames.H1), h4 = sideOf(frames.H4);
   const htfAvailable = h1 !== null || h4 !== null;
@@ -107,6 +107,11 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const coverage = availableWeight;
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
+  if (side && externalAgentConsensus?.approved !== true) {
+    hardBlockers.push("Five-agent confirmation quorum not met: " + (externalAgentConsensus?.counts ? JSON.stringify(externalAgentConsensus.counts) : "agent consensus unavailable"));
+  } else if (side && externalAgentConsensus.direction !== side) {
+    hardBlockers.push("Five-agent consensus direction does not match primary candidate");
+  }
   const advisories = [];
   // A1 HEART is a distinct opening-range/volume-profile strategy, not a
   // universal prerequisite for every trend, VWAP, SMC or retest candidate.
