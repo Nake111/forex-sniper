@@ -51,6 +51,10 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
     totals: summarize(records),
     byStrategy: groupBy(row => row.strategy?.strategyId ?? "LEGACY_UNATTRIBUTED"),
     byMarket: groupBy(row => row.market),
+    bySide: {
+      BUY: summarize(records.filter(row => row.side === "BUY")),
+      SELL: summarize(records.filter(row => row.side === "SELL"))
+    },
     bySession: groupBy(row => row.strategy?.session ?? "UNKNOWN"),
     byProfile: groupBy(row => row.strategy?.profile ?? "UNKNOWN"),
     records: records.map(row => ({
