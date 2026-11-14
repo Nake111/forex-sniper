@@ -659,6 +659,7 @@ async function analyseMarket(market, macroContext) {
       decisionLayers: { discovery: discoveryLayer, weightedScore, verification: verificationLayer, execution: executionLayer },
       approval,
       verification,
+      githubAgentEvidence: githubResearch,
       strategyAttribution: {
         profile: SIGNAL_PROFILE,
         strategyId: tieredReport?.setupType ?? "CORE_MULTI_TIMEFRAME",
