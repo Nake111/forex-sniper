@@ -45,7 +45,7 @@ test("does not invent volume confirmation when candle volume is absent", () => {
   const result = evaluateMarketSurveillance(candles, { atr14: 1.5, atrBaseline: 1 });
   assert.equal(result.status, "BREAKOUT_WATCH");
   assert.equal(result.volumeStatus, "UNAVAILABLE");
-  assert.match(result.note, /tick volume/i);
+  assert.match(result.note, /volume confirmation is unavailable/i);
 });
 
 test("does not label a candle inside the prior range as a breakout", () => {
