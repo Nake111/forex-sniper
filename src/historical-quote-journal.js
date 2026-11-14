@@ -47,7 +47,7 @@ export function recordHistoricalQuote(market, quote, receivedAt = Date.now()) {
   };
   writeQueue = writeQueue.then(async () => {
     await mkdir(dirname(path), { recursive: true });
-    await appendFile(path, JSON.stringify(record) + "\\n", { encoding: "utf8", flag: "a" });
+    await appendFile(path, JSON.stringify(record) + "\n", { encoding: "utf8", flag: "a" });
   }).catch(error => {
     writeErrors++;
     console.error("HISTORICAL QUOTE PERSISTENCE FAILED:", error.message);
