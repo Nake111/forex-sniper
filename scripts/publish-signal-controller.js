@@ -58,6 +58,24 @@ function jsonLineAny(section, labels) {
   if (!label) throw new Error(`Missing required report evidence: ${labels.join(" or ")}`);
   return jsonLine(section, label);
 }
+function statusEvidence(section, label, { statusKey, booleanKey, blockersKey }) {
+  const raw = lineValue(section, label);
+  if (!raw) throw new Error(`Missing required report evidence: ${label}`);
+  const parts = raw.split("|").map(value => value.trim());
+  const result = {};
+  if (statusKey) result[statusKey] = parts[0].split(/\\s+/)[0] ?? "UNKNOWN";
+  for (const part of parts.slice(1)) {
+    const match = part.match(/^([a-zA-Z]+):\\s*(.*)$/);
+    if (!match) continue;
+    const [, key, value] = match;
+    if (key === "approved" && booleanKey) result[booleanKey] = value.toLowerCase() === "true";
+    if (key === "blockers" && blockersKey) {
+      try { result[blockersKey] = JSON.parse(value); } catch { result[blockersKey] = []; }
+    }
+  }
+  if (blockersKey && !Array.isArray(result[blockersKey])) result[blockersKey] = [];
+  return result;
+}
 function optionalJsonLine(section, label, fallback = null) {
   const raw = lineValue(section, label);
   if (!raw) return fallback;
@@ -99,8 +117,12 @@ for (const market of markets) {
   const fiveDirectionalAgents = optionalJsonLine(section, "FIVE INDEPENDENT SIGNAL AGENTS:", []);
   const fiveAgentConsensus = optionalJsonLine(section, "FIVE-AGENT CONSENSUS:", null);
   const quote = jsonLine(section, "BID/ASK MARKET QUOTE:");
-  const layer2 = jsonLineAny(section, ["LAYER 2 VERIFICATION:", "LAYER 2 — INDEPENDENT VERIFICATION:"]);
-  const layer3 = jsonLineAny(section, ["LAYER 3 PAPER APPROVAL:", "LAYER 3 — EXECUTION APPROVAL:"]);
+  const layer2 = statusEvidence(section, "LAYER 2 VERIFICATION:", {
+    statusKey: "status", blockersKey: "blockers"
+  });
+  const layer3 = statusEvidence(section, "LAYER 3 PAPER APPROVAL:", {
+    statusKey: "decision", booleanKey: "paperApproved", blockersKey: "paperBlockers"
+  });
   const action = lineValue(section, "FINAL ACTION:");
   const scoreRaw = lineValue(section, "CANDIDATE STRENGTH / EVIDENCE COVERAGE:") ??
     lineValue(section, "WEIGHTED SCORE / COVERAGE:");
