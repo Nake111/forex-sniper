@@ -218,21 +218,22 @@ Public-feed direction counts are context only. A publisher domain and article ti
 The public-idea research adapter uses the free public TradingView Trading Ideas RSS feed (https://www.tradingview.com/feed/) by default, so it can operate without an API key or paid subscription. Set PUBLIC_TRADER_RSS_URLS to override the default with up to three comma-separated HTTPS RSS/Atom feeds. Feed mentions are unverified public commentary, not verified trades or a validated trader track record; the evidence is advisory only.
 
 
-## Five GitHub research integrations (main)
+## Five directional signal agents (main)
 
-The main analysis now runs five isolated research adapters from `src/github-research-confluence.js` and prints their evidence beside the primary Forex Sniper analysis:
+The main signal pipeline runs five independent deterministic agents on closed M5/M15/H1/H4 candles and validated quote data:
+1. **hpFX multi-timeframe agent** — M5 EMA/MACD direction with higher-timeframe trend and momentum confirmation.
+2. **ICT/SMC structure agent** — confirmed market-structure shift plus same-direction unfilled fair-value gap.
+3. **FxTT market scanner agent** — RSI/trend agreement, ADX threshold and provider-validated spread/ATR.
+4. **Gann/Hurst trend agent** — trailing MA32/64/128 alignment and price location relative to a 64-bar octave midpoint.
+5. **Systematic breakout agent** — closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50.
 
-1. **hpFX methodology** — entry / confirmation / trade-or-not role diagnostics inspired by the published hpFX documentation. hpFX itself is an MT4 batch-testing engine and is not embedded or executed by this Node.js project.
-2. **Forex Research (ICT/SMC)** — closed-candle swing break / MSS and recent FVG diagnostics. The upstream project defaults to synthetic data for offline plumbing; synthetic performance is not evidence of a trading edge.
-3. **FxTT Scanner methodology** — RSI, ADX, ATR and validated spread-to-ATR diagnostics. No MT4 executable or external scanner process is required.
-4. **Gann / Hurst research** — Murrey-style octave levels, explicitly normalized swing-anchored 1x1 / 2x1 research lines, and trailing 32/64/128 moving-average alignment. Centred moving averages and astronomy/cycle timing are excluded because they can introduce look-ahead or cannot be reliably reproduced from the available public material.
-5. **FX Strategy Framework methodology** — chronological training / holdout boundaries and validation requirements. It does not tune parameters or read the final 30% holdout.
+Every agent returns BUY, SELL or NO_SIGNAL with its evidence and reason. A minimum 3-of-5 directional quorum is required before a Forex Sniper candidate can advance to weighted verification. If quorum is missing or disagrees with the primary candidate, the candidate is rejected. The quorum does not approve a trade or bypass the existing independent quote, spread, calendar, entry-trigger, stop-loss, take-profit, and minimum 1:2 risk/reward checks.
 
-These are original, transparent JavaScript adapters based on the public methodology descriptions, not copied or bundled upstream MT4 binaries/source. The upstream repositories remain separately credited:
+These are original, transparent JavaScript implementations inspired by public methodology descriptions; they are not copied MT4 binaries or verified ports of upstream code. The FX Strategy Framework-inspired validation policy preserves chronological training and locks the final 30% holdout until candidate settings are frozen. External agents must pass walk-forward testing, realistic transaction-cost modelling, at least 30 resolved paper trades, and forward paper validation before any future change to their authority. PAPER / RESEARCH ONLY; broker execution remains disabled.
+
+Source references:
 - https://github.com/mbelgin/hpFX
 - https://github.com/st3fansrb/forex-research
 - https://github.com/ForexTradingTools/fxtt-mt4-forex-scanner
 - https://github.com/kayzaa/TL-Free-MT4-MT5-Tools
 - https://github.com/nateemma/fx-strategy-framework
-
-**Critical governance:** all five adapters are currently diagnostics with `externalModuleSignalWeight: 0`. They cannot create, promote, veto or approve a BUY/SELL. Forex Sniper remains the primary provider and all existing quote, spread, calendar, closed-candle, entry, stop-loss, take-profit and minimum 1:2 reward/risk checks remain unchanged. External evidence may receive signal weight only after chronological training tests, realistic transaction-cost modelling, at least 30 resolved trades, and forward paper validation. The final 30% chronological holdout remains locked until candidate settings are frozen. PAPER / RESEARCH ONLY; no broker connection or live orders.
