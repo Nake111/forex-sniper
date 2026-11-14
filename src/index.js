@@ -10,6 +10,7 @@ import { evaluateSignal, confirmSignal, scoreInstitutionalSetup } from "./signal
 import { evaluateTieredSignal } from "./tiered-signal.js";
 import { evaluateVWAPStrategies, selectVWAPConsensus, resolvePrimaryDirection } from "./vwap-strategies.js";
 import { getForexNews } from "./news.js";
+import { enrichNewsWithAgentReach } from "./agent-reach-research.js";
 import { buildMacroContext } from "./macro.js";
 import { getEconomicCalendar, evaluateEconomicRisk } from "./economic-calendar.js";
 import { fetchBtcOptionsWalls, summarizeOptionsContext } from "./options-flow.js";
@@ -714,6 +715,11 @@ async function main() {
       const marketRisk = evaluateEconomicRisk(economicCalendar, market.symbol);
       const calendarForMarket = { ...economicCalendar, marketRisk: { [market.symbol]: marketRisk } };
       let context = buildMacroContext(selectedArticles, Date.now(), calendarForMarket, market.symbol);
+      // Agent-Reach only enriches already-discovered public headlines with article
+      // text. It is explicitly zero-vote context and never enters price/risk gates.
+      const agentReachResearch = await enrichNewsWithAgentReach(selectedArticles, { market: market.symbol });
+      context = { ...context, agentReachResearch };
+      console.log("AGENT-REACH RESEARCH (READ-ONLY / ZERO-VOTE):", JSON.stringify(agentReachResearch));
       if (market.symbol === "XAUUSD") {
         const goldMacro = await (await import("./gold-macro.js")).getGoldMacroData();
         const liveGoldContext = await loadGoldLiveContext();
