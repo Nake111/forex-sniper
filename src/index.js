@@ -508,7 +508,8 @@ async function analyseMarket(market, macroContext) {
   const githubResearch = evaluateGithubResearchIntegrations({
     frames: results,
     candles: frames.find(frame => frame.key === "M5").candles,
-    quoteValidation
+    quoteValidation,
+    market: market.symbol
   });
   console.log("FIVE GITHUB RESEARCH INTEGRATIONS — ZERO VOTE:", JSON.stringify(githubResearch));
 
