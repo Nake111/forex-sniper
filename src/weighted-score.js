@@ -1,8 +1,9 @@
 const SIDES = new Set(["BUY", "SELL"]);
 const WEIGHTS = Object.freeze({
   higherTimeframe: 25,
-  m15Momentum: 20,
-  m5Trigger: 20,
+  m15Momentum: 15,
+  m5Trigger: 15,
+  pocketOptionConfluence: 10,
   liquidityStructure: 15,
   quoteQuality: 10,
   volatilitySession: 10
@@ -46,6 +47,19 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
     : side === "SELL"
       ? (Number.isFinite(m15.macdHistogram) && m15.macdHistogram < 0) ||
         (Number.isFinite(m15.rsi14) && m15.rsi14 <= 48) : false;
+  const pocket = frames.M5 ?? {};
+  const confluenceVotes = [
+    { name: "RSI", available: Number.isFinite(pocket.rsi14), direction: Number.isFinite(pocket.rsi14) ? (pocket.rsi14 > 50 ? "BUY" : pocket.rsi14 < 50 ? "SELL" : "NEUTRAL") : null },
+    { name: "MACD", available: Number.isFinite(pocket.macdHistogram), direction: Number.isFinite(pocket.macdHistogram) ? (pocket.macdHistogram > 0 ? "BUY" : pocket.macdHistogram < 0 ? "SELL" : "NEUTRAL") : null },
+    { name: "Stochastic", available: ["BULLISH", "BEARISH", "NEUTRAL"].includes(pocket.stochastic?.direction), direction: pocket.stochastic?.direction === "BULLISH" ? "BUY" : pocket.stochastic?.direction === "BEARISH" ? "SELL" : pocket.stochastic?.direction === "NEUTRAL" ? "NEUTRAL" : null },
+    { name: "Candle streak", available: pocket.candleStreak?.direction !== "UNAVAILABLE" && typeof pocket.candleStreak?.direction === "string", direction: pocket.candleStreak?.direction === "BULLISH" ? "BUY" : pocket.candleStreak?.direction === "BEARISH" ? "SELL" : pocket.candleStreak?.direction === "NONE" ? "NEUTRAL" : null }
+  ];
+  const availableConfluence = confluenceVotes.filter(vote => vote.available);
+  const alignedConfluence = availableConfluence.filter(vote => vote.direction === side).length;
+  const confluenceAvailable = availableConfluence.length >= 3;
+  const confluencePass = confluenceAvailable && alignedConfluence >= 3 &&
+    pocket.rsiWick?.confirmed !== true || (confluenceAvailable && alignedConfluence >= 3 &&
+      (!pocket.rsiWick?.confirmed || pocket.rsiWick.direction === (side === "BUY" ? "BULLISH" : "BEARISH")));
   const triggerValue = marketReview?.m5?.confirmed;
   const triggerAvailable = typeof triggerValue === "boolean" || Boolean(frames.M5?.lastCandle);
   const triggerPass = typeof triggerValue === "boolean" ? triggerValue : candleTrigger(frames.M5, side) === true;
@@ -72,6 +86,13 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
     component("higher_timeframe_trend_and_structure", WEIGHTS.higherTimeframe, htfPass, htfAvailable, { H1: h1 ?? "UNAVAILABLE", H4: h4 ?? "UNAVAILABLE" }),
     component("M15_momentum", WEIGHTS.m15Momentum, momentumPass, momentumAvailable, { rsi14: m15.rsi14 ?? null, macdHistogram: m15.macdHistogram ?? null }),
     component("M5_closed_candle_trigger", WEIGHTS.m5Trigger, triggerPass, triggerAvailable, { confirmed: triggerAvailable ? triggerPass : null }),
+    component("pocket_option_style_indicator_confluence", WEIGHTS.pocketOptionConfluence, confluencePass, confluenceAvailable, {
+      votes: confluenceVotes.map(vote => ({ name: vote.name, direction: vote.direction ?? "UNAVAILABLE" })),
+      aligned: alignedConfluence,
+      required: 3,
+      rsiWick: pocket.rsiWick ?? null,
+      note: "Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority"
+    }),
     component("liquidity_and_SMC", WEIGHTS.liquidityStructure, liquidityPass, structureAvailable || Boolean(pressure), { bos: structure.bos ?? null, sweep: structure.sweep ?? null, pressure: pressure?.direction ?? "UNAVAILABLE" }),
     component("quote_and_spread", WEIGHTS.quoteQuality, spreadVerified === true, quoteAvailable, {
       spread: quoteValidation.spread ?? null,
