@@ -103,6 +103,32 @@ async function loadCandles(path, timeframe, interval) {
   return unique.slice(-WINDOW);
 }
 
+async function loadTrainingAgentOutcomes() {
+  const cutoff = Date.parse(process.env.AGENT_TRAINING_CUTOFF ?? "");
+  if (!Number.isFinite(cutoff)) return [];
+  const path = process.env.PAPER_JOURNAL_PATH ?? `${DATA_DIR}/second-brain.jsonl`;
+  try {
+    const raw = await readFile(path, "utf8");
+    const training = [];
+    for (const line of raw.split("\\n")) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line);
+      if (event.eventType !== "AGENT_FORECAST_OUTCOME") continue;
+      const rawTime = event.forecastAt;
+      const forecastAt = typeof rawTime === "number"
+        ? (rawTime < 1e12 ? rawTime * 1000 : rawTime)
+        : Date.parse(rawTime);
+      // Read only the timestamp needed to exclude the frozen holdout; do not
+      // pass post-cutoff outcome fields into calibration or its diagnostics.
+      if (Number.isFinite(forecastAt) && forecastAt <= cutoff) training.push(event);
+    }
+    return training;
+  } catch (error) {
+    if (error.code !== "ENOENT") console.warn("AGENT CALIBRATION: training journal unavailable or invalid; baseline weights retained:", error.message);
+    return [];
+  }
+}
+
 async function loadGoldLiveContext() {
   try {
     const raw = await readFile(`${DATA_DIR}/gold-live-ticks.jsonl`, "utf8");
@@ -293,7 +319,12 @@ async function analyseMarket(market, macroContext) {
   }
 
   const candleHistory = Object.fromEntries(frames.map(({ key, candles }) => [key, candles]));
-  const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext, candleHistory });
+  const agentTrainingCutoff = process.env.AGENT_TRAINING_CUTOFF ?? null;
+  const agentOutcomes = await loadTrainingAgentOutcomes();
+  console.log("AGENT TRAINING CALIBRATION:", agentTrainingCutoff
+    ? `frozen cutoff ${agentTrainingCutoff}; eligible training outcomes ${agentOutcomes.length}`
+    : "DISABLED — set AGENT_TRAINING_CUTOFF only after freezing the chronological training/holdout boundary");
+  const agentReport = runTradingAgents({ market: market.symbol, frames: results, macro: macroContext, candleHistory, agentOutcomes, agentTrainingCutoff });
   console.log("\nQUANTITATIVE CANDLE FORECAST PANEL:", JSON.stringify(agentReport.forecastingAgents));
   console.log("QUANTITATIVE FORECAST SUMMARY:", JSON.stringify(agentReport.forecastingSummary));
   console.log("\nTRADINGAGENTS MULTI-AGENT REPORT:", JSON.stringify(agentReport));
