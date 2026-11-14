@@ -548,7 +548,9 @@ async function analyseMarket(market, macroContext) {
     frames: results,
     candles: frames.find(frame => frame.key === "M5").candles,
     quoteValidation,
-    market: market.symbol
+    market: market.symbol,
+    agentOutcomes,
+    agentTrainingCutoff
   });
   console.log("FIVE INDEPENDENT SIGNAL AGENTS:", JSON.stringify(githubResearch.agents));
   console.log("FIVE-AGENT CONSENSUS:", JSON.stringify(githubResearch.consensus));
