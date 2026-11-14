@@ -53,7 +53,7 @@ export async function updateSecondBrain({
   market, candles = [], signal = "NO TRADE", candidate = "HOLD", plan = null,
   quote = null, quoteValidation = {}, vwap = {}, agents = {}, llm = {},
   macro = {}, frames = {}, marketIntelligence = {}, approval = {},
-  verification = {}, decisionLayers = {}, strategyAttribution = {},
+  verification = {}, decisionLayers = {}, strategyAttribution = {}, githubAgentEvidence = {},
   path = process.env.PAPER_JOURNAL_PATH ?? "data/second-brain.jsonl",
   now = Date.now()
 }) {
@@ -182,7 +182,10 @@ export async function updateSecondBrain({
         verification: { decision: verification.decision ?? "UNKNOWN", approved: verification.approved === true, blockers: verification.blockers ?? [] },
         discovery: decisionLayers.discovery?.candidate ?? null,
         verificationLayer: decisionLayers.verification?.status ?? null,
-        executionLayer: decisionLayers.execution?.decision ?? null
+        executionLayer: decisionLayers.execution?.decision ?? null,
+        fiveDirectionalAgents: githubAgentEvidence.agents ?? [],
+        fiveAgentConsensus: githubAgentEvidence.consensus ?? null,
+        validationFramework: githubAgentEvidence.validationFramework ?? null
       },
       macroRisk: macro.eventRisk ?? "UNKNOWN",
       timeframes: Object.fromEntries(["M5", "M15", "H1", "H4"].map(key => {
