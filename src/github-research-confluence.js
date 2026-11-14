@@ -14,7 +14,7 @@
 const DIRECTIONAL = new Set(["BUY", "SELL"]);
 
 function finite(value) {
-  return Number.isFinite(Number(value));
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 }
 
 function sideFromDelta(delta, epsilon = 0) {
@@ -76,10 +76,11 @@ function hpfxRoleResearch(frames) {
   return { status: "RESEARCH_ONLY", roles: ["TRADEORNOT", "SIGNAL", "CONFIRMATION", "EXIT"], votes, direction, confirmationCount: confirmations };
 }
 
-function scannerResearch(m5, quoteValidation) {
+function scannerResearch(m5, quoteValidation, market) {
   const spreadAtr = finite(quoteValidation?.spread) && finite(m5?.atr14) && m5.atr14 > 0
     ? quoteValidation.spread / m5.atr14 : null;
-  const spreadPass = quoteValidation?.valid === true && finite(spreadAtr) && spreadAtr <= 0.12;
+  const spreadLimit = market === "BTCUSD" ? 0.18 : market === "XAUUSD" ? 0.15 : 0.12;
+  const spreadPass = quoteValidation?.valid === true && finite(spreadAtr) && spreadAtr <= spreadLimit;
   const adxPass = finite(m5?.adx14) && m5.adx14 >= 18;
   const rsiDirection = finite(m5?.rsi14) ? (m5.rsi14 >= 55 ? "BUY" : m5.rsi14 <= 45 ? "SELL" : "NEUTRAL") : "NEUTRAL";
   const trendDirection = finite(m5?.ema20) && finite(m5?.ema50) ? sideFromDelta(m5.ema20 - m5.ema50) : "NEUTRAL";
@@ -133,10 +134,10 @@ function validationFramework(candles) {
   };
 }
 
-export function evaluateGithubResearchIntegrations({ frames, candles, quoteValidation = null }) {
+export function evaluateGithubResearchIntegrations({ frames, candles, quoteValidation = null, market = "EURUSD" }) {
   const hpfx = hpfxRoleResearch(frames);
   const smc = smcResearch(candles);
-  const scanner = scannerResearch(frames.M5, quoteValidation);
+  const scanner = scannerResearch(frames.M5, quoteValidation, market);
   const gannHurst = gannHurstResearch(candles);
   const framework = validationFramework(candles);
   return {
