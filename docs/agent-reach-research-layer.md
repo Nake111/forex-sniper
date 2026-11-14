@@ -1,22 +1,24 @@
 # Agent-Reach research layer (paper-only)
 
-Agent-Reach is an optional, read-only research source for public web, GitHub, Reddit, YouTube and other supported platform content. It is not a live market-data feed, broker quote source, candle provider or trade-approval engine.
+Agent-Reach is now an optional read-only enrichment step in the main signal workflow. Forex Sniper first discovers public headlines using its existing news providers, then asks Agent-Reach to read up to two article URLs and attach short source excerpts to the market macro context.
 
-## Allowed use
-- Gather dated macroeconomic commentary, public news links and market narratives.
-- Collect public trader discussion as low-weight contextual sentiment.
-- Preserve source URL, author/publisher and publication time when available.
-- Mark the source unavailable when Agent-Reach or a platform cannot be reached.
-- Discover supported actions with `agent-reach channels`; use only documented read/search actions.
+## Runtime integration
+- `src/agent-reach-research.js` invokes the documented `agent-reach read <URL>` command and parses its JSON result.
+- `src/index.js` attaches the result to each market's macro context and logs its status.
+- `src/llm-agents.js` supplies bounded excerpts to the macro specialist, explicitly marked as untrusted external text.
+- `.github/workflows/forex-sniper.yml` installs the Agent-Reach CLI into the ephemeral GitHub Actions runner with `pipx`. It runs the safe/check-only installer mode; no system dependencies, browser sessions, cookies or login channels are installed.
+- `AGENT_REACH_ENABLED=false` disables the reader. If the CLI or source is unavailable, the adapter reports `UNAVAILABLE` and analysis continues.
 
-## Prohibited use
-- Never derive bid/ask, spread, executable price, candle OHLC or provider timestamps from social posts or article text.
-- Never let sentiment, an influencer call, a search result or an LLM override candle, quote, spread, M5 trigger, risk/reward, macro-event or independent approval gates.
-- Never convert an external BUY/SELL opinion into a Forex Sniper signal.
-- Never install browser cookies, request credentials, post, comment, message or place orders as part of this integration.
+## Signal and data boundary
+Agent-Reach output is research context only (`researchOnly: true`, `voteWeight: 0`, `canApproveSignal: false`). It may help the macro reviewer understand an article body, but it cannot:
+- provide or replace bid/ask, spread, executable price, candle OHLC or provider timestamps;
+- change the technical candidate, quote validation, spread/ATR, calendar, closed-M5 trigger, stop/target geometry or reward/risk checks;
+- approve a BUY/SELL, override independent approval, or authorize a broker order;
+- perform any write action, login, cookie import, post, comment, message or trade.
 
-## Approval boundary
-Agent-Reach output may be attached to the research report as non-voting context only. The deterministic market engine and independent approval agents remain authoritative. A paper BUY/SELL still requires a current provider-timestamped bid/ask snapshot, valid market-specific spread/ATR, a closed M5 trigger, a correctly priced entry/stop/target and at least 1:2 effective risk/reward. Otherwise publish `NO APPROVED TRADE`.
+Article text is untrusted. The LLM reviewer is instructed to ignore instructions embedded in retrieved pages and treat excerpts only as source evidence. Excerpts are truncated and retain the source URL, author and publication time when supplied.
 
-## Runtime
-Do not make Agent-Reach a required dependency of the scheduled GitHub Actions signal pipeline. Its optional platform backends can require separate setup, login or third-party tools; a research-source outage must not stop market-data refresh or weaken trade validation. Enable a source only after its documented action and health check have been verified.
+## Fail-closed behavior
+A paper BUY/SELL still requires the existing provider-timestamped quote, market-specific spread/ATR validation, closed M5 entry trigger, complete quote-priced entry/stop/target, minimum 1:2 effective risk/reward and independent approval. Otherwise publish `NO APPROVED TRADE`.
+
+Agent-Reach is not a required dependency: an unavailable reader must never stop candle refresh or weaken any trading safety gate. The workflow installs only the CLI and invokes the official safe/check-only mode. It does not configure optional authenticated channels.
