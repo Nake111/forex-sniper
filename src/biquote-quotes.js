@@ -78,6 +78,12 @@ export async function fetchBiquoteQuote(market, {
         "https://biquote.io/api/" + SYMBOLS[market] + "?allowStale=false",
         { signal: AbortSignal.timeout(timeoutMs) }
       );
+      if (response.status === 404) {
+        return {
+          quote: null,
+          error: "Biquote " + market + " has no fresh tick (HTTP 404: market may be closed or its last quote is older than five minutes)"
+        };
+      }
       if (!response.ok) throw new Error("HTTP " + response.status);
       const payload = await response.json();
       const quote = normalizeBiquoteTick(payload);
