@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildAdaptiveAgentWeights } from "../src/adaptive-agent-weights.js";
+import { buildAgentForecasts } from "../src/signal-quality.js";
 
 const cutoff = "2026-01-01T00:00:00.000Z";
 function outcome(agent, side, actual, at = "2025-12-01T00:00:00.000Z", market = "EURUSD") {
@@ -40,4 +41,12 @@ test("missing frozen cutoff disables calibration", () => {
   const report = buildAdaptiveAgentWeights({ market: "EURUSD", outcomes: rows });
   assert.equal(report.enabled, false);
   assert.match(report.reason, /AGENT_TRAINING_CUTOFF/);
+});
+
+test("agent direction is recorded as a directional forecast", () => {
+  const forecasts = buildAgentForecasts({
+    agents: [{ name: "SMC analyst", direction: "BUY", evidence: "closed candle structure" }],
+    market: "EURUSD", candleAt: 1764547200000, close: 1.1, atr14: 0.001
+  });
+  assert.equal(forecasts[0].predictedSide, "BUY");
 });
