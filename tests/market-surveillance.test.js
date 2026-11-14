@@ -10,7 +10,7 @@ function baseCandles(last = {}) {
     low: 99,
     close: 100,
     volume: 100,
-    ...((i === 19) ? last : {})
+    ...((i === 20) ? last : {})
   }));
 }
 
