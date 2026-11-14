@@ -27,7 +27,7 @@ test("historical bid/ask journal preserves provider quote evidence append-only",
     assert.equal(rows.length, 2);
     assert.equal(rows[0].bid, 1.1);
     assert.equal(rows[0].ask, 1.1002);
-    assert.equal(rows[0].spread, 0.0002);
+    assert.ok(Math.abs(rows[0].spread - 0.0002) < 1e-10);
     assert.equal(rows[0].providerTimestamp, receivedAt - 500);
     assert.equal(rows[0].receivedAt, receivedAt);
     assert.equal(rows[0].validation.valid, true);
