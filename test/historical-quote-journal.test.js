@@ -23,7 +23,7 @@ test("historical bid/ask journal preserves provider quote evidence append-only",
     }, receivedAt);
     await journal.flushHistoricalQuotes();
 
-    const rows = (await readFile(path, "utf8")).trim().split("\\n").map(JSON.parse);
+    const rows = (await readFile(path, "utf8")).trim().split("\n").map(JSON.parse);
     assert.equal(rows.length, 2);
     assert.equal(rows[0].bid, 1.1);
     assert.equal(rows[0].ask, 1.1002);
