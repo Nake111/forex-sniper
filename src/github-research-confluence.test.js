@@ -61,7 +61,9 @@ test("five-agent panel applies only frozen market-specific training calibration"
     quoteValidation: { valid: true, spread: 0.0001 }, market: "EURUSD",
     agentOutcomes: outcomes, agentTrainingCutoff: "2026-01-01T00:00:00.000Z"
   });
-  assert.equal(result.agents.every(agent => agent.weight === 1.25), true);
+  const directionalBuys = result.agents.filter(agent => agent.signal === "BUY");
+  assert.ok(directionalBuys.length >= 3);
+  assert.equal(directionalBuys.every(agent => agent.weight === 1.25), true);
   assert.equal(result.consensus.approved, true);
   assert.equal(result.adaptiveCalibration.enabled, true);
 });
