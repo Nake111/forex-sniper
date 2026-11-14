@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The 17 deterministic research specialists receive conservative, market-specific and direction-specific reliability multipliers. This changes only the relative contribution of specialist votes; it does not relax any candidate, confirmation, quote, stale-data, macro, entry, spread, stop-loss, or minimum 1:2 risk/reward gate.
+The five independent research adapters and the 17 deterministic specialist agents receive conservative, market-specific and direction-specific reliability multipliers. The five-agent quorum still requires at least 3 of 5 directional votes and at least 60% of directional reliability-weighted support. This changes only the relative contribution of specialist votes; it does not relax any candidate, confirmation, quote, stale-data, macro, entry, spread, stop-loss, or minimum 1:2 risk/reward gate.
 
 ## Training boundary is mandatory
 
-Set `AGENT_TRAINING_CUTOFF` to the ISO-8601 timestamp that ends the already-frozen training partition. The calibration code accepts only resolved `AGENT_FORECAST_OUTCOME` records for the requested market whose `forecastAt` is at or before that timestamp. Records after the cutoff are not used to calculate, rank, or tune weights.
+Set the GitHub Actions repository variable `AGENT_TRAINING_CUTOFF` to the ISO-8601 timestamp that ends the already-frozen training partition (Repository Settings → Secrets and variables → Actions → Variables). The signal workflows pass this variable to the analysis process. The calibration code accepts only resolved `AGENT_FORECAST_OUTCOME` records for the requested market whose `forecastAt` is at or before that timestamp. Records after the cutoff are not used to calculate, rank, or tune weights.
 
 If the cutoff is absent or invalid, calibration is disabled and the existing baseline weights remain in force. Do not set the cutoff by looking for the best holdout result. Freeze it from the chronological dataset definition before tuning.
 
