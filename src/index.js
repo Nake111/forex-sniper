@@ -51,6 +51,14 @@ const MARKET_FILTER = process.env.MARKET_FILTER?.toUpperCase();
 const MARKETS = MARKET_FILTER ? ALL_MARKETS.filter(market => market.symbol === MARKET_FILTER) : ALL_MARKETS;
 if (MARKET_FILTER && MARKETS.length === 0) throw new Error("Unknown MARKET_FILTER: " + MARKET_FILTER);
 
+const BTC_MAX_AGE_MS = { M5: 8 * 60 * 1000, M15: 18 * 60 * 1000, H1: 70 * 60 * 1000 };
+
+function maxAgeForMarket(market, timeframe) {
+  return market.symbol === "BTCUSD"
+    ? (BTC_MAX_AGE_MS[timeframe.key] ?? timeframe.maxAgeMs)
+    : timeframe.maxAgeMs;
+}
+
 const TIMEFRAMES = [
   { key: "M5", file: "m5", milliseconds: 5 * 60 * 1000, maxAgeMs: 10 * 60 * 1000 },
   { key: "M15", file: "m15", milliseconds: 15 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 },
@@ -185,7 +193,7 @@ async function analyseMarket(market, macroContext) {
   let staleTimeframes = TIMEFRAMES.filter(tf => {
     const candles = frames.find(frame => frame.key === tf.key).candles;
     const closedAt = candles.at(-1).timestamp + tf.milliseconds;
-    return Date.now() - closedAt > tf.maxAgeMs;
+    return Date.now() - closedAt > maxAgeForMarket(market, tf);
   });
   for (const tf of TIMEFRAMES) {
     const candles = frames.find(frame => frame.key === tf.key).candles;
@@ -208,7 +216,7 @@ async function analyseMarket(market, macroContext) {
         frames = await loadMarketFrames();
         staleTimeframes = TIMEFRAMES.filter(tf => {
           const candles = frames.find(frame => frame.key === tf.key).candles;
-          return Date.now() - (candles.at(-1).timestamp + tf.milliseconds) > tf.maxAgeMs;
+          return Date.now() - (candles.at(-1).timestamp + tf.milliseconds) > maxAgeForMarket(market, tf);
         });
       } catch (error) {
         console.warn(`FAST RECOVERY ATTEMPT ${attempt} FAILED:`, error.message);
