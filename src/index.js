@@ -503,15 +503,17 @@ async function analyseMarket(market, macroContext) {
   const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
   console.log("A1 HEART — MULTI-SESSION OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
   console.log("A1 HEART SESSION STATUS:", (a1Heart.sessions ?? []).map(session => `${session.name}: ${session.status}`).join(" | "));
-  // Five public GitHub methodologies are evaluated as isolated research modules.
-  // They have zero signal weight and cannot approve, veto, or override Forex Sniper.
+  // Five independent directional agents analyse the same closed-candle data.
+  // Their 3-of-5 quorum is an additional candidate-confirmation gate only.
   const githubResearch = evaluateGithubResearchIntegrations({
     frames: results,
     candles: frames.find(frame => frame.key === "M5").candles,
     quoteValidation,
     market: market.symbol
   });
-  console.log("FIVE GITHUB RESEARCH INTEGRATIONS — ZERO VOTE:", JSON.stringify(githubResearch));
+  console.log("FIVE INDEPENDENT SIGNAL AGENTS:", JSON.stringify(githubResearch.agents));
+  console.log("FIVE-AGENT CONSENSUS:", JSON.stringify(githubResearch.consensus));
+  console.log("FIVE-AGENT VALIDATION FRAMEWORK:", JSON.stringify(githubResearch.validationFramework));
 
   const weightedScore = scoreCandidate({
     market: market.symbol,
@@ -522,7 +524,8 @@ async function analyseMarket(market, macroContext) {
     spreadVerified,
     macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
     staleTimeframes: staleTimeframes.map(tf => tf.key),
-    a1Heart
+    a1Heart,
+    externalAgentConsensus: githubResearch.consensus
   });
   console.log("WEIGHTED VERIFICATION SCORE:", JSON.stringify(weightedScore));
 
@@ -546,7 +549,9 @@ async function analyseMarket(market, macroContext) {
     quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
     marketSurveillance: results.M5.surveillance ?? null,
     alphaPipResearch: results.M5.alphaPip ?? null,
-    githubResearchIntegrations: githubResearch,
+    githubResearchAgents: githubResearch.agents,
+    githubResearchConsensus: githubResearch.consensus,
+    githubResearchValidation: githubResearch.validationFramework,
     hardBlockers: weightedScore.hardBlockers ?? [],
     approvalStatus: "PENDING_INDEPENDENT_VERIFICATION"
   };
