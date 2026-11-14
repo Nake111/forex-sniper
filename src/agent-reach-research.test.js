@@ -47,3 +47,13 @@ test("Agent-Reach can be disabled and rejects unsafe URLs", async () => {
   assert.equal(result.status, "DISABLED");
   assert.equal(invoked, false);
 });
+
+test("market filter prevents unrelated EUR/USD headlines entering BTC research", async () => {
+  let invoked = false;
+  const result = await enrichNewsWithAgentReach(articles, {
+    market: "BTCUSD",
+    execFileImpl: async () => { invoked = true; return { stdout: "{}" }; }
+  });
+  assert.equal(result.status, "NO_MATCHING_HEADLINES");
+  assert.equal(invoked, false);
+});
