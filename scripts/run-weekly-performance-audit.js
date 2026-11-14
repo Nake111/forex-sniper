@@ -48,10 +48,19 @@ const quoteQuality = {
   note: "Paper estimates are not actual fills. Observed slippage is only measurable when a real fill price and timestamp are recorded."
 };
 const allTimePerformance = buildPaperPerformance(events, now.toISOString());
-const weeklyPaperPerformance = buildPaperPerformance(events.filter(event => {
+const recentSignalIds = new Set(events.filter(event => event.eventType === "PAPER_SIGNAL").filter(event => {
   const t = timeOf(event);
   return t !== null && t >= periodStart.getTime() && t <= now.getTime();
-}), now.toISOString());
+}).map(event => event.signalId));
+for (const outcome of events.filter(event => event.eventType === "PAPER_OUTCOME")) {
+  const t = timeOf(outcome);
+  if (t !== null && t >= periodStart.getTime() && t <= now.getTime()) recentSignalIds.add(outcome.signalId);
+}
+const weeklyPaperEvents = events.filter(event =>
+  (event.eventType === "PAPER_SIGNAL" && recentSignalIds.has(event.signalId)) ||
+  (event.eventType === "PAPER_OUTCOME" && recentSignalIds.has(event.signalId))
+);
+const weeklyPaperPerformance = buildPaperPerformance(weeklyPaperEvents, now.toISOString());
 
 const audit = {
   schemaVersion: 1,
