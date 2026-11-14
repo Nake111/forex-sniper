@@ -213,7 +213,7 @@ export async function updateSecondBrain({
     const ranges = validCandles.slice(-20).map(c => Number(c.high) - Number(c.low)).filter(finite);
     const rangeBaseline = ranges.length ? ranges.reduce((a,b)=>a+b,0) / ranges.length : null;
     const current = latest ? { ...frames.M5, close: Number(latest.close), candleRange: Number(latest.high) - Number(latest.low) } : frames.M5;
-    const regime = classifyMarketRegime({ close: current?.close, ema20: current?.ema20, ema50: current?.ema50, ema200: current?.ema200, adx14: current?.adx14, atr14: current?.atr14, atrBaseline: current?.atrBaseline, candleRange: current?.candleRange, rangeBaseline });
+    const regime = classifyMarketRegime({ close: current?.close, ema20: current?.ema20, ema50: current?.ema50, ema200: current?.ema200, adx14: current?.adx14, atr14: current?.atr14, atrBaseline: current?.atrBaseline ?? rangeBaseline, candleRange: current?.candleRange, rangeBaseline });
     const forecasts = buildAgentForecasts({ agents: githubAgentEvidence.agents, market, candleAt, close: current?.close, atr14: current?.atr14, regime });
     for (const forecast of forecasts) if (!eventIds.has(forecast.eventId) && !events.some(e => e.eventId === forecast.eventId) && !newEvents.some(e => e.eventId === forecast.eventId)) newEvents.push(forecast);
   }
@@ -225,6 +225,12 @@ export async function updateSecondBrain({
         eventId: signalId, eventType: "PAPER_SIGNAL", signalId, market, side: signal,
         createdAt: now, signalCandleAt: candleAt,
         indicativeEntry: finite(plan.entry) ? plan.entry : null,
+        executableSideQuote: signal === "BUY" ? quoteEvidence.ask : quoteEvidence.bid,
+        quoteAgeAtDecisionMs: quoteAgeMs,
+        observedSlippage: null,
+        actualFillPrice: null,
+        actualFillTimestamp: null,
+        estimatedSlippageBpsPerSide: costEstimate.estimatedSlippageBpsPerSide,
         signalReferenceEntry: finite(plan.signalReferenceEntry) ? plan.signalReferenceEntry : null,
         entryReference: plan.entryReference ?? null,
         stopLoss: finite(plan.stopLoss) ? plan.stopLoss : null,
