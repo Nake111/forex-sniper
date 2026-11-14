@@ -7,7 +7,7 @@ import { evaluateCombinedSignal } from "./combined-signal.js";
 
 const MIN_HISTORY = 220;
 const INTERVALS = { M5: 5 * 60 * 1000, M15: 15 * 60 * 1000, H1: 60 * 60 * 1000 };
-const MAX_AGE = { M5: 20 * 60 * 1000, M15: 45 * 60 * 1000, H1: 2 * 60 * 60 * 1000 };
+const MAX_AGE = { M5: 8 * 60 * 1000, M15: 18 * 60 * 1000, H1: 70 * 60 * 1000 };
 
 function getTime(candle) {
   const raw = candle.timestamp ?? candle.time ?? candle.date;
