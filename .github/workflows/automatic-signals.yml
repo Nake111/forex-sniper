@@ -70,6 +70,7 @@ jobs:
             npm start
           } 2>&1 | tee signals.txt
         env:
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           LLM_TIMEOUT_MS: "8000"
