@@ -82,3 +82,46 @@ test("BTCUSD can advance independent candidates when A1 HEART is not ready", () 
   assert.ok(result.advisories.some(reason => reason.includes("A1 HEART")));
   assert.equal(result.status, "ELIGIBLE_FOR_RISK_GATE");
 });
+
+test("Pocket Option-style confluence adds candidate points but never approves a trade", () => {
+  const frames = {
+    ...bullish,
+    M5: {
+      ...bullish.M5,
+      rsi14: 60,
+      macdHistogram: 0.2,
+      stochastic: { direction: "BULLISH", k: 82, d: 75 },
+      candleStreak: { direction: "BULLISH", confirmed: true, streak: 3 },
+      rsiWick: { direction: "NONE", confirmed: false }
+    }
+  };
+  const result = scoreCandidate({
+    market: "EURUSD", direction: "BUY", frames,
+    marketReview: { m5: { confirmed: true }, orderFlow: { direction: "BUY", strength: 3 } },
+    quoteValidation: { valid: true, spread: 0.0001 }, spreadVerified: true,
+    a1Heart: { status: "READY", direction: "BUY" }
+  });
+  const confluence = result.components.find(item => item.name === "pocket_option_style_indicator_confluence");
+  assert.equal(confluence.status, "PASS");
+  assert.equal(confluence.points, 10);
+  assert.equal(result.decision, "CANDIDATE_ONLY");
+  assert.equal(result.approved, false);
+});
+
+test("opposing RSI wick rejection blocks Pocket Option-style confluence points", () => {
+  const frames = {
+    ...bullish,
+    M5: {
+      ...bullish.M5,
+      rsi14: 60,
+      macdHistogram: 0.2,
+      stochastic: { direction: "BULLISH" },
+      candleStreak: { direction: "BULLISH", confirmed: true },
+      rsiWick: { direction: "BEARISH", confirmed: true }
+    }
+  };
+  const result = scoreCandidate({ market: "EURUSD", direction: "BUY", frames });
+  const confluence = result.components.find(item => item.name === "pocket_option_style_indicator_confluence");
+  assert.equal(confluence.status, "FAIL");
+  assert.equal(confluence.points, 0);
+});
