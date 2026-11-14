@@ -8,6 +8,10 @@ const bullish = {
   M15: { rsi14: 60, macdHistogram: 0.2 },
   M5: {
     atr14: 1, atrBaseline: 1,
+    rsi14: 60, macdHistogram: 0.2,
+    stochastic: { direction: "BULLISH", k: 82, d: 75 },
+    candleStreak: { direction: "BULLISH", confirmed: true, streak: 3 },
+    rsiWick: { direction: "NONE", confirmed: false },
     lastCandle: { open: 100, high: 102, low: 99, close: 101.8 },
     structure: { bos: "BULLISH", sweep: "SELL_SIDE" },
     smartMoney: { orderBlocks: [] }
