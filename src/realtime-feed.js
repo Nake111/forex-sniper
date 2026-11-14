@@ -4,6 +4,7 @@ import WebSocket from "ws";
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 import { normalizeCoinbaseTicker, normalizeBiquoteStreamTick } from "./realtime-feed-core.js";
 import { validateBiquoteTick } from "./biquote-quotes.js";
+import { recordHistoricalQuote, flushHistoricalQuotes } from "./historical-quote-journal.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const MAX_AGE_MS = 15_000;
@@ -159,6 +160,7 @@ async function pollBiquoteRest() {
 
 function publish(market, quote) {
   quotes[market] = quote;
+  recordHistoricalQuote(market, quote, Date.now());
   const event = "event: quote\ndata: " + JSON.stringify({ market, quote, updatedAt: Date.now() }) + "\n\n";
   for (const client of clients) {
     if (!client.destroyed) client.write(event);
