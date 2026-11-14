@@ -331,7 +331,7 @@ function shutdown(signal) {
   socket?.close(1000, "service shutdown");
   void biquoteConnection?.stop();
   for (const client of clients) client.end();
-  server.close(() => process.exit(0));
+  server.close(async () => { await flushHistoricalQuotes(); process.exit(0); });
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
