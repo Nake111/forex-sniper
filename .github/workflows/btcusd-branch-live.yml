@@ -2,7 +2,7 @@ name: BTCUSD Branch Live Refresh
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
   push:
     branches: [main, Btcusd]
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   refresh-and-analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout BTCUSD branch
         uses: actions/checkout@v4
