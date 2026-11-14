@@ -8,10 +8,10 @@ import {
 
 test("classic stochastic uses closed OHLC candles and reports directional alignment", () => {
   const candles = Array.from({ length: 20 }, (_, i) => ({
-    open: 100 + i,
-    high: 102 + i,
-    low: 99 + i,
-    close: 101 + i
+    open: 40,
+    high: 100,
+    low: 0,
+    close: i < 18 ? 60 : i === 18 ? 65 : 70
   }));
   const result = stochasticOscillator(candles, 14, 3);
   assert.ok(Number.isFinite(result.k));
