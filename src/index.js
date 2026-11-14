@@ -160,6 +160,7 @@ ${name} ANALYSIS`);
   console.log("Recent unfilled FVG zones:", JSON.stringify(result.smartMoney.fairValueGaps));
   console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
   console.log("AI Profit Sniper-style surveillance:", JSON.stringify(result.surveillance));
+  console.log("Alpha Pip-style ATR/momentum research:", JSON.stringify(result.alphaPip));
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
@@ -533,6 +534,7 @@ async function analyseMarket(market, macroContext) {
     quoteSource: spreadQuote?.source ?? "unavailable",
     quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
     marketSurveillance: results.M5.surveillance ?? null,
+    alphaPipResearch: results.M5.alphaPip ?? null,
     hardBlockers: weightedScore.hardBlockers ?? [],
     approvalStatus: "PENDING_INDEPENDENT_VERIFICATION"
   };
