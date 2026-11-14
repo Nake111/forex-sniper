@@ -532,6 +532,7 @@ async function analyseMarket(market, macroContext) {
     ask: spreadQuote?.ask ?? null,
     quoteSource: spreadQuote?.source ?? "unavailable",
     quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
+    marketSurveillance: results.M5.surveillance ?? null,
     hardBlockers: weightedScore.hardBlockers ?? [],
     approvalStatus: "PENDING_INDEPENDENT_VERIFICATION"
   };
