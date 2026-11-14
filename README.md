@@ -216,3 +216,23 @@ Optional public idea corroboration can be enabled with the repository/environmen
 Public-feed direction counts are context only. A publisher domain and article timestamp can be checked, but individual trader identity, track record, entry quality and profitability are not verified. This evidence never changes the engine candidate and cannot override quote, calendar, timeframe, entry, spread, stop-loss, risk/reward or approval gates. Do not put private or paid feed credentials in a public repository; use encrypted repository secrets or deployment environment variables.
 
 The public-idea research adapter uses the free public TradingView Trading Ideas RSS feed (https://www.tradingview.com/feed/) by default, so it can operate without an API key or paid subscription. Set PUBLIC_TRADER_RSS_URLS to override the default with up to three comma-separated HTTPS RSS/Atom feeds. Feed mentions are unverified public commentary, not verified trades or a validated trader track record; the evidence is advisory only.
+
+
+## Five GitHub research integrations (main)
+
+The main analysis now runs five isolated research adapters from `src/github-research-confluence.js` and prints their evidence beside the primary Forex Sniper analysis:
+
+1. **hpFX methodology** — entry / confirmation / trade-or-not role diagnostics inspired by the published hpFX documentation. hpFX itself is an MT4 batch-testing engine and is not embedded or executed by this Node.js project.
+2. **Forex Research (ICT/SMC)** — closed-candle swing break / MSS and recent FVG diagnostics. The upstream project defaults to synthetic data for offline plumbing; synthetic performance is not evidence of a trading edge.
+3. **FxTT Scanner methodology** — RSI, ADX, ATR and validated spread-to-ATR diagnostics. No MT4 executable or external scanner process is required.
+4. **Gann / Hurst research** — Murrey-style octave levels, explicitly normalized swing-anchored 1x1 / 2x1 research lines, and trailing 32/64/128 moving-average alignment. Centred moving averages and astronomy/cycle timing are excluded because they can introduce look-ahead or cannot be reliably reproduced from the available public material.
+5. **FX Strategy Framework methodology** — chronological training / holdout boundaries and validation requirements. It does not tune parameters or read the final 30% holdout.
+
+These are original, transparent JavaScript adapters based on the public methodology descriptions, not copied or bundled upstream MT4 binaries/source. The upstream repositories remain separately credited:
+- https://github.com/mbelgin/hpFX
+- https://github.com/st3fansrb/forex-research
+- https://github.com/ForexTradingTools/fxtt-mt4-forex-scanner
+- https://github.com/kayzaa/TL-Free-MT4-MT5-Tools
+- https://github.com/nateemma/fx-strategy-framework
+
+**Critical governance:** all five adapters are currently diagnostics with `externalModuleSignalWeight: 0`. They cannot create, promote, veto or approve a BUY/SELL. Forex Sniper remains the primary provider and all existing quote, spread, calendar, closed-candle, entry, stop-loss, take-profit and minimum 1:2 reward/risk checks remain unchanged. External evidence may receive signal weight only after chronological training tests, realistic transaction-cost modelling, at least 30 resolved trades, and forward paper validation. The final 30% chronological holdout remains locked until candidate settings are frozen. PAPER / RESEARCH ONLY; no broker connection or live orders.
