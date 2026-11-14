@@ -1,0 +1,72 @@
+name: Forex Sniper Weekly Performance Audit
+
+on:
+  schedule:
+    # Weekly Monday audit. GitHub may delay scheduled starts during high load.
+    - cron: "15 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: forex-sniper-weekly-performance-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  weekly-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout latest main and append-only paper journal
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify source and regression tests
+        run: |
+          npm run check
+          npm test
+      - name: Build cumulative BUY/SELL paper performance
+        run: npm run publish:paper-performance
+      - name: Generate weekly agent, regime and execution audit
+        run: node scripts/run-weekly-performance-audit.js
+      - name: Verify audit safeguards and report structure
+        run: |
+          node --input-type=module -e '
+            import { readFile } from "node:fs/promises";
+            const report = JSON.parse(await readFile("dashboard/data/weekly-performance-audit.json", "utf8"));
+            if (report.mode !== "PAPER_RESEARCH_ONLY") throw new Error("Unexpected operating mode");
+            if (report.validationPolicy.holdoutAccessed !== false || report.validationPolicy.holdoutUsedForTuning !== false) throw new Error("Holdout policy violation");
+            if (report.validationPolicy.consensusThresholdChanged !== false || report.validationPolicy.brokerOrdersPlaced !== false) throw new Error("Trading safety policy violation");
+            if (!report.directionalAccuracy || !report.executionEvidenceLast7Days) throw new Error("Missing audit sections");
+            console.log("WEEKLY AUDIT VERIFIED:", report.generatedAt);
+          '
+      - name: Publish weekly audit and cumulative dashboard metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard/data/paper-performance.json dashboard/data/weekly-performance-audit.json reports/weekly-performance-audit.md
+          if git diff --cached --quiet; then
+            echo "No report changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish weekly Forex Sniper performance audit"
+          git push origin HEAD:main
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-sniper-weekly-performance-audit
+          path: |
+            dashboard/data/weekly-performance-audit.json
+            reports/weekly-performance-audit.md
+          if-no-files-found: warn
+          retention-days: 90
