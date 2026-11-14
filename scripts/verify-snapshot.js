@@ -15,7 +15,6 @@ const labels = [
   ["AGENT 3 — INDEPENDENT LIVE ENTRY VERIFICATION:", "verification"]
 ];
 const lines = log.split(/\r?\n/);
-const escaped = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const exactLineIndex = value => lines.findIndex(line => line.trim() === value);
 
 for (const market of markets) {
@@ -30,6 +29,12 @@ for (const market of markets) {
     throw new Error(`${market}: final signal section missing from its exact market block`);
   }
   const section = sectionLines.join("\n");
+  const finalActionLine = sectionLines.slice(finalIndex).find(line => line.startsWith("FINAL ACTION:"));
+  if (!finalActionLine) throw new Error(`${market}: final action line missing`);
+  const action = finalActionLine.slice("FINAL ACTION:".length).trim();
+  if (!["BUY", "SELL", "NO TRADE", "HOLD"].includes(action)) {
+    throw new Error(`${market}: unrecognized final action ${action}`);
+  }
 
   for (const [marker, kind] of labels) {
     const matches = sectionLines.filter(value => value.includes(marker));
@@ -48,25 +53,27 @@ for (const market of markets) {
       if (age < -60000 || age > 5 * 60 * 1000) {
         throw new Error(`${market}: verification result is not from this fresh snapshot`);
       }
-      if (report.quoteValidationValid !== true ||
-          !Number.isFinite(report.quoteAgeMs) || report.quoteAgeMs < 0 ||
-          report.quoteAgeMs > maxQuoteAgeMs ||
-          !report.quote || !(Number(report.quote.bid) > 0) ||
-          !(Number(report.quote.ask) > Number(report.quote.bid))) {
-        throw new Error(`${market}: no independently validated fresh bid/ask quote (age limit ${maxQuoteAgeMs}ms)`);
+      const quoteIsFresh = report.quoteValidationValid === true &&
+        Number.isFinite(report.quoteAgeMs) && report.quoteAgeMs >= 0 &&
+        report.quoteAgeMs <= maxQuoteAgeMs &&
+        report.quote && Number(report.quote.bid) > 0 &&
+        Number(report.quote.ask) > Number(report.quote.bid);
+      if (action === "BUY" || action === "SELL") {
+        if (!quoteIsFresh) {
+          throw new Error(`${market}: actionable ${action} is missing an independently validated fresh bid/ask quote (age limit ${maxQuoteAgeMs}ms)`);
+        }
+        if (report.approved !== true || report.decision !== action) {
+          throw new Error(`${market}: actionable ${action} is not approved by independent entry verification`);
+        }
+        console.log(`${market}: all three agents ran; quote fresh (${report.quoteAgeMs}ms); ${action}; independently approved=true`);
+      } else {
+        console.log(`${market}: ${action}; no fresh quote is required to publish a fail-closed no-trade result`);
       }
-      console.log(`${market}: all three agents ran; quote fresh (${report.quoteAgeMs}ms); ${report.decision}; approved=${report.approved}`);
     }
   }
 
-  // The final decision is evidence, not an approval shortcut. A blocked decision
-  // is a valid snapshot; only the independent agents and quote checks above gate it.
-  const finalAction = sectionLines.slice(finalIndex).find(line => line.startsWith("FINAL ACTION:"));
-  if (!finalAction) throw new Error(`${market}: final action line missing`);
-  const action = finalAction.slice("FINAL ACTION:".length).trim();
-  if (!["BUY", "SELL", "NO TRADE", "HOLD"].includes(action)) {
-    throw new Error(`${market}: unrecognized final action ${action}`);
-  }
+  // A no-trade snapshot is publishable even when the market is closed or quotes are unavailable.
+  // BUY/SELL remain gated by fresh quote evidence and independent approval above.
   console.log(`${market}: final action section present (${action})`);
 }
 
