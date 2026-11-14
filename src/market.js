@@ -429,6 +429,72 @@ export function cumulativeVolumeDeltaProxy(candles, slopeBars = 5) {
   };
 }
 
+export function stochasticOscillator(candles, period = 14, smoothD = 3) {
+  if (!Array.isArray(candles) || candles.length < period + smoothD) {
+    return { k: null, d: null, direction: "UNAVAILABLE", state: "UNAVAILABLE" };
+  }
+  const values = [];
+  for (let end = period - 1; end < candles.length; end++) {
+    const window = candles.slice(end - period + 1, end + 1);
+    const high = Math.max(...window.map(c => Number(c.high)));
+    const low = Math.min(...window.map(c => Number(c.low)));
+    const close = Number(candles[end].close);
+    values.push(high === low ? 50 : 100 * (close - low) / (high - low));
+  }
+  const k = values.at(-1);
+  const dValues = values.slice(-smoothD);
+  const d = dValues.length === smoothD ? rollingMean(dValues) : null;
+  const previousK = values.at(-2);
+  const direction = Number.isFinite(k) && Number.isFinite(d) && Number.isFinite(previousK)
+    ? k > d && k > previousK ? "BULLISH"
+      : k < d && k < previousK ? "BEARISH" : "NEUTRAL"
+    : "UNAVAILABLE";
+  return { k, d, direction, state: k >= 80 ? "OVERBOUGHT" : k <= 20 ? "OVERSOLD" : "MIDRANGE" };
+}
+
+export function candleStreakReversal(candles, minimumStreak = 3) {
+  if (!Array.isArray(candles) || candles.length < minimumStreak + 1) {
+    return { direction: "UNAVAILABLE", streak: 0, confirmed: false };
+  }
+  const latest = candles.at(-1);
+  const previous = candles.slice(0, -1);
+  const bodyDirection = candle => Number(candle.close) > Number(candle.open) ? "BULLISH"
+    : Number(candle.close) < Number(candle.open) ? "BEARISH" : "DOJI";
+  const priorDirection = bodyDirection(previous.at(-1));
+  if (!["BULLISH", "BEARISH"].includes(priorDirection)) {
+    return { direction: "NONE", streak: 0, confirmed: false };
+  }
+  let streak = 0;
+  for (let i = previous.length - 1; i >= 0 && bodyDirection(previous[i]) === priorDirection; i--) streak++;
+  const range = Number(latest.high) - Number(latest.low);
+  if (!(range > 0)) return { direction: "NONE", streak, confirmed: false };
+  const closeLocation = (Number(latest.close) - Number(latest.low)) / range;
+  const reversalDirection = priorDirection === "BEARISH" ? "BULLISH" : "BEARISH";
+  const oppositeBody = bodyDirection(latest) === reversalDirection;
+  const closeConfirms = reversalDirection === "BULLISH" ? closeLocation >= 0.70 : closeLocation <= 0.30;
+  const confirmed = streak >= minimumStreak && oppositeBody && closeConfirms;
+  return { direction: confirmed ? reversalDirection : "NONE", priorDirection, streak, closeLocation, confirmed };
+}
+
+export function rsiWickConfirmation(candle, rsiValue, minimumWickPercent = 30) {
+  if (!candle || ![candle.open, candle.high, candle.low, candle.close, rsiValue].every(Number.isFinite)) {
+    return { direction: "UNAVAILABLE", wickPercent: null, confirmed: false };
+  }
+  const range = candle.high - candle.low;
+  if (!(range > 0)) return { direction: "NONE", wickPercent: 0, confirmed: false };
+  const upperWick = candle.high - Math.max(candle.open, candle.close);
+  const lowerWick = Math.min(candle.open, candle.close) - candle.low;
+  const upperPct = 100 * upperWick / range;
+  const lowerPct = 100 * lowerWick / range;
+  if (rsiValue >= 70 && upperPct >= minimumWickPercent) {
+    return { direction: "BEARISH", wickPercent: upperPct, confirmed: true };
+  }
+  if (rsiValue <= 30 && lowerPct >= minimumWickPercent) {
+    return { direction: "BULLISH", wickPercent: lowerPct, confirmed: true };
+  }
+  return { direction: "NONE", wickPercent: Math.max(upperPct, lowerPct), confirmed: false };
+}
+
 export function analyseTimeframe(candles) {
   if (!Array.isArray(candles) || candles.length < 60) throw new Error("Not enough candles for analysis.");
   const lastCandle = candles.at(-1);
@@ -454,6 +520,9 @@ export function analyseTimeframe(candles) {
   const mfi14 = moneyFlowIndex(candles, 14);
   const cci20 = commodityChannelIndex(candles, 20);
   const stochRsi = stochasticRsi(closes, 14, 14, 3, 3);
+  const stochastic = stochasticOscillator(candles, 14, 3);
+  const candleStreak = candleStreakReversal(candles, 3);
+  const rsiWick = rsiWickConfirmation(lastCandle, rsi14, 30);
   const psar = parabolicSar(candles, 0.02, 0.2);
   const donchian20 = donchianChannels(candles, 20);
   const obv = onBalanceVolume(candles, 5);
@@ -469,7 +538,7 @@ export function analyseTimeframe(candles) {
     sessionContext,
     ema20, ema50, ema200, regime, atrBaseline, rsi14, macd: macdData.line, macdSignal: macdData.signal,
     macdHistogram: macdData.histogram, atr14, adx14,
-    supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20, stochRsi, psar, donchian: donchian20, obv,
+    supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20, stochRsi, stochastic, candleStreak, rsiWick, psar, donchian: donchian20, obv,
     williamsR: williams, keltner, aroon: aroonData, roc: roc12,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
     profileVolume: profile.totalVolume, volumeProfileAvailable: profile.available === true, vwap, cvd, squeeze, structure, smartMoney,
