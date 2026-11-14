@@ -36,6 +36,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Agent-Reach is installed only in the ephemeral runner. Its safe check
+      # mode does not install system tools or configure login/cookie channels.
+      # Failure is non-blocking: technical analysis and all risk gates continue.
+      - name: Install optional Agent-Reach research CLI
+        continue-on-error: true
+        run: |
+          if ! command -v pipx >/dev/null 2>&1; then
+            python3 -m pip install --user pipx
+            export PATH="$HOME/.local/bin:$PATH"
+          fi
+          pipx install --force https://github.com/Panniantong/agent-reach/archive/main.zip
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          agent-reach install --env=auto --safe
+
       - name: Check syntax
         run: |
           npm run check
