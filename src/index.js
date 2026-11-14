@@ -159,6 +159,7 @@ ${name} ANALYSIS`);
   console.log("Recent OB zones:", JSON.stringify(result.smartMoney.orderBlocks));
   console.log("Recent unfilled FVG zones:", JSON.stringify(result.smartMoney.fairValueGaps));
   console.log("H1 squeeze:", result.squeeze.state, result.squeeze.direction);
+  console.log("AI Profit Sniper-style surveillance:", JSON.stringify(result.surveillance));
   console.log("Bullish / Bearish votes:", result.bullishVotes, "/", result.bearishVotes);
 }
 
