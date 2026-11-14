@@ -107,10 +107,12 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const coverage = availableWeight;
   const hardBlockers = [];
   if (!side) hardBlockers.push("No directional BUY/SELL discovery candidate");
-  if (side && externalAgentConsensus?.approved !== true) {
-    hardBlockers.push("Five-agent confirmation quorum not met: " + (externalAgentConsensus?.counts ? JSON.stringify(externalAgentConsensus.counts) : "agent consensus unavailable"));
-  } else if (side && externalAgentConsensus.direction !== side) {
-    hardBlockers.push("Five-agent consensus direction does not match primary candidate");
+  if (side && externalAgentConsensus !== null && externalAgentConsensus !== undefined) {
+    if (externalAgentConsensus.approved !== true) {
+      hardBlockers.push("Five-agent confirmation quorum not met: " + (externalAgentConsensus.counts ? JSON.stringify(externalAgentConsensus.counts) : "agent consensus unavailable"));
+    } else if (externalAgentConsensus.direction !== side) {
+      hardBlockers.push("Five-agent consensus direction does not match primary candidate");
+    }
   }
   const advisories = [];
   // A1 HEART is a distinct opening-range/volume-profile strategy, not a
