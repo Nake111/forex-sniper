@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T16:45:59.461Z",
-  "generatedAtSlovenia": "2026-11-14 17:45:59",
+  "generatedAt": "2026-11-14T16:47:13.023Z",
+  "generatedAtSlovenia": "2026-11-14 17:47:13",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-14T16:45:23.000Z",
-    "timestampUtc": "2026-11-14T16:45:23.000Z",
-    "timestampSlovenia": "2026-11-14T17:45:23+01:00",
+    "id": "2026-11-14T16:46:27.000Z",
+    "timestampUtc": "2026-11-14T16:46:27.000Z",
+    "timestampSlovenia": "2026-11-14T17:46:27+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-14T16:45:23.000Z",
-  "sourceReportAgeSeconds": 36,
+  "sourceReportGeneratedAt": "2026-11-14T16:46:27.000Z",
+  "sourceReportAgeSeconds": 46,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -18,14 +18,14 @@
       "label": "EUR/USD",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "SELL",
+      "candidate": "BUY",
       "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": null,
-      "score": "65/100 candidate strength · 90% evidence coverage",
+      "score": "40/100 candidate strength · 90% evidence coverage",
       "candidateStrength": {
-        "score": 65,
+        "score": 40,
         "maxScore": 100,
         "evidenceCoveragePct": 90,
         "label": "Candidate strength",
@@ -73,7 +73,7 @@
                 {
                   "timeframe": "M15",
                   "trend": "SELL",
-                  "momentum": "SELL",
+                  "momentum": "BUY",
                   "tradeableVolatility": true
                 },
                 {
@@ -118,23 +118,23 @@
               "spreadPass": false,
               "adx": 58.516260626357685,
               "adxPass": true,
-              "rsi": 44.41726283309809,
-              "rsiDirection": "SELL",
+              "rsi": 57.997037712497246,
+              "rsiDirection": "BUY",
               "trendDirection": "BUY"
             },
             "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend."
           },
           {
             "name": "Gann/Hurst trend",
-            "signal": "NO_SIGNAL",
-            "direction": "NO_SIGNAL",
-            "status": "NO_SIGNAL",
+            "signal": "BUY",
+            "direction": "BUY",
+            "status": "DIRECTIONAL_SIGNAL",
             "evidence": {
-              "ma32": 1.1022703125000002,
-              "ma64": 1.1022278125000002,
-              "ma128": 1.1021799218750006,
+              "ma32": 1.1022753125,
+              "ma64": 1.1022303125000004,
+              "ma128": 1.1021811718750005,
               "octaveMidpoint": 1.10228,
-              "price": 1.1022,
+              "price": 1.10236,
               "rangeLow": 1.10208,
               "rangeHigh": 1.10248
             },
@@ -146,11 +146,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 1.1022,
+              "close": 1.10236,
               "prior20High": 1.10244,
               "prior20Low": 1.10216,
-              "sma20": 1.1022679999999998,
-              "sma50": 1.1022524000000002
+              "sma20": 1.1022759999999998,
+              "sma50": 1.1022556000000001
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend."
           }
@@ -161,11 +161,11 @@
           "requiredVotes": 3,
           "totalAgents": 5,
           "counts": {
-            "BUY": 0,
+            "BUY": 1,
             "SELL": 0,
-            "NO_SIGNAL": 5
+            "NO_SIGNAL": 4
           },
-          "agreementPct": 0,
+          "agreementPct": 20,
           "rule": "At least 3 of 5 independent agents must agree; otherwise NO_SIGNAL."
         },
         "marketIntelligenceApproved": false,
@@ -179,6 +179,7 @@
           "M5 closed candle does not confirm the higher-timeframe direction",
           "EURUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
+          "Independent market-intelligence direction conflicts with candidate",
           "Entry/stop/target plan is incomplete",
           "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
           "Quote snapshot identity is missing or inconsistent",
@@ -191,12 +192,12 @@
           "Spread-to-ATR cannot be independently verified"
         ]
       },
-      "generatedAt": "2026-11-14T16:45:59.461Z",
-      "generatedAtSlovenia": "2026-11-14 17:45:59",
+      "generatedAt": "2026-11-14T16:47:13.023Z",
+      "generatedAtSlovenia": "2026-11-14 17:47:13",
       "analysisCycle": {
-        "id": "2026-11-14T16:45:23.000Z",
-        "timestampUtc": "2026-11-14T16:45:23.000Z",
-        "timestampSlovenia": "2026-11-14T17:45:23+01:00",
+        "id": "2026-11-14T16:46:27.000Z",
+        "timestampUtc": "2026-11-14T16:46:27.000Z",
+        "timestampSlovenia": "2026-11-14T17:46:27+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -210,13 +211,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 65158.01,
+        "entry": 65109.61,
         "signalReferenceEntry": 65306.2,
         "entryReference": "BID (validated executable-side quote)",
         "stopLoss": 65966.37,
         "takeProfit": 63985.86,
-        "riskReward": "1:1.45",
-        "riskRewardValue": 1.4500347352250047,
+        "riskReward": "1:1.31",
+        "riskRewardValue": 1.3116276417420563,
         "entryTriggerConfirmed": true,
         "stopMethod": "MARKET_STRUCTURE"
       },
@@ -244,12 +245,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 65158.01,
-        "ask": 65158.02,
+        "bid": 65109.61,
+        "ask": 65109.62,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794674746965,
+        "timestamp": 1794674813130,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1029,
+        "ageMs": 759,
         "validated": true
       },
       "agents": {
@@ -315,7 +316,7 @@
             "direction": "SELL",
             "status": "DIRECTIONAL_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.00003932694736556027,
+              "spreadAtr": 0.000039326947394174385,
               "spreadLimit": 0.18,
               "spreadPass": true,
               "adx": 28.958566145670044,
@@ -383,16 +384,16 @@
           "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.583 ATR from signal reference entry; maximum is 0.25",
+          "Executable-side quote is 0.773 ATR from signal reference entry; maximum is 0.25",
           "Live-quote risk/reward is below 1:2"
         ]
       },
-      "generatedAt": "2026-11-14T16:45:59.461Z",
-      "generatedAtSlovenia": "2026-11-14 17:45:59",
+      "generatedAt": "2026-11-14T16:47:13.023Z",
+      "generatedAtSlovenia": "2026-11-14 17:47:13",
       "analysisCycle": {
-        "id": "2026-11-14T16:45:23.000Z",
-        "timestampUtc": "2026-11-14T16:45:23.000Z",
-        "timestampSlovenia": "2026-11-14T17:45:23+01:00",
+        "id": "2026-11-14T16:46:27.000Z",
+        "timestampUtc": "2026-11-14T16:46:27.000Z",
+        "timestampSlovenia": "2026-11-14T17:46:27+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -400,14 +401,14 @@
       "label": "XAU/USD (Gold)",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "BUY",
+      "candidate": "SELL",
       "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": null,
-      "score": "50/100 candidate strength · 90% evidence coverage",
+      "score": "90/100 candidate strength · 90% evidence coverage",
       "candidateStrength": {
-        "score": 50,
+        "score": 90,
         "maxScore": 100,
         "evidenceCoveragePct": 90,
         "label": "Candidate strength",
@@ -448,8 +449,8 @@
               "votes": [
                 {
                   "timeframe": "M5",
-                  "trend": "BUY",
-                  "momentum": "BUY",
+                  "trend": "SELL",
+                  "momentum": "SELL",
                   "tradeableVolatility": true
                 },
                 {
@@ -500,23 +501,23 @@
               "spreadPass": false,
               "adx": 27.255342627259264,
               "adxPass": true,
-              "rsi": 52.8825050859346,
+              "rsi": 46.62964358972749,
               "rsiDirection": "NO_SIGNAL",
-              "trendDirection": "BUY"
+              "trendDirection": "SELL"
             },
             "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend."
           },
           {
             "name": "Gann/Hurst trend",
-            "signal": "BUY",
-            "direction": "BUY",
-            "status": "DIRECTIONAL_SIGNAL",
+            "signal": "NO_SIGNAL",
+            "direction": "NO_SIGNAL",
+            "status": "NO_SIGNAL",
             "evidence": {
-              "ma32": 3874.4751528125003,
-              "ma64": 3874.4731774999996,
-              "ma128": 3874.471825703125,
+              "ma32": 3874.47235125,
+              "ma64": 3874.4717767187494,
+              "ma128": 3874.4711253125,
               "octaveMidpoint": 3874.487515,
-              "price": 3874.51222,
+              "price": 3874.42257,
               "rangeLow": 3874.36085,
               "rangeHigh": 3874.61418
             },
@@ -528,11 +529,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 3874.51222,
+              "close": 3874.42257,
               "prior20High": 3874.60708,
               "prior20Low": 3874.37468,
-              "sma20": 3874.473976499999,
-              "sma50": 3874.475229800001
+              "sma20": 3874.4694939999986,
+              "sma50": 3874.473436800001
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend."
           }
@@ -543,11 +544,11 @@
           "requiredVotes": 3,
           "totalAgents": 5,
           "counts": {
-            "BUY": 1,
+            "BUY": 0,
             "SELL": 0,
-            "NO_SIGNAL": 4
+            "NO_SIGNAL": 5
           },
-          "agreementPct": 20,
+          "agreementPct": 0,
           "rule": "At least 3 of 5 independent agents must agree; otherwise NO_SIGNAL."
         },
         "marketIntelligenceApproved": false,
@@ -558,11 +559,9 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "Gold M5 trigger candle does not confirm H1/M15 direction",
           "XAUUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
           "Economic/news risk is HIGH",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "Independent market-intelligence direction conflicts with candidate",
           "Entry/stop/target plan is incomplete",
           "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
           "Quote snapshot identity is missing or inconsistent",
@@ -575,12 +574,12 @@
           "Spread-to-ATR cannot be independently verified"
         ]
       },
-      "generatedAt": "2026-11-14T16:45:59.461Z",
-      "generatedAtSlovenia": "2026-11-14 17:45:59",
+      "generatedAt": "2026-11-14T16:47:13.023Z",
+      "generatedAtSlovenia": "2026-11-14 17:47:13",
       "analysisCycle": {
-        "id": "2026-11-14T16:45:23.000Z",
-        "timestampUtc": "2026-11-14T16:45:23.000Z",
-        "timestampSlovenia": "2026-11-14T17:45:23+01:00",
+        "id": "2026-11-14T16:46:27.000Z",
+        "timestampUtc": "2026-11-14T16:46:27.000Z",
+        "timestampSlovenia": "2026-11-14T17:46:27+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
