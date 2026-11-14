@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T06:52:33.135Z",
+  "generatedAt": "2026-11-14T07:42:50.706Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
-    "signals": 2,
+    "signals": 3,
     "resolved": 2,
-    "pending": 0,
+    "pending": 1,
     "wins": 0,
     "losses": 2,
     "timeouts": 0,
@@ -19,6 +19,21 @@
     "sampleWarning": "Small sample: do not rank this strategy as proven."
   },
   "byStrategy": {
+    "PULLBACK_OR_REVERSAL": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    },
     "TREND_CONTINUATION": {
       "signals": 2,
       "resolved": 2,
@@ -37,9 +52,9 @@
   },
   "byMarket": {
     "BTCUSD": {
-      "signals": 1,
+      "signals": 2,
       "resolved": 1,
-      "pending": 0,
+      "pending": 1,
       "wins": 0,
       "losses": 1,
       "timeouts": 0,
@@ -68,6 +83,21 @@
     }
   },
   "bySession": {
+    "LONDON": {
+      "signals": 1,
+      "resolved": 0,
+      "pending": 1,
+      "wins": 0,
+      "losses": 0,
+      "timeouts": 0,
+      "ambiguous": 0,
+      "winRatePct": null,
+      "averageGrossR": null,
+      "averageNetEstimatedR": null,
+      "totalNetEstimatedR": null,
+      "profitFactor": 0,
+      "sampleWarning": "Small sample: do not rank this strategy as proven."
+    },
     "NEW_YORK": {
       "signals": 2,
       "resolved": 2,
@@ -86,9 +116,9 @@
   },
   "byProfile": {
     "balanced": {
-      "signals": 2,
+      "signals": 3,
       "resolved": 2,
-      "pending": 0,
+      "pending": 1,
       "wins": 0,
       "losses": 2,
       "timeouts": 0,
@@ -141,6 +171,26 @@
       "resolvedAt": 1794505800000,
       "grossR": -1,
       "netEstimatedR": -1.2204
+    },
+    {
+      "signalId": "SIGNAL:BTCUSD:SELL:1794641700000",
+      "market": "BTCUSD",
+      "side": "SELL",
+      "createdAt": 1794642158541,
+      "strategy": {
+        "profile": "balanced",
+        "strategyId": "PULLBACK_OR_REVERSAL",
+        "strategyName": "PULLBACK_OR_REVERSAL",
+        "setupTier": "A+",
+        "session": "LONDON",
+        "marketRegime": "BEAR_TREND",
+        "weightedScore": 100,
+        "scoreCoverage": 100
+      },
+      "outcome": "PENDING",
+      "resolvedAt": null,
+      "grossR": null,
+      "netEstimatedR": null
     }
   ]
 }
