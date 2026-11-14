@@ -133,6 +133,7 @@ jobs:
             npm start
           } 2>&1 | tee "$REPORT_PATH"
         env:
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
