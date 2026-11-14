@@ -9,6 +9,8 @@
  * The chronological final 30% holdout remains locked until settings are frozen.
  */
 
+import { buildAdaptiveAgentWeights } from "./adaptive-agent-weights.js";
+
 const SIDES = new Set(["BUY", "SELL"]);
 const valid = value => value !== null && value !== undefined && Number.isFinite(Number(value));
 const side = delta => !valid(delta) || delta === 0 ? "NO_SIGNAL" : delta > 0 ? "BUY" : "SELL";
@@ -126,7 +128,7 @@ function validationFramework(candles) {
   };
 }
 
-export function evaluateGithubResearchIntegrations({ frames, candles, quoteValidation = null, market = "EURUSD" }) {
+export function evaluateGithubResearchIntegrations({ frames, candles, quoteValidation = null, market = "EURUSD", agentOutcomes = [], agentTrainingCutoff = null }) {
   const agents = [
     hpfxAgent(frames),
     smcAgent(candles),
@@ -134,17 +136,38 @@ export function evaluateGithubResearchIntegrations({ frames, candles, quoteValid
     gannAgent(candles),
     systematicAgent(candles)
   ];
+  const adaptiveCalibration = buildAdaptiveAgentWeights({ market, outcomes: agentOutcomes, trainingCutoff: agentTrainingCutoff });
+  for (const agent of agents) {
+    const learned = adaptiveCalibration.weights?.[agent.name]?.[agent.signal];
+    agent.baseWeight = 1;
+    agent.calibration = learned ?? {
+      status: adaptiveCalibration.enabled ? "INSUFFICIENT_SIDE_SAMPLE" : "BASELINE_UNCALIBRATED",
+      sampleSize: 0, multiplier: 1
+    };
+    agent.weight = learned?.multiplier ?? 1;
+  }
   const counts = { BUY: agents.filter(a => a.signal === "BUY").length, SELL: agents.filter(a => a.signal === "SELL").length, NO_SIGNAL: agents.filter(a => a.signal === "NO_SIGNAL").length };
-  const direction = counts.BUY >= counts.SELL ? "BUY" : "SELL";
-  const support = counts[direction];
+  const weightedScores = {
+    BUY: agents.filter(a => a.signal === "BUY").reduce((sum, agent) => sum + agent.weight, 0),
+    SELL: agents.filter(a => a.signal === "SELL").reduce((sum, agent) => sum + agent.weight, 0)
+  };
+  const totalDirectionalWeight = weightedScores.BUY + weightedScores.SELL;
+  const direction = weightedScores.BUY > weightedScores.SELL ? "BUY"
+    : weightedScores.SELL > weightedScores.BUY ? "SELL" : "NO_SIGNAL";
+  const support = direction === "NO_SIGNAL" ? 0 : counts[direction];
+  const weightedAgreementPct = totalDirectionalWeight > 0 && direction !== "NO_SIGNAL"
+    ? weightedScores[direction] / totalDirectionalWeight * 100 : 0;
+  const approved = support >= 3 && weightedAgreementPct >= 60;
   const consensus = {
-    direction: support >= 3 ? direction : "NO_SIGNAL",
-    approved: support >= 3,
+    direction: approved ? direction : "NO_SIGNAL",
+    approved,
     requiredVotes: 3,
     totalAgents: 5,
     counts,
+    weightedScores,
+    weightedAgreementPct: Number(weightedAgreementPct.toFixed(2)),
     agreementPct: support / 5 * 100,
-    rule: "At least 3 of 5 independent agents must agree; otherwise NO_SIGNAL."
+    rule: "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
   };
   return {
     generatedAt: new Date().toISOString(),
@@ -152,6 +175,7 @@ export function evaluateGithubResearchIntegrations({ frames, candles, quoteValid
     primaryProvider: "FOREX_SNIPER",
     agents,
     consensus,
+    adaptiveCalibration,
     validationFramework: validationFramework(candles),
     governance: {
       agentQuorumRequiredForCandidateAdvancement: true,
