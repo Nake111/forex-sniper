@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { evaluateMarketSurveillance } from "../src/market-surveillance.js";
 
 function baseCandles(last = {}) {
-  return Array.from({ length: 20 }, (_, i) => ({
+  return Array.from({ length: 21 }, (_, i) => ({
     timestamp: i * 300_000,
     open: 99.5,
     high: 101,
