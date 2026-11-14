@@ -1,4 +1,5 @@
 import { runForecastAgents } from "./forecast-agents.js";
+import { buildAdaptiveAgentWeights } from "./adaptive-agent-weights.js";
 
 // TradingAgents-inspired deterministic multi-agent decision layer.
 // Six additional specialist agents independently inspect higher-timeframe alignment,
@@ -81,7 +82,7 @@ function runAdditionalSpecialists(frames) {
   return agents;
 }
 
-export function runTradingAgents({ market, frames, macro = {}, candleHistory = {} }) {
+export function runTradingAgents({ market, frames, macro = {}, candleHistory = {}, agentOutcomes = [], agentTrainingCutoff = null }) {
   const { M5 = {}, M15 = {}, H1 = {} } = frames ?? {};
   const agents = [];
 
@@ -134,6 +135,22 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
   agents.push(...runAdditionalSpecialists(frames));
   agents.push(...forecastAgents);
 
+  // Reliability calibration is market- and side-specific and uses only the
+  // explicitly frozen training partition. Missing/weak evidence keeps baseline weights.
+  const adaptiveCalibration = buildAdaptiveAgentWeights({
+    market, outcomes: agentOutcomes, trainingCutoff: agentTrainingCutoff
+  });
+  for (const agent of agents) {
+    const baseWeight = agent.weight;
+    const learned = adaptiveCalibration.weights?.[agent.name]?.[agent.direction];
+    agent.baseWeight = baseWeight;
+    agent.calibration = learned ?? {
+      status: adaptiveCalibration.enabled ? "INSUFFICIENT_SIDE_SAMPLE" : "BASELINE_UNCALIBRATED",
+      sampleSize: 0, multiplier: 1
+    };
+    agent.weight = Number((baseWeight * (learned?.multiplier ?? 1)).toFixed(4));
+  }
+
   const score = direction => agents.reduce((sum, agent) =>
     sum + (agent.direction === direction ? agent.weight : 0), 0);
   const bullScore = score("BUY");
@@ -178,7 +195,8 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
 
   return {
     market,
-    architecture: "11 technical specialists + 6 quantitative forecasting agents + risk/debate/portfolio managers",
+    architecture: "11 technical specialists + 6 quantitative forecasting agents + training-only adaptive reliability weighting + independent risk/debate/portfolio managers",
+    adaptiveCalibration,
     agents,
     agentCount: agents.length,
     forecastingAgents: forecastAgents,
