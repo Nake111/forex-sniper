@@ -44,6 +44,8 @@ jobs:
         run: |
           set -o pipefail
           MARKET_FILTER=XAUUSD SIGNAL_PROFILE=gold npm start 2>&1 | tee gold-signals.txt
+        env:
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF }}
       - name: Upload Gold signal report immediately
         if: always()
         uses: actions/upload-artifact@v4
