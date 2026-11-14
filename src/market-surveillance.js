@@ -1,4 +1,4 @@
-const finite = value => Number.isFinite(Number(value));
+const finite = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 
 /**
  * Read-only market surveillance inspired by AI Profit Sniper's published
