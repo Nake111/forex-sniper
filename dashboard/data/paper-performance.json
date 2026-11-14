@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T17:39:10.370Z",
+  "generatedAt": "2026-11-14T20:58:23.539Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
@@ -173,14 +173,30 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 0,
+        "predictions": 2,
         "correct": 0,
-        "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "falseSignals": 2,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
       }
     },
     "Gann/Hurst trend": {
+      "BUY": {
+        "predictions": 2,
+        "correct": 0,
+        "falseSignals": 2,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      },
+      "SELL": {
+        "predictions": 6,
+        "correct": 0,
+        "falseSignals": 6,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      }
+    },
+    "Higher-timeframe confluence analyst": {
       "BUY": {
         "predictions": 0,
         "correct": 0,
@@ -190,13 +206,29 @@
       },
       "SELL": {
         "predictions": 2,
-        "correct": 0,
-        "falseSignals": 2,
-        "accuracyPct": 0,
-        "falseSignalRatePct": 100
+        "correct": 1,
+        "falseSignals": 1,
+        "accuracyPct": 50,
+        "falseSignalRatePct": 50
       }
     },
     "ICT/SMC structure": {
+      "BUY": {
+        "predictions": 1,
+        "correct": 1,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Liquidity sweep and reclaim analyst": {
       "BUY": {
         "predictions": 0,
         "correct": 0,
@@ -212,7 +244,247 @@
         "falseSignalRatePct": null
       }
     },
+    "M5 candle-quality analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 1,
+        "correct": 0,
+        "falseSignals": 1,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      }
+    },
+    "Macro and news analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Momentum analyst": {
+      "BUY": {
+        "predictions": 1,
+        "correct": 0,
+        "falseSignals": 1,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Momentum exhaustion analyst": {
+      "BUY": {
+        "predictions": 2,
+        "correct": 2,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 1,
+        "correct": 0,
+        "falseSignals": 1,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      }
+    },
+    "Quantitative agent 1 — weighted regression": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Quantitative agent 2 — autoregression": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 1,
+        "correct": 0,
+        "falseSignals": 1,
+        "accuracyPct": 0,
+        "falseSignalRatePct": 100
+      }
+    },
+    "Quantitative agent 3 — Kalman filter": {
+      "BUY": {
+        "predictions": 1,
+        "correct": 1,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Quantitative agent 4 — EWMA volatility": {
+      "BUY": {
+        "predictions": 2,
+        "correct": 2,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Quantitative agent 5 — cycle model": {
+      "BUY": {
+        "predictions": 1,
+        "correct": 1,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 2,
+        "correct": 1,
+        "falseSignals": 1,
+        "accuracyPct": 50,
+        "falseSignalRatePct": 50
+      }
+    },
+    "Quantitative agent 6 — analog search": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 3,
+        "correct": 1,
+        "falseSignals": 2,
+        "accuracyPct": 33.33,
+        "falseSignalRatePct": 66.67
+      }
+    },
+    "SMC and liquidity analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 2,
+        "correct": 1,
+        "falseSignals": 1,
+        "accuracyPct": 50,
+        "falseSignalRatePct": 50
+      }
+    },
     "Systematic breakout": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Technical analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 4,
+        "correct": 1,
+        "falseSignals": 3,
+        "accuracyPct": 25,
+        "falseSignalRatePct": 75
+      }
+    },
+    "Trading-session breakout analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Volatility and regime analyst": {
+      "BUY": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      },
+      "SELL": {
+        "predictions": 0,
+        "correct": 0,
+        "falseSignals": 0,
+        "accuracyPct": null,
+        "falseSignalRatePct": null
+      }
+    },
+    "Volume and auction analyst": {
       "BUY": {
         "predictions": 0,
         "correct": 0,
