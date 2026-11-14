@@ -32,6 +32,7 @@ import { learnFromMarketData } from "./market-data-learning.js";
 import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
+import { evaluateGithubResearchIntegrations } from "./github-research-confluence.js";
 
 const DATA_DIR = process.env.DATA_DIR ?? "data";
 const WINDOW = 240;
@@ -502,6 +503,15 @@ async function analyseMarket(market, macroContext) {
   const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
   console.log("A1 HEART — MULTI-SESSION OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
   console.log("A1 HEART SESSION STATUS:", (a1Heart.sessions ?? []).map(session => `${session.name}: ${session.status}`).join(" | "));
+  // Five public GitHub methodologies are evaluated as isolated research modules.
+  // They have zero signal weight and cannot approve, veto, or override Forex Sniper.
+  const githubResearch = evaluateGithubResearchIntegrations({
+    frames: results,
+    candles: frames.find(frame => frame.key === "M5").candles,
+    quoteValidation
+  });
+  console.log("FIVE GITHUB RESEARCH INTEGRATIONS — ZERO VOTE:", JSON.stringify(githubResearch));
+
   const weightedScore = scoreCandidate({
     market: market.symbol,
     direction: directionalCandidate,
@@ -535,6 +545,7 @@ async function analyseMarket(market, macroContext) {
     quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
     marketSurveillance: results.M5.surveillance ?? null,
     alphaPipResearch: results.M5.alphaPip ?? null,
+    githubResearchIntegrations: githubResearch,
     hardBlockers: weightedScore.hardBlockers ?? [],
     approvalStatus: "PENDING_INDEPENDENT_VERIFICATION"
   };
