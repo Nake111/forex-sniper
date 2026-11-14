@@ -214,7 +214,11 @@ export async function updateSecondBrain({
     const rangeBaseline = ranges.length ? ranges.reduce((a,b)=>a+b,0) / ranges.length : null;
     const current = latest ? { ...frames.M5, close: Number(latest.close), candleRange: Number(latest.high) - Number(latest.low) } : frames.M5;
     const regime = classifyMarketRegime({ close: current?.close, ema20: current?.ema20, ema50: current?.ema50, ema200: current?.ema200, adx14: current?.adx14, atr14: current?.atr14, atrBaseline: current?.atrBaseline ?? rangeBaseline, candleRange: current?.candleRange, rangeBaseline });
-    const forecasts = buildAgentForecasts({ agents: githubAgentEvidence.agents, market, candleAt, close: current?.close, atr14: current?.atr14, regime });
+    const accountableAgents = [
+      ...(Array.isArray(githubAgentEvidence.agents) ? githubAgentEvidence.agents : []),
+      ...(Array.isArray(agents?.agents) ? agents.agents : [])
+    ];
+    const forecasts = buildAgentForecasts({ agents: accountableAgents, market, candleAt, close: current?.close, atr14: current?.atr14, regime });
     for (const forecast of forecasts) if (!eventIds.has(forecast.eventId) && !events.some(e => e.eventId === forecast.eventId) && !newEvents.some(e => e.eventId === forecast.eventId)) newEvents.push(forecast);
   }
 

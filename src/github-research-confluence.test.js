@@ -46,3 +46,24 @@ test("agents fail closed when data, quote, or quorum is insufficient", () => {
   assert.equal(result.consensus.approved, false);
   assert.equal(result.consensus.direction, "NO_SIGNAL");
 });
+
+test("five-agent panel applies only frozen market-specific training calibration", () => {
+  const names = ["hpFX multi-timeframe", "ICT/SMC structure", "FxTT market scanner", "Gann/Hurst trend", "Systematic breakout"];
+  const outcomes = [];
+  for (const name of names) {
+    for (let i = 0; i < 30; i++) outcomes.push({
+      eventType: "AGENT_FORECAST_OUTCOME", market: "EURUSD", agent: name,
+      predictedSide: "BUY", actualDirection: "BUY", forecastAt: "2025-12-01T00:00:00.000Z"
+    });
+  }
+  const result = evaluateGithubResearchIntegrations({
+    frames: alignedFrames(), candles: risingCandles(),
+    quoteValidation: { valid: true, spread: 0.0001 }, market: "EURUSD",
+    agentOutcomes: outcomes, agentTrainingCutoff: "2026-01-01T00:00:00.000Z"
+  });
+  const directionalBuys = result.agents.filter(agent => agent.signal === "BUY");
+  assert.ok(directionalBuys.length >= 3);
+  assert.equal(directionalBuys.every(agent => agent.weight === 1.25), true);
+  assert.equal(result.consensus.approved, true);
+  assert.equal(result.adaptiveCalibration.enabled, true);
+});
