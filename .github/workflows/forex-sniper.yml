@@ -1,6 +1,10 @@
 name: Forex Sniper Analysis
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - dashboard/data/signals.json
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
