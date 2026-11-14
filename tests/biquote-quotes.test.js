@@ -30,3 +30,15 @@ test("Biquote never returns a quote when every provider response is stale", asyn
   assert.equal(result.quote, null);
   assert.match(result.error, /after 2 attempts/);
 });
+
+test("Biquote treats HTTP 404 as a terminal no-fresh-tick result without retrying", async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return new Response(JSON.stringify({ message: "No fresh tick" }), { status: 404 });
+  };
+  const result = await fetchBiquoteQuote("EURUSD", { fetchImpl, attempts: 3, retryDelayMs: 0 });
+  assert.equal(calls, 1);
+  assert.equal(result.quote, null);
+  assert.match(result.error, /market may be closed|older than five minutes/);
+});
