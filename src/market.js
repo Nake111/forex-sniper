@@ -3,6 +3,7 @@ import { analyzeSmartMoney } from "./smart-money.js";
 import { calculateVolumeProfile } from "./volume-profile.js";
 import { classifyMarketRegime } from "./market-regime.js";
 import { getSessionContext } from "./sessions.js";
+import { evaluateMarketSurveillance } from "./market-surveillance.js";
 
 export function ema(values, period) {
   if (values.length < period) return null;
@@ -531,6 +532,7 @@ export function analyseTimeframe(candles) {
   const aroonData = aroon(candles, 25);
   const roc12 = rateOfChange(closes, 12);
   const regime = classifyMarketRegime({ close, ema50, ema200, adx14, atr14, atrBaseline });
+  const surveillance = evaluateMarketSurveillance(candles, { atr14, atrBaseline, squeeze });
   const bullish = [close > ema20, ema20 > ema50, rsi14 > 50, macdData.line > macdData.signal, supertrend14.direction === "BULLISH", ichimokuCloud.direction === "BULLISH", Number.isFinite(mfi14) && mfi14 > 50, Number.isFinite(cci20) && cci20 > 0, stochRsi.direction === "BULLISH", psar.direction === "BULLISH", donchian20.breakout === "BULLISH", obv.direction === "BUYING", williams.direction === "BULLISH", keltner.breakout === "BULLISH", aroonData.direction === "BULLISH", roc12.direction === "BULLISH"];
   const bearish = [close < ema20, ema20 < ema50, rsi14 < 50, macdData.line < macdData.signal, supertrend14.direction === "BEARISH", ichimokuCloud.direction === "BEARISH", Number.isFinite(mfi14) && mfi14 < 50, Number.isFinite(cci20) && cci20 < 0, stochRsi.direction === "BEARISH", psar.direction === "BEARISH", donchian20.breakout === "BEARISH", obv.direction === "SELLING", williams.direction === "BEARISH", keltner.breakout === "BEARISH", aroonData.direction === "BEARISH", roc12.direction === "BEARISH"];
   return {
@@ -541,7 +543,7 @@ export function analyseTimeframe(candles) {
     supertrend: supertrend14, ichimoku: ichimokuCloud, mfi14, cci20, stochRsi, stochastic, candleStreak, rsiWick, psar, donchian: donchian20, obv,
     williamsR: williams, keltner, aroon: aroonData, roc: roc12,
     poc: profile.poc, valueAreaHigh: profile.valueAreaHigh, valueAreaLow: profile.valueAreaLow,
-    profileVolume: profile.totalVolume, volumeProfileAvailable: profile.available === true, vwap, cvd, squeeze, structure, smartMoney,
+    profileVolume: profile.totalVolume, volumeProfileAvailable: profile.available === true, vwap, cvd, squeeze, surveillance, structure, smartMoney,
     bullishVotes: bullish.filter(Boolean).length, bearishVotes: bearish.filter(Boolean).length,
     bullishConditions: bullish, bearishConditions: bearish
   };
