@@ -13,7 +13,7 @@ const cycleSloveniaMatch = text.match(/^Analysis cycle Slovenia:\s*(.+)$/m);
 const timezoneMatch = text.match(/^Analysis timezone:\s*(.+)$/m);
 const generatedRaw = generatedMatch?.[1]?.trim();
 const generatedAt = generatedRaw
-  ? new Date(/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(generatedRaw)
+  ? new Date(/(?:Z|[+-]\d{2}:\d{2})$/i.test(generatedRaw)
     ? generatedRaw
     : generatedRaw.replace(" ", "T") + "Z")
   : null;
