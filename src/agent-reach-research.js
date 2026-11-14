@@ -17,13 +17,13 @@ function safeUrl(value) {
 
 function matchesMarket(article, market) {
   const title = String(article?.title ?? "").toLowerCase();
-  const broadMacro = /\b(fed|federal reserve|ecb|central bank|inflation|cpi|interest rates?|bond yields?|treasury|dollar index|dxy|geopolitic|tariff|sanctions)\b/.test(title);
-  if (market === "BTCUSD") return /\b(bitcoin|btc|crypto|cryptocurrency|digital assets?|spot etf|bitcoin etf|ethereum)\b/.test(title);
-  if (market === "XAUUSD") return /\b(gold|xau|bullion|precious metals?)\b/.test(title) || broadMacro;
-  if (market === "EURUSD") return /\b(eur\/?usd|eurusd|euro|dollar|ecb|fed|federal reserve|central bank|inflation|cpi|interest rates?|employment|payrolls?)\b/.test(title);
+  const hasAny = terms => terms.some(term => title.includes(term));
+  const broadMacro = hasAny(["fed", "federal reserve", "ecb", "central bank", "inflation", "cpi", "interest rate", "bond yield", "treasury", "dollar index", "dxy", "geopolitic", "tariff", "sanctions"]);
+  if (market === "BTCUSD") return hasAny(["bitcoin", "btc", "crypto", "cryptocurrency", "digital asset", "spot etf", "bitcoin etf", "ethereum"]);
+  if (market === "XAUUSD") return hasAny(["gold", "xau", "bullion", "precious metal"]) || broadMacro;
+  if (market === "EURUSD") return hasAny(["eur/usd", "eurusd", "euro", "dollar", "ecb", "fed", "federal reserve", "central bank", "inflation", "cpi", "interest rate", "employment", "payroll"]);
   return true;
 }
-
 function normalizeItem(item, article) {
   if (!item || typeof item !== "object") return null;
   const text = String(item.text ?? item.content ?? item.markdown ?? "").trim();
