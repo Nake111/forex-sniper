@@ -719,6 +719,15 @@ async function analyseMarket(market, macroContext) {
 }
 
 async function main() {
+  // One immutable report/cycle timestamp keeps all three markets synchronized.
+  const reportStartedAt = new Date();
+  console.log("Generated UTC:", reportStartedAt.toISOString());
+  console.log("Analysis cycle UTC:", reportStartedAt.toISOString());
+  console.log("Analysis cycle Slovenia:", reportStartedAt.toLocaleString("sv-SE", {
+    timeZone: "Europe/Ljubljana", hour12: false
+  }));
+  console.log("Analysis timezone: Europe/Ljubljana");
+
   let articles = [];
   try {
     articles = await getForexNews();
