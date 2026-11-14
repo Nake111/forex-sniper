@@ -57,9 +57,9 @@ export function scoreCandidate({ market, direction, frames = {}, marketReview = 
   const availableConfluence = confluenceVotes.filter(vote => vote.available);
   const alignedConfluence = availableConfluence.filter(vote => vote.direction === side).length;
   const confluenceAvailable = availableConfluence.length >= 3;
-  const confluencePass = confluenceAvailable && alignedConfluence >= 3 &&
-    pocket.rsiWick?.confirmed !== true || (confluenceAvailable && alignedConfluence >= 3 &&
-      (!pocket.rsiWick?.confirmed || pocket.rsiWick.direction === (side === "BUY" ? "BULLISH" : "BEARISH")));
+  const wickOpposes = pocket.rsiWick?.confirmed === true &&
+    pocket.rsiWick.direction !== (side === "BUY" ? "BULLISH" : "BEARISH");
+  const confluencePass = confluenceAvailable && alignedConfluence >= 3 && !wickOpposes;
   const triggerValue = marketReview?.m5?.confirmed;
   const triggerAvailable = typeof triggerValue === "boolean" || Boolean(frames.M5?.lastCandle);
   const triggerPass = typeof triggerValue === "boolean" ? triggerValue : candleTrigger(frames.M5, side) === true;
