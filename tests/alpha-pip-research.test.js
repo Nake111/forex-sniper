@@ -39,8 +39,8 @@ test("suppresses candidate when volatility has not expanded", () => {
 });
 
 test("suppresses candidate when momentum conflicts with trend", () => {
-  const result = evaluateAlphaPipResearch(candles(-1), {
-    atr14: 1.2, atrBaseline: 1, ema20: 94, ema50: 93
+  const result = evaluateAlphaPipResearch(candles(), {
+    atr14: 1.2, atrBaseline: 1, ema20: 108, ema50: 109
   });
   assert.equal(result.status, "MOMENTUM_NOT_ALIGNED");
   assert.equal(result.direction, "NONE");
