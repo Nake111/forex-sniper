@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T06:45:04.280Z",
-  "generatedAtSlovenia": "2026-11-14 07:45:04",
+  "generatedAt": "2026-11-14T06:47:53.789Z",
+  "generatedAtSlovenia": "2026-11-14 07:47:53",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-14T06:44:25.000Z",
-    "timestampUtc": "2026-11-14T06:44:25.000Z",
-    "timestampSlovenia": "2026-11-14T07:44:25+01:00",
+    "id": "2026-11-14T06:47:16.000Z",
+    "timestampUtc": "2026-11-14T06:47:16.000Z",
+    "timestampSlovenia": "2026-11-14T07:47:16+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-14T06:44:25.000Z",
-  "sourceReportAgeSeconds": 39,
+  "sourceReportGeneratedAt": "2026-11-14T06:47:16.000Z",
+  "sourceReportAgeSeconds": 38,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -23,9 +23,9 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": null,
-      "score": "70/100 candidate strength · 90% evidence coverage",
+      "score": "65/100 candidate strength · 90% evidence coverage",
       "candidateStrength": {
-        "score": 70,
+        "score": 65,
         "maxScore": 100,
         "evidenceCoveragePct": 90,
         "label": "Candidate strength",
@@ -84,18 +84,19 @@
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"BUY\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":1,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":55.555555555528144,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
           "quote_and_spread: UNAVAILABLE — {\"spread\":null,\"spreadAtr\":null,\"spreadAtrLimit\":0.12,\"passed\":false}",
           "Layer 2 verification did not pass",
           "Quote-priced entry/SL/TP plan unavailable",
           "Valid uncrossed bid/ask is unavailable"
         ]
       },
-      "generatedAt": "2026-11-14T06:45:04.280Z",
-      "generatedAtSlovenia": "2026-11-14 07:45:04",
+      "generatedAt": "2026-11-14T06:47:53.789Z",
+      "generatedAtSlovenia": "2026-11-14 07:47:53",
       "analysisCycle": {
-        "id": "2026-11-14T06:44:25.000Z",
-        "timestampUtc": "2026-11-14T06:44:25.000Z",
-        "timestampSlovenia": "2026-11-14T07:44:25+01:00",
+        "id": "2026-11-14T06:47:16.000Z",
+        "timestampUtc": "2026-11-14T06:47:16.000Z",
+        "timestampSlovenia": "2026-11-14T07:47:16+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -108,20 +109,20 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 67246.58,
-        "signalReferenceEntry": 67256.3,
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
+        "entry": 67359.22,
+        "signalReferenceEntry": 67249.7,
         "entryReference": "ASK (validated executable-side quote)",
-        "stopLoss": 67037.61,
-        "takeProfit": 67693.67,
-        "riskReward": "1:2.14",
-        "riskRewardValue": 2.1395434688980646,
+        "stopLoss": 67030.46,
+        "takeProfit": 67688.18,
+        "riskReward": "1:1.00",
+        "riskRewardValue": 1.0006083465141213,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
-      "score": "55/100 candidate strength · 100% evidence coverage",
+      "score": "50/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
-        "score": 55,
+        "score": 50,
         "maxScore": 100,
         "evidenceCoveragePct": 100,
         "label": "Candidate strength",
@@ -145,16 +146,16 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 67246.57,
-        "ask": 67246.58,
+        "bid": 67359.21,
+        "ask": 67359.22,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794638692019,
+        "timestamp": 1794638860906,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 838,
+        "ageMs": 1391,
         "validated": true
       },
       "agents": {
-        "marketIntelligenceApproved": false,
+        "marketIntelligenceApproved": true,
         "signalApprovalApproved": false,
         "entryVerificationApproved": false
       },
@@ -162,24 +163,29 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "M15 buyer/seller pressure proxy conflicts with H1 release",
           "Independent market-intelligence direction conflicts with candidate",
+          "Risk/reward is below 1:2",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
+          "Executable-side quote is 0.899 ATR from signal reference entry; maximum is 0.25",
+          "Live-quote risk/reward is below 1:2",
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "Layer 2 verification did not pass"
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"NEUTRAL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":55.46218487394187,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
+          "Layer 2 verification did not pass",
+          "Executable-side reward/risk is below 1:2"
         ]
       },
-      "generatedAt": "2026-11-14T06:45:04.280Z",
-      "generatedAtSlovenia": "2026-11-14 07:45:04",
+      "generatedAt": "2026-11-14T06:47:53.789Z",
+      "generatedAtSlovenia": "2026-11-14 07:47:53",
       "analysisCycle": {
-        "id": "2026-11-14T06:44:25.000Z",
-        "timestampUtc": "2026-11-14T06:44:25.000Z",
-        "timestampSlovenia": "2026-11-14T07:44:25+01:00",
+        "id": "2026-11-14T06:47:16.000Z",
+        "timestampUtc": "2026-11-14T06:47:16.000Z",
+        "timestampSlovenia": "2026-11-14T07:47:16+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -192,9 +198,9 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": null,
-      "score": "70/100 candidate strength · 90% evidence coverage",
+      "score": "65/100 candidate strength · 90% evidence coverage",
       "candidateStrength": {
-        "score": 70,
+        "score": 65,
         "maxScore": 100,
         "evidenceCoveragePct": 90,
         "label": "Candidate strength",
@@ -253,18 +259,19 @@
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"BUY\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":0,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":37.21897335933189,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
           "quote_and_spread: UNAVAILABLE — {\"spread\":null,\"spreadAtr\":null,\"spreadAtrLimit\":0.15,\"passed\":false}",
           "Layer 2 verification did not pass",
           "Quote-priced entry/SL/TP plan unavailable",
           "Valid uncrossed bid/ask is unavailable"
         ]
       },
-      "generatedAt": "2026-11-14T06:45:04.280Z",
-      "generatedAtSlovenia": "2026-11-14 07:45:04",
+      "generatedAt": "2026-11-14T06:47:53.789Z",
+      "generatedAtSlovenia": "2026-11-14 07:47:53",
       "analysisCycle": {
-        "id": "2026-11-14T06:44:25.000Z",
-        "timestampUtc": "2026-11-14T06:44:25.000Z",
-        "timestampSlovenia": "2026-11-14T07:44:25+01:00",
+        "id": "2026-11-14T06:47:16.000Z",
+        "timestampUtc": "2026-11-14T06:47:16.000Z",
+        "timestampSlovenia": "2026-11-14T07:47:16+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
