@@ -237,3 +237,8 @@ Source references:
 - https://github.com/ForexTradingTools/fxtt-mt4-forex-scanner
 - https://github.com/kayzaa/TL-Free-MT4-MT5-Tools
 - https://github.com/nateemma/fx-strategy-framework
+
+
+## Profitability evidence gate
+
+The strategy-selection, independent validation, execution-cost, BUY/SELL accountability, and paper-trading promotion rules are documented in [docs/profitability-evidence-gate.md](docs/profitability-evidence-gate.md). This is the project's acceptance policy: no strategy is labelled profitable without positive net expectancy and independent evidence; weak or unverified setups remain research-only or return NO APPROVED TRADE.
