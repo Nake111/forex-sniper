@@ -4,6 +4,7 @@ import WebSocket from "ws";
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 import { normalizeCoinbaseTicker, normalizeBiquoteStreamTick } from "./realtime-feed-core.js";
 import { validateBiquoteTick } from "./biquote-quotes.js";
+import { recordHistoricalQuote, flushHistoricalQuotes } from "./historical-quote-journal.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const MAX_AGE_MS = 15_000;
@@ -159,6 +160,7 @@ async function pollBiquoteRest() {
 
 function publish(market, quote) {
   quotes[market] = quote;
+  recordHistoricalQuote(market, quote, Number.isFinite(quote?.receivedAt) ? quote.receivedAt : Date.now());
   const event = "event: quote\ndata: " + JSON.stringify({ market, quote, updatedAt: Date.now() }) + "\n\n";
   for (const client of clients) {
     if (!client.destroyed) client.write(event);
@@ -277,6 +279,40 @@ const server = http.createServer(async (request, response) => {
     response.end(JSON.stringify({ ready, coverage: snapshot.coverage, markets: snapshot.markets }));
     return;
   }
+  if (url.pathname === "/quote-history-health") {
+    const journalPath = process.env.QUOTE_HISTORY_PATH ?? `${process.env.DATA_DIR ?? "data"}/historical-bid-ask.jsonl`;
+    try {
+      const [info, raw] = await Promise.all([stat(journalPath), readFile(journalPath, "utf8")]);
+      const records = raw.split("\n").filter(Boolean).map((line, index) => {
+        try { return JSON.parse(line); }
+        catch { throw new Error(`Invalid quote-history JSON at line ${index + 1}`); }
+      });
+      const markets = {};
+      for (const record of records) {
+        const item = markets[record.market] ??= { records: 0, valid: 0, invalid: 0, lastProviderTimestamp: null, lastReceivedAt: null };
+        item.records++;
+        if (record.validation?.valid === true) item.valid++;
+        else item.invalid++;
+        if (Number(record.receivedAt) > Number(item.lastReceivedAt ?? 0)) {
+          item.lastProviderTimestamp = record.providerTimestamp ?? null;
+          item.lastReceivedAt = record.receivedAt ?? null;
+        }
+      }
+      response.writeHead(200);
+      response.end(JSON.stringify({
+        status: "HISTORICAL_QUOTE_JOURNAL_READABLE",
+        journalPath, bytes: info.size, recordCount: records.length, markets,
+        lastReceivedAt: records.at(-1)?.receivedAt ?? null
+      }));
+    } catch (error) {
+      response.writeHead(error.code === "ENOENT" ? 503 : 500);
+      response.end(JSON.stringify({
+        status: "HISTORICAL_QUOTE_JOURNAL_UNAVAILABLE_OR_INVALID",
+        journalPath, error: error.message
+      }));
+    }
+    return;
+  }
   if (url.pathname === "/quotes") {
     response.writeHead(200);
     response.end(JSON.stringify({ quotes, updatedAt: Date.now(), maxAgeMs: MAX_AGE_MS, markets: brainSnapshot().markets }));
@@ -329,7 +365,7 @@ function shutdown(signal) {
   socket?.close(1000, "service shutdown");
   void biquoteConnection?.stop();
   for (const client of clients) client.end();
-  server.close(() => process.exit(0));
+  server.close(async () => { await flushHistoricalQuotes(); process.exit(0); });
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
