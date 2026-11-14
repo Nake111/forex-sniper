@@ -5,7 +5,7 @@ const path = process.env.QUOTE_HISTORY_PATH ?? join(process.env.DATA_DIR ?? "dat
 let writeQueue = Promise.resolve();
 let writeErrors = 0;
 
-function finite(value) { return Number.isFinite(Number(value)); }
+function finite(value) { return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)); }
 
 /**
  * Persist every normalized live quote as immutable NDJSON evidence.
