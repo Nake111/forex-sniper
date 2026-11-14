@@ -7,11 +7,16 @@ if (!reportPath) throw new Error("Usage: node scripts/publish-signal-controller.
 const text = await readFile(reportPath, "utf8");
 const now = Date.now();
 const maxReportAgeMs = Number(process.env.MAX_SIGNAL_REPORT_AGE_MS ?? 10 * 60 * 1000);
-const generatedMatch = text.match(/Generated UTC:\s*(.+)/);
-const cycleUtcMatch = text.match(/Analysis cycle UTC:\s*(.+)/);
-const cycleSloveniaMatch = text.match(/Analysis cycle Slovenia:\s*(.+)/);
-const timezoneMatch = text.match(/Analysis timezone:\s*(.+)/);
-const generatedAt = generatedMatch ? new Date(generatedMatch[1].trim().replace(" ", "T") + "Z") : null;
+const generatedMatch = text.match(/^Generated UTC:\s*(.+)$/m);
+const cycleUtcMatch = text.match(/^Analysis cycle UTC:\s*(.+)$/m);
+const cycleSloveniaMatch = text.match(/^Analysis cycle Slovenia:\s*(.+)$/m);
+const timezoneMatch = text.match(/^Analysis timezone:\s*(.+)$/m);
+const generatedRaw = generatedMatch?.[1]?.trim();
+const generatedAt = generatedRaw
+  ? new Date(/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(generatedRaw)
+    ? generatedRaw
+    : generatedRaw.replace(" ", "T") + "Z")
+  : null;
 const analysisCycleAt = cycleUtcMatch ? new Date(cycleUtcMatch[1].trim()) : null;
 const analysisCycleSlovenia = cycleSloveniaMatch?.[1]?.trim() ?? null;
 if (!generatedAt || !Number.isFinite(generatedAt.getTime())) {
@@ -47,6 +52,11 @@ function jsonLine(section, label) {
   if (!raw) throw new Error(`Missing required report evidence: ${label}`);
   try { return JSON.parse(raw); }
   catch { throw new Error(`Invalid JSON report evidence: ${label}`); }
+}
+function jsonLineAny(section, labels) {
+  const label = labels.find(candidate => lineValue(section, candidate));
+  if (!label) throw new Error(`Missing required report evidence: ${labels.join(" or ")}`);
+  return jsonLine(section, label);
 }
 function optionalJsonLine(section, label, fallback = null) {
   const raw = lineValue(section, label);
@@ -89,8 +99,8 @@ for (const market of markets) {
   const fiveDirectionalAgents = optionalJsonLine(section, "FIVE INDEPENDENT SIGNAL AGENTS:", []);
   const fiveAgentConsensus = optionalJsonLine(section, "FIVE-AGENT CONSENSUS:", null);
   const quote = jsonLine(section, "BID/ASK MARKET QUOTE:");
-  const layer2 = jsonLine(section, "LAYER 2 — INDEPENDENT VERIFICATION:");
-  const layer3 = jsonLine(section, "LAYER 3 — EXECUTION APPROVAL:");
+  const layer2 = jsonLineAny(section, ["LAYER 2 VERIFICATION:", "LAYER 2 — INDEPENDENT VERIFICATION:"]);
+  const layer3 = jsonLineAny(section, ["LAYER 3 PAPER APPROVAL:", "LAYER 3 — EXECUTION APPROVAL:"]);
   const action = lineValue(section, "FINAL ACTION:");
   const scoreRaw = lineValue(section, "CANDIDATE STRENGTH / EVIDENCE COVERAGE:") ??
     lineValue(section, "WEIGHTED SCORE / COVERAGE:");
