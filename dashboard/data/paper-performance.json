@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T20:59:32.224Z",
+  "generatedAt": "2026-11-15T00:48:45.942Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
@@ -205,9 +205,9 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 2,
-        "correct": 1,
-        "falseSignals": 1,
+        "predictions": 4,
+        "correct": 2,
+        "falseSignals": 2,
         "accuracyPct": 50,
         "falseSignalRatePct": 50
       }
@@ -221,11 +221,11 @@
         "falseSignalRatePct": 0
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "Liquidity sweep and reclaim analyst": {
@@ -246,18 +246,18 @@
     },
     "M5 candle-quality analyst": {
       "BUY": {
-        "predictions": 0,
-        "correct": 0,
-        "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
-      },
-      "SELL": {
         "predictions": 1,
         "correct": 0,
         "falseSignals": 1,
         "accuracyPct": 0,
         "falseSignalRatePct": 100
+      },
+      "SELL": {
+        "predictions": 3,
+        "correct": 1,
+        "falseSignals": 2,
+        "accuracyPct": 33.33,
+        "falseSignalRatePct": 66.67
       }
     },
     "Macro and news analyst": {
@@ -278,18 +278,18 @@
     },
     "Momentum analyst": {
       "BUY": {
-        "predictions": 1,
+        "predictions": 2,
         "correct": 0,
-        "falseSignals": 1,
+        "falseSignals": 2,
         "accuracyPct": 0,
         "falseSignalRatePct": 100
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
-        "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "predictions": 2,
+        "correct": 1,
+        "falseSignals": 1,
+        "accuracyPct": 50,
+        "falseSignalRatePct": 50
       }
     },
     "Momentum exhaustion analyst": {
@@ -349,11 +349,11 @@
         "falseSignalRatePct": 0
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "Quantitative agent 4 — EWMA volatility": {
@@ -365,11 +365,11 @@
         "falseSignalRatePct": 0
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "Quantitative agent 5 — cycle model": {
@@ -381,27 +381,27 @@
         "falseSignalRatePct": 0
       },
       "SELL": {
-        "predictions": 2,
-        "correct": 1,
-        "falseSignals": 1,
-        "accuracyPct": 50,
-        "falseSignalRatePct": 50
-      }
-    },
-    "Quantitative agent 6 — analog search": {
-      "BUY": {
-        "predictions": 0,
-        "correct": 0,
-        "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
-      },
-      "SELL": {
         "predictions": 3,
         "correct": 1,
         "falseSignals": 2,
         "accuracyPct": 33.33,
         "falseSignalRatePct": 66.67
+      }
+    },
+    "Quantitative agent 6 — analog search": {
+      "BUY": {
+        "predictions": 1,
+        "correct": 1,
+        "falseSignals": 0,
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
+      },
+      "SELL": {
+        "predictions": 4,
+        "correct": 1,
+        "falseSignals": 3,
+        "accuracyPct": 25,
+        "falseSignalRatePct": 75
       }
     },
     "SMC and liquidity analyst": {
@@ -413,11 +413,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 2,
-        "correct": 1,
+        "predictions": 3,
+        "correct": 2,
         "falseSignals": 1,
-        "accuracyPct": 50,
-        "falseSignalRatePct": 50
+        "accuracyPct": 66.67,
+        "falseSignalRatePct": 33.33
       }
     },
     "Systematic breakout": {
@@ -429,11 +429,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "Technical analyst": {
@@ -445,11 +445,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 4,
-        "correct": 1,
-        "falseSignals": 3,
-        "accuracyPct": 25,
-        "falseSignalRatePct": 75
+        "predictions": 6,
+        "correct": 2,
+        "falseSignals": 4,
+        "accuracyPct": 33.33,
+        "falseSignalRatePct": 66.67
       }
     },
     "Trading-session breakout analyst": {
@@ -461,11 +461,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "Volatility and regime analyst": {
@@ -493,11 +493,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 0,
-        "correct": 0,
+        "predictions": 1,
+        "correct": 1,
         "falseSignals": 0,
-        "accuracyPct": null,
-        "falseSignalRatePct": null
+        "accuracyPct": 100,
+        "falseSignalRatePct": 0
       }
     },
     "hpFX multi-timeframe": {
@@ -509,11 +509,11 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 1,
-        "correct": 0,
-        "falseSignals": 1,
-        "accuracyPct": 0,
-        "falseSignalRatePct": 100
+        "predictions": 3,
+        "correct": 1,
+        "falseSignals": 2,
+        "accuracyPct": 33.33,
+        "falseSignalRatePct": 66.67
       }
     }
   },
