@@ -29,7 +29,7 @@ function summarize(trades) {
     timeouts: trades.filter(row => row.outcome === "TIMEOUT").length,
     winRatePct: values.length ? Number((wins.length / values.length * 100).toFixed(2)) : null,
     expectancyR: values.length ? Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(4)) : null,
-    profitFactor: grossLoss > 0 ? Number((grossProfit / grossLoss).toFixed(3)) : grossProfit > 0 ? null : 0,
+    profitFactor: grossLoss > 0 ? Number((grossProfit / grossLoss).toFixed(3)) : grossProfit > 0 ? "UNBOUNDED" : 0,
     maxDrawdownR: Number(maxDrawdownR.toFixed(3)),
     totalNetR: Number(values.reduce((sum, value) => sum + value, 0).toFixed(3))
   };
@@ -84,7 +84,7 @@ export function evaluateOutOfSamplePaperGate({
   const blockers = [];
   if (metrics.sampleSize < minTrades) blockers.push(`Insufficient forward-paper sample: ${metrics.sampleSize}/${minTrades} resolved trades`);
   if (metrics.expectancyR === null || metrics.expectancyR <= minExpectancyR) blockers.push("Forward-paper net expectancy is not positive");
-  if (metrics.profitFactor === null || metrics.profitFactor < minProfitFactor) blockers.push(`Forward-paper profit factor is below ${minProfitFactor}`);
+  if (metrics.profitFactor !== "UNBOUNDED" && (metrics.profitFactor === null || metrics.profitFactor < minProfitFactor)) blockers.push(`Forward-paper profit factor is below ${minProfitFactor}`);
   if (metrics.maxDrawdownR > maxDrawdownR) blockers.push(`Forward-paper drawdown exceeds ${maxDrawdownR}R`);
   return {
     approved: blockers.length === 0,
