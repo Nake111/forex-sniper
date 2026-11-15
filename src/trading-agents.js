@@ -1,5 +1,6 @@
 import { runForecastAgents } from "./forecast-agents.js";
 import { buildAdaptiveAgentWeights } from "./adaptive-agent-weights.js";
+import { marketAwareMacroDirection, validateSmcPriceEvidence, classifyVolumeEvidence, evaluateAgentHistoricalPerformance } from "./agent-evidence.js";
 
 // TradingAgents-inspired deterministic multi-agent decision layer.
 // Six additional specialist agents independently inspect higher-timeframe alignment,
@@ -104,31 +105,28 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
   agents.push(vote("Momentum analyst", momentumSum >= 2 ? "BUY" : momentumSum <= -2 ? "SELL" : "HOLD", 1.5,
     "MACD M5/M15, RSI and Supertrend"));
 
-  // Existing specialist 3: BOS, liquidity sweep and OB/FVG context.
-  const structureSignals = [M5.structure?.bos, M5.structure?.sweep]
-    .map(value => value === "BULLISH" ? 1 : value === "BEARISH" ? -1 : 0);
-  const bullishZones = (M5.smartMoney?.orderBlocks ?? []).some(z => z.direction === "BULLISH" && !z.invalidated);
-  const bearishZones = (M5.smartMoney?.orderBlocks ?? []).some(z => z.direction === "BEARISH" && !z.invalidated);
-  structureSignals.push(bullishZones && !bearishZones ? 1 : bearishZones && !bullishZones ? -1 : 0);
-  const structureSum = structureSignals.reduce((sum, value) => sum + value, 0);
-  agents.push(vote("SMC and liquidity analyst", structureSum >= 1 ? "BUY" : structureSum <= -1 ? "SELL" : "HOLD", 1.5,
-    "BOS, liquidity sweep and active order-block context"));
+  // Core specialist 3: validate SMC against closed OHLC structure, displacement and reclaim/retest.
+  const smcEvidence = validateSmcPriceEvidence(candleHistory.M5 ?? [], M5);
+  agents.push(vote("SMC and liquidity analyst", smcEvidence.direction, 1.5, smcEvidence.reason));
 
-  // Existing specialist 4: headlines and macro bias never imply direction on their own.
-  const macroBias = macro.goldMacroBias === "BULLISH" ? "BUY"
-    : macro.goldMacroBias === "BEARISH" ? "SELL" : "HOLD";
+  // Core specialist 4: market-specific macro direction. Gold bias is never reused for FX or BTC.
+  const macroBias = marketAwareMacroDirection(market, macro);
+  const macroLabel = macro.marketBias?.[market] ??
+    ({ EURUSD: macro.eurusdMacroBias, GBPUSD: macro.gbpusdMacroBias, USDJPY: macro.usdjpyMacroBias,
+       XAUUSD: macro.goldMacroBias, BTCUSD: macro.btcMacroBias })[market] ?? "UNCONFIRMED";
   agents.push(vote("Macro and news analyst", macroBias, 1,
-    `Event risk: ${macro.eventRisk ?? "UNKNOWN"}; directional bias: ${macro.goldMacroBias ?? "UNCONFIRMED"}`));
+    `Market: ${market}; event risk: ${macro.eventRisk ?? "UNKNOWN"}; market-specific directional bias: ${macroLabel}`));
 
-  // Existing specialist 5: auction/value location and volume-pressure proxy.
-  const valueSignals = [
+  // Core specialist 5: only verified trade-volume feeds can cast a directional volume vote.
+  const volumeEvidence = classifyVolumeEvidence(M5);
+  const valueSignals = volumeEvidence.trusted ? [
     Number.isFinite(M5.vwap) ? (M5.close > M5.vwap ? 1 : M5.close < M5.vwap ? -1 : 0) : 0,
     Number.isFinite(M5.poc) ? (M5.close > M5.poc ? 1 : M5.close < M5.poc ? -1 : 0) : 0,
-    M5.cvd?.direction === "BUYING" ? 1 : M5.cvd?.direction === "SELLING" ? -1 : 0
-  ];
+    volumeEvidence.direction === "BUY" ? 1 : volumeEvidence.direction === "SELL" ? -1 : 0
+  ] : [];
   const valueSum = valueSignals.reduce((sum, value) => sum + value, 0);
-  agents.push(vote("Volume and auction analyst", valueSum >= 2 ? "BUY" : valueSum <= -2 ? "SELL" : "HOLD", 1,
-    "VWAP, volume-profile POC and cumulative-volume pressure proxy"));
+  agents.push(vote("Volume and auction analyst", volumeEvidence.trusted && valueSum >= 2 ? "BUY" : volumeEvidence.trusted && valueSum <= -2 ? "SELL" : "HOLD", 1,
+    `${volumeEvidence.reason}; source: ${volumeEvidence.source}`));
 
   // Six new quantitative candle forecasters; use closed M5 history only.
   const forecastAgents = runForecastAgents(candleHistory.M5 ?? []);
@@ -140,6 +138,7 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
   const adaptiveCalibration = buildAdaptiveAgentWeights({
     market, outcomes: agentOutcomes, trainingCutoff: agentTrainingCutoff
   });
+  const agentHistoricalPerformance = evaluateAgentHistoricalPerformance(agentOutcomes, agentTrainingCutoff);
   for (const agent of agents) {
     const baseWeight = agent.weight;
     const learned = adaptiveCalibration.weights?.[agent.name]?.[agent.direction];
@@ -197,6 +196,7 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
     market,
     architecture: "11 technical specialists + 6 quantitative forecasting agents + training-only adaptive reliability weighting + independent risk/debate/portfolio managers",
     adaptiveCalibration,
+    agentHistoricalPerformance,
     agents,
     agentCount: agents.length,
     forecastingAgents: forecastAgents,
