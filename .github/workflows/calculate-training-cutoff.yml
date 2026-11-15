@@ -1,0 +1,48 @@
+name: Calculate Frozen Training Cutoff
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calculate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DATA_DAYS_BACK: "180"
+      DATA_OVERLAP_DAYS: "3"
+      DOWNLOAD_CONCURRENCY: "6"
+      BTC_DATA_PREFIX: "btcusd"
+      DUKASCOPY_BATCH_SIZE: "8"
+      DUKASCOPY_BATCH_PAUSE_MS: "150"
+      DUKASCOPY_REQUEST_INTERVAL_MS: "120"
+      DUKASCOPY_RETRY_COUNT: "3"
+      DUKASCOPY_RATE_LIMIT_RETRIES: "4"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Download full research history
+        run: npm run download
+
+      - name: Calculate chronological 70/30 boundary
+        run: node scripts/calculate-training-cutoff.js
+
+      - name: Publish cutoff report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-training-cutoff
+          path: reports/training-cutoff.json
+          if-no-files-found: error
+          retention-days: 30
