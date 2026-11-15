@@ -138,7 +138,7 @@ export function runTradingAgents({ market, frames, macro = {}, candleHistory = {
   const adaptiveCalibration = buildAdaptiveAgentWeights({
     market, outcomes: agentOutcomes, trainingCutoff: agentTrainingCutoff
   });
-  const agentHistoricalPerformance = evaluateAgentHistoricalPerformance(agentOutcomes, agentTrainingCutoff);
+  const agentHistoricalPerformance = evaluateAgentHistoricalPerformance(agentOutcomes, agentTrainingCutoff, market);
   for (const agent of agents) {
     const baseWeight = agent.weight;
     const learned = adaptiveCalibration.weights?.[agent.name]?.[agent.direction];
