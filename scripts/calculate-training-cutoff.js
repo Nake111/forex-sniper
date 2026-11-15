@@ -17,15 +17,15 @@ function timestamp(candle) {
 }
 
 async function loadMarket(prefix) {
-  const path = \`\${DATA_DIR}/\${prefix}-m5.json\`;
+  const path = DATA_DIR + "/" + prefix + "-m5.json";
   const bytes = await readFile(path);
   const parsed = JSON.parse(bytes.toString("utf8"));
-  if (!Array.isArray(parsed)) throw new Error(\`\${path} must contain a JSON candle array\`);
+  if (!Array.isArray(parsed)) throw new Error(path + " must contain a JSON candle array");
   const rows = parsed.map(row => ({ time: timestamp(row) }))
     .filter(row => Number.isFinite(row.time))
     .sort((a, b) => a.time - b.time);
   const unique = [...new Set(rows.map(row => row.time))];
-  if (unique.length < 1000) throw new Error(\`\${prefix}: only \${unique.length} valid M5 timestamps; refusing to freeze a short or incomplete history\`);
+  if (unique.length < 1000) throw new Error(prefix + ": only " + unique.length + " valid M5 timestamps; refusing to freeze a short or incomplete history");
   return {
     prefix,
     path,
