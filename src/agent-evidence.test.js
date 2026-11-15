@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { marketAwareMacroDirection, classifyVolumeEvidence, evaluateAgentHistoricalPerformance, validateSmcPriceEvidence } from "./agent-evidence.js";
+import { buildAgentForecasts } from "./signal-quality.js";
 
 test("macro direction is market-specific and never reuses gold bias for EURUSD or BTCUSD", () => {
   assert.equal(marketAwareMacroDirection("XAUUSD", { goldMacroBias: "BULLISH" }), "BUY");
@@ -31,4 +32,13 @@ test("historical diagnostics count false signals and missed opportunities withou
 
 test("SMC abstains without sufficient price-history validation", () => {
   assert.equal(validateSmcPriceEvidence([], {}).valid, false);
+});
+
+test("HOLD forecasts are journaled so missed directional opportunities can be measured", () => {
+  const rows = buildAgentForecasts({
+    market: "EURUSD", candleAt: 1000, close: 1.1, atr14: 0.001,
+    agents: [{ name: "Abstaining analyst", direction: "HOLD" }]
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].predictedSide, "HOLD");
 });
