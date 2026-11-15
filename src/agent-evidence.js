@@ -91,10 +91,11 @@ function parseTime(value) {
 
 // Diagnostics include abstentions so missed opportunities are visible.
 // Only observations at or before the frozen training cutoff are eligible.
-export function evaluateAgentHistoricalPerformance(outcomes = [], trainingCutoff = null) {
+export function evaluateAgentHistoricalPerformance(outcomes = [], trainingCutoff = null, market = null) {
   const cutoff = parseTime(trainingCutoff);
   const rows = Array.isArray(outcomes) && cutoff !== null ? outcomes.filter(row =>
     row?.eventType === "AGENT_FORECAST_OUTCOME" &&
+    (market === null || row.market === market) &&
     typeof row.agent === "string" && SIDES.has(row.predictedSide) &&
     ["BUY", "SELL", "FLAT"].includes(row.actualDirection) &&
     parseTime(row.forecastAt) !== null && parseTime(row.forecastAt) <= cutoff
