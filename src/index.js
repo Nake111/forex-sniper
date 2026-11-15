@@ -25,6 +25,7 @@ import { createQuoteSnapshot } from "./quote-snapshot.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
 import { fetchPublicTraderEvidence } from "./public-trader-signals.js";
 import { runSignalApprovalAgent } from "./signal-approval-agent.js";
+import { evaluateOutOfSamplePaperGate } from "./oos-performance-gate.js";
 import { runEntryVerificationAgent } from "./entry-verification-agent.js";
 import { buildDiscoveryLayer, buildVerificationLayer, buildExecutionLayer } from "./decision-layers.js";
 import { decideBrainAction } from "./brain-decision.js";
@@ -125,6 +126,23 @@ async function loadTrainingAgentOutcomes() {
     return training;
   } catch (error) {
     if (error.code !== "ENOENT") console.warn("AGENT CALIBRATION: training journal unavailable or invalid; baseline weights retained:", error.message);
+    return [];
+  }
+}
+
+async function loadPaperJournalEvents() {
+  const path = process.env.PAPER_JOURNAL_PATH ?? `${DATA_DIR}/second-brain.jsonl`;
+  try {
+    const raw = await readFile(path, "utf8");
+    const events = [];
+    for (const line of raw.split("\n")) {
+      if (!line.trim()) continue;
+      try { events.push(JSON.parse(line)); }
+      catch { console.warn("OOS PAPER GATE: skipped malformed journal line"); }
+    }
+    return events;
+  } catch (error) {
+    if (error.code !== "ENOENT") console.warn("OOS PAPER GATE: journal unavailable:", error.message);
     return [];
   }
 }
@@ -321,6 +339,11 @@ async function analyseMarket(market, macroContext) {
   const candleHistory = Object.fromEntries(frames.map(({ key, candles }) => [key, candles]));
   const agentTrainingCutoff = process.env.AGENT_TRAINING_CUTOFF ?? null;
   const agentOutcomes = await loadTrainingAgentOutcomes();
+  const paperJournalEvents = await loadPaperJournalEvents();
+  const oosPerformanceGate = evaluateOutOfSamplePaperGate({
+    events: paperJournalEvents, market: market.symbol, trainingCutoff: agentTrainingCutoff
+  });
+  console.log("FORWARD OUT-OF-SAMPLE PAPER PERFORMANCE GATE:", JSON.stringify(oosPerformanceGate));
   console.log("AGENT TRAINING CALIBRATION:", agentTrainingCutoff
     ? `frozen cutoff ${agentTrainingCutoff}; eligible training outcomes ${agentOutcomes.length}`
     : "DISABLED — set AGENT_TRAINING_CUTOFF only after freezing the chronological training/holdout boundary");
@@ -633,6 +656,9 @@ async function analyseMarket(market, macroContext) {
   // weighted score was below threshold, then passed HOLD to both agents. This
   // generated misleading "No directional candidate" and direction-conflict
   // blockers instead of evaluating the actual candidate and its real failures.
+  if (!oosPerformanceGate.approved) {
+    approvalBlockers.push(...(oosPerformanceGate.blockers ?? ["Forward out-of-sample paper performance not approved"]));
+  }
   const approval = runSignalApprovalAgent({
     candidate: directionalCandidate, marketReview, plan, quoteValidation, quote: spreadQuote,
     dataStale: Boolean(macroContext.dataStale) || staleTimeframes.length > 0,
