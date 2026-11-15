@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-15T08:56:39.768Z",
-  "generatedAtSlovenia": "2026-11-15 09:56:39",
+  "generatedAt": "2026-11-15T09:00:10.642Z",
+  "generatedAtSlovenia": "2026-11-15 10:00:10",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-15T08:56:04.000Z",
-    "timestampUtc": "2026-11-15T08:56:04.000Z",
-    "timestampSlovenia": "2026-11-15T09:56:04+01:00",
+    "id": "2026-11-15T08:59:37.000Z",
+    "timestampUtc": "2026-11-15T08:59:37.000Z",
+    "timestampSlovenia": "2026-11-15T09:59:37+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-15T08:56:04.000Z",
-  "sourceReportAgeSeconds": 36,
+  "sourceReportGeneratedAt": "2026-11-15T08:59:37.000Z",
+  "sourceReportAgeSeconds": 34,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -219,6 +219,7 @@
           "M5 closed candle does not confirm the higher-timeframe direction",
           "EURUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
+          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
           "Entry/stop/target plan is incomplete",
           "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
           "Quote snapshot identity is missing or inconsistent",
@@ -231,12 +232,12 @@
           "Spread-to-ATR cannot be independently verified"
         ]
       },
-      "generatedAt": "2026-11-15T08:56:39.768Z",
-      "generatedAtSlovenia": "2026-11-15 09:56:39",
+      "generatedAt": "2026-11-15T09:00:10.642Z",
+      "generatedAtSlovenia": "2026-11-15 10:00:10",
       "analysisCycle": {
-        "id": "2026-11-15T08:56:04.000Z",
-        "timestampUtc": "2026-11-15T08:56:04.000Z",
-        "timestampSlovenia": "2026-11-15T09:56:04+01:00",
+        "id": "2026-11-15T08:59:37.000Z",
+        "timestampUtc": "2026-11-15T08:59:37.000Z",
+        "timestampSlovenia": "2026-11-15T09:59:37+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -250,13 +251,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 64769.32,
+        "entry": 65195.54,
         "signalReferenceEntry": 64740.3,
         "entryReference": "ASK (validated executable-side quote)",
         "stopLoss": 64327.42,
         "takeProfit": 65566.06,
-        "riskReward": "1:1.80",
-        "riskRewardValue": 1.8029877380540773,
+        "riskReward": "1:0.43",
+        "riskRewardValue": 0.42680994265120636,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -284,12 +285,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 64769.31,
-        "ask": 64769.32,
+        "bid": 65195.53,
+        "ask": 65195.54,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794732986900,
+        "timestamp": 1794733197641,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1001,
+        "ageMs": 930,
         "validated": true
       },
       "agents": {
@@ -459,19 +460,22 @@
         "layer3": "REJECTED",
         "blockers": [
           "H1 squeeze momentum is not strengthening in a clear direction",
+          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
           "Risk/reward is below 1:2",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
+          "Executable-side quote is 1.985 ATR from signal reference entry; maximum is 0.25",
           "Live-quote risk/reward is below 1:2"
         ]
       },
-      "generatedAt": "2026-11-15T08:56:39.768Z",
-      "generatedAtSlovenia": "2026-11-15 09:56:39",
+      "generatedAt": "2026-11-15T09:00:10.642Z",
+      "generatedAtSlovenia": "2026-11-15 10:00:10",
       "analysisCycle": {
-        "id": "2026-11-15T08:56:04.000Z",
-        "timestampUtc": "2026-11-15T08:56:04.000Z",
-        "timestampSlovenia": "2026-11-15T09:56:04+01:00",
+        "id": "2026-11-15T08:59:37.000Z",
+        "timestampUtc": "2026-11-15T08:59:37.000Z",
+        "timestampSlovenia": "2026-11-15T09:59:37+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -681,6 +685,7 @@
           "Gold M5 trigger candle does not confirm H1/M15 direction",
           "XAUUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
+          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
           "Entry/stop/target plan is incomplete",
           "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
           "Quote snapshot identity is missing or inconsistent",
@@ -693,12 +698,12 @@
           "Spread-to-ATR cannot be independently verified"
         ]
       },
-      "generatedAt": "2026-11-15T08:56:39.768Z",
-      "generatedAtSlovenia": "2026-11-15 09:56:39",
+      "generatedAt": "2026-11-15T09:00:10.642Z",
+      "generatedAtSlovenia": "2026-11-15 10:00:10",
       "analysisCycle": {
-        "id": "2026-11-15T08:56:04.000Z",
-        "timestampUtc": "2026-11-15T08:56:04.000Z",
-        "timestampSlovenia": "2026-11-15T09:56:04+01:00",
+        "id": "2026-11-15T08:59:37.000Z",
+        "timestampUtc": "2026-11-15T08:59:37.000Z",
+        "timestampSlovenia": "2026-11-15T09:59:37+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
