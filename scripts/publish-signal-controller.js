@@ -129,6 +129,7 @@ for (const market of markets) {
     lineValue(section, "WEIGHTED SCORE / COVERAGE:");
   const candidateStrength = parseCandidateStrength(scoreRaw);
   const m5Atr14 = numberAfter(section, "ATR 14:");
+  const marketDataQuality = optionalJsonLine(section, "MARKET DATA QUALITY DIAGNOSTICS:", null);
   const entry = numberAfter(section, "ENTRY:");
   const signalReferenceEntry = numberAfter(section, "SIGNAL REFERENCE ENTRY:");
   const stopLoss = numberAfter(section, "STOP LOSS:");
@@ -185,6 +186,7 @@ for (const market of markets) {
         : "No BUY/SELL direction was discovered",
     candidatePlan,
     m5Atr14,
+    marketDataQuality,
     score: candidateStrength
       ? candidateStrength.score + "/" + candidateStrength.maxScore + " candidate strength · " +
         (candidateStrength.evidenceCoveragePct ?? "n/a") + "% evidence coverage"
