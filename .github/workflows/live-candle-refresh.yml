@@ -149,7 +149,7 @@ jobs:
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
           BTC_DATA_PREFIX: "kraken-btcusd"
-      - name: Require fresh quotes and complete three-agent verification
+      - name: Require fresh quotes, five-agent execution and independent verification
         run: node scripts/verify-snapshot.js "$REPORT_PATH"
         env:
           MAX_SNAPSHOT_QUOTE_AGE_MS: "15000"
