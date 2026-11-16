@@ -36,6 +36,39 @@ for (const market of markets) {
     throw new Error(`${market}: unrecognized final action ${action}`);
   }
 
+  const researchLines = Object.fromEntries(researchMarkers.map(marker => [
+    marker, sectionLines.filter(value => value.includes(marker))
+  ]));
+  for (const marker of researchMarkers) {
+    if (researchLines[marker].length !== 1) {
+      throw new Error(`${market}: expected exactly one ${marker} report; found ${researchLines[marker].length}`);
+    }
+  }
+  const parseResearch = marker => {
+    const raw = researchLines[marker][0].slice(researchLines[marker][0].indexOf(marker) + marker.length).trim();
+    try { return JSON.parse(raw); }
+    catch { throw new Error(`${market}: invalid JSON in ${marker}`); }
+  };
+  const fiveAgents = parseResearch("FIVE INDEPENDENT SIGNAL AGENTS:");
+  const consensus = parseResearch("FIVE-AGENT CONSENSUS:");
+  const framework = parseResearch("FIVE-AGENT VALIDATION FRAMEWORK:");
+  const actualNames = Array.isArray(fiveAgents) ? fiveAgents.map(agent => agent?.name) : [];
+  if (actualNames.length !== 5 || new Set(actualNames).size !== 5 ||
+      researchAgentNames.some(name => !actualNames.includes(name)) ||
+      fiveAgents.some(agent => !["BUY", "SELL", "NO_SIGNAL"].includes(agent?.signal))) {
+    throw new Error(`${market}: five distinct research agents did not all execute with valid directional/abstention outputs`);
+  }
+  if (consensus?.totalAgents !== 5 || consensus?.requiredVotes !== 3 ||
+      typeof consensus.approved !== "boolean" ||
+      !["BUY", "SELL", "NO_SIGNAL"].includes(consensus.direction)) {
+    throw new Error(`${market}: five-agent quorum report is incomplete or its 3-of-5 rule changed`);
+  }
+  if (framework?.holdoutAccess !== "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN" ||
+      framework?.optimizationApplied !== false) {
+    throw new Error(`${market}: research validation framework did not preserve the locked holdout`);
+  }
+  console.log(`${market}: all five distinct research agents ran; quorum ${consensus.direction} (${consensus.requiredVotes}/${consensus.totalAgents}); holdout locked.`);
+
   for (const [marker, kind] of labels) {
     const matches = sectionLines.filter(value => value.includes(marker));
     if (matches.length !== 1) throw new Error(`${market}: expected exactly one ${kind} agent result; found ${matches.length}`);
@@ -77,4 +110,4 @@ for (const market of markets) {
   console.log(`${market}: final action section present (${action})`);
 }
 
-console.log("SNAPSHOT VERIFICATION PASSED: all three market sections contain exactly one result from each independent agent, fresh validated bid/ask evidence, and a final decision. This verifier does not approve trades.");
+console.log("SNAPSHOT VERIFICATION PASSED: all three market sections contain all five distinct research agents, the 3-of-5 quorum report, locked holdout metadata, three independent approval agents, and fresh-quote validation. This verifier does not approve trades.");
