@@ -529,6 +529,10 @@ async function analyseMarket(market, macroContext) {
   const confirmation = market.symbol === "BTCUSD"
     ? confirmSignal(directionalCandidate, results.H1)
     : { status: "H1 ALIGNED", reason: "BTC-only squeeze filter not applicable; market-specific higher-timeframe and M5 checks remain mandatory." };
+  // Public-trader ideas are advisory only. Fetch them before the execution quote
+  // so their network latency cannot age a quote past the 15-second watchdog limit.
+  const publicTraderEvidence = await fetchPublicTraderEvidence(market.symbol);
+  console.log("PUBLIC TRADER IDEAS (ADVISORY ONLY):", JSON.stringify(publicTraderEvidence));
   const candleClosePlan = buildIndicativeTradePlan(directionalCandidate, results.M5, market.symbol);
   // Fetch the active market's bid/ask immediately before final validation so
   // long-running agent reviews do not age the quote before the execution gate.
@@ -560,8 +564,6 @@ async function analyseMarket(market, macroContext) {
     validation: quoteValidation
   }));
   marketReview = runMarketIntelligenceAgent({ market: market.symbol, frames: results, macro: macroContext, quote: quoteValidation.valid ? { ...spreadQuote, spread: quoteValidation.spread } : null });
-  const publicTraderEvidence = await fetchPublicTraderEvidence(market.symbol);
-  console.log("PUBLIC TRADER IDEAS (ADVISORY ONLY):", JSON.stringify(publicTraderEvidence));
   const a1Heart = evaluateA1Heart({ candles: frames.find(frame => frame.key === "M5").candles, market: market.symbol });
   console.log("A1 HEART — MULTI-SESSION OPENING RANGE / VOLUME PROFILE / ABSORPTION:", JSON.stringify(a1Heart));
   console.log("A1 HEART SESSION STATUS:", (a1Heart.sessions ?? []).map(session => `${session.name}: ${session.status}`).join(" | "));
