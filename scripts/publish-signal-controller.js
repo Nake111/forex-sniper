@@ -128,6 +128,7 @@ for (const market of markets) {
   const scoreRaw = lineValue(section, "CANDIDATE STRENGTH / EVIDENCE COVERAGE:") ??
     lineValue(section, "WEIGHTED SCORE / COVERAGE:");
   const candidateStrength = parseCandidateStrength(scoreRaw);
+  const m5Atr14 = numberAfter(section, "ATR 14:");
   const entry = numberAfter(section, "ENTRY:");
   const signalReferenceEntry = numberAfter(section, "SIGNAL REFERENCE ENTRY:");
   const stopLoss = numberAfter(section, "STOP LOSS:");
@@ -183,6 +184,7 @@ for (const market of markets) {
         ? "Directional research candidate only; one or more approval gates failed"
         : "No BUY/SELL direction was discovered",
     candidatePlan,
+    m5Atr14,
     score: candidateStrength
       ? candidateStrength.score + "/" + candidateStrength.maxScore + " candidate strength · " +
         (candidateStrength.evidenceCoveragePct ?? "n/a") + "% evidence coverage"
