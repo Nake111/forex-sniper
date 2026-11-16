@@ -157,6 +157,13 @@ jobs:
           CYCLE_SLOVENIA="$(sed -n 's/^Analysis cycle Slovenia: //p' "$REPORT_PATH" | head -n 1)"
           test -n "$CYCLE_UTC" && test -n "$CYCLE_SLOVENIA"
           ANALYSIS_CYCLE_UTC="$CYCLE_UTC" ANALYSIS_CYCLE_SLOVENIA="$CYCLE_SLOVENIA" npm run publish:data
+          watchdog_blocked=false
+          if node scripts/stale-data-watchdog.js; then
+            echo "Publication watchdog PASS: synchronized candles and provider quotes are fresh."
+          else
+            echo "Publication watchdog BLOCKED: publishing fail-closed NO APPROVED TRADE states." >&2
+            watchdog_blocked=true
+          fi
           node --input-type=module -e '
             import { readFile } from "node:fs/promises";
             const [s, q] = await Promise.all([
@@ -211,6 +218,10 @@ jobs:
           rm -f "$snapshot" "$signal_snapshot" "$performance_snapshot" "$brain_snapshot"
           if [ "$pushed" != true ]; then
             echo "Could not publish dashboard snapshot after five attempts." >&2
+            exit 1
+          fi
+          if [ "$watchdog_blocked" = true ]; then
+            echo "Snapshot was safely published as blocked; watchdog did not pass." >&2
             exit 1
           fi
         env:
