@@ -34,6 +34,7 @@ import { scoreCandidate } from "./weighted-score.js";
 import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
 import { evaluateGithubResearchIntegrations } from "./github-research-confluence.js";
+import { assessCandleVolume, assessQuoteCandleBasis } from "./market-data-quality.js";
 
 const DATA_DIR = process.env.DATA_DIR ?? "data";
 const WINDOW = 240;
@@ -541,6 +542,18 @@ async function analyseMarket(market, macroContext) {
   const quoteSnapshot = createQuoteSnapshot(rawSpreadQuote, market.symbol);
   const spreadQuote = quoteSnapshot.quote;
   const quoteValidation = quoteSnapshot.validation;
+  const closedM5Candles = frames.find(frame => frame.key === "M5")?.candles ?? [];
+  const volumeQuality = assessCandleVolume(closedM5Candles);
+  const quoteCandleBasis = assessQuoteCandleBasis({
+    quote: spreadQuote,
+    candle: closedM5Candles.at(-1),
+    atr: results.M5.atr14
+  });
+  console.log("MARKET DATA QUALITY DIAGNOSTICS:", JSON.stringify({
+    market: market.symbol,
+    volume: volumeQuality,
+    quoteCandleBasis
+  }));
   const plan = pricePlanAtExecutableQuote(
     candleClosePlan, directionalCandidate, spreadQuote, quoteValidation, results.M5.atr14
   );
