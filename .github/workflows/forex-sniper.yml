@@ -1,22 +1,17 @@
 name: Forex Sniper Analysis
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - dashboard/data/signals.json
-  schedule:
-    - cron: "*/5 * * * *"
+  # Legacy analysis is manual-only; live-candle-refresh owns the synchronized cadence and publication.
   workflow_dispatch:
 
 # Never interrupt an active analysis. GitHub keeps at most one pending run
 # per concurrency group, so a slow run can cause skipped schedule slots.
 concurrency:
-  group: forex-sniper-main
+  group: forex-sniper-market-pipeline
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   analyse:
