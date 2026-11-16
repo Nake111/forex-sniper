@@ -1,48 +1,116 @@
-name: Calculate Frozen Training Cutoff
+name: Freeze Approved Training Cutoff
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/calculate-training-cutoff.yml"
+      - "config/approved-training-cutoff.json"
 
 permissions:
   contents: read
+  actions: write
+
+concurrency:
+  group: forex-sniper-training-cutoff-freeze
+  cancel-in-progress: false
 
 jobs:
-  calculate:
+  freeze:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      DATA_DAYS_BACK: "180"
-      DATA_OVERLAP_DAYS: "3"
-      DOWNLOAD_CONCURRENCY: "6"
-      BTC_DATA_PREFIX: "btcusd"
-      DUKASCOPY_BATCH_SIZE: "8"
-      DUKASCOPY_BATCH_PAUSE_MS: "150"
-      DUKASCOPY_REQUEST_INTERVAL_MS: "120"
-      DUKASCOPY_RETRY_COUNT: "3"
-      DUKASCOPY_RATE_LIMIT_RETRIES: "4"
+    timeout-minutes: 10
     steps:
-      - name: Checkout
+      - name: Checkout approved cutoff record
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Validate artifact evidence and freeze repository variable
+        id: freeze
+        uses: actions/github-script@v7
         with:
-          node-version: "20"
+          script: |
+            const fs = require('fs');
+            const sourcePath = 'config/approved-training-cutoff.json';
+            const report = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+            const cutoffMs = Date.parse(report.trainingCutoff || '');
+            const holdoutMs = Date.parse(report.holdoutStartsAt || '');
+            const total = Number(report.totalUniqueTimestamps);
+            const training = Number(report.trainingCandleCount);
+            const expectedCutoff = '2026-09-21T07:25:00.000Z';
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+            if (report.schemaVersion !== 1 || report.status !== 'APPROVED_TO_FREEZE') {
+              throw new Error('Approved cutoff record has an unexpected schema or status.');
+            }
+            if (report.trainingCutoff !== expectedCutoff ||
+                !Number.isFinite(cutoffMs) || !Number.isFinite(holdoutMs) ||
+                holdoutMs - cutoffMs !== 5 * 60 * 1000) {
+              throw new Error('Cutoff does not match the previously verified approved boundary.');
+            }
+            if (report.holdoutRead !== false) {
+              throw new Error('Refusing to freeze: holdoutRead must remain false.');
+            }
+            if (!Number.isInteger(total) || total !== 51401 ||
+                !Number.isInteger(training) || training !== Math.floor(total * 0.7)) {
+              throw new Error('Chronological 70/30 boundary does not match the verified calculation.');
+            }
+            const artifact = report.sourceArtifact;
+            if (artifact?.workflowRunId !== 43697661964 ||
+                artifact?.artifactId !== 14154733625 ||
+                artifact?.artifactName !== 'verified-training-cutoff' ||
+                artifact?.artifactSha256 !== 'a6ca279c94f464abbc2a0ddcd63fa48a0c4252ec6ee529ff7f6bd855f19f778d') {
+              throw new Error('Source training-cutoff artifact identity or digest does not match the inspected artifact.');
+            }
+            const datasets = report.datasets;
+            const expectedMarkets = ['EURUSD', 'BTCUSD', 'XAUUSD'];
+            if (!Array.isArray(datasets) || datasets.length !== 3 ||
+                !expectedMarkets.every(m => datasets.some(d => d.market === m))) {
+              throw new Error('All three market datasets are required.');
+            }
+            for (const d of datasets) {
+              if (!/^[a-f0-9]{64}$/i.test(d.sha256 || '') ||
+                  !Number.isInteger(d.candlesInCommonWindow) ||
+                  !Number.isInteger(d.trainingCandles) ||
+                  !Number.isInteger(d.holdoutCandles) ||
+                  d.trainingCandles + d.holdoutCandles !== d.candlesInCommonWindow ||
+                  d.trainingSharePct < 65 || d.trainingSharePct > 75) {
+                throw new Error('Dataset integrity or per-market 70/30 coverage failed for ' + d.market);
+              }
+            }
 
-      - name: Download full research history
-        run: npm run download
+            const name = 'AGENT_TRAINING_CUTOFF';
+            const value = new Date(cutoffMs).toISOString();
+            const { owner, repo } = context.repo;
+            let exists = true;
+            try {
+              await github.rest.actions.getRepoVariable({ owner, repo, name });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              exists = false;
+            }
+            if (exists) {
+              await github.rest.actions.updateRepoVariable({ owner, repo, name, value });
+            } else {
+              await github.rest.actions.createRepoVariable({ owner, repo, name, value });
+            }
+            const verified = await github.rest.actions.getRepoVariable({ owner, repo, name });
+            if (verified.data.value !== value) {
+              throw new Error('Repository variable read-back did not match the approved cutoff.');
+            }
 
-      - name: Calculate chronological 70/30 boundary
-        run: node scripts/calculate-training-cutoff.js
+            report.status = 'FROZEN';
+            report.variableName = name;
+            report.variableVerified = true;
+            report.frozenAt = new Date().toISOString();
+            report.holdoutRead = false;
+            fs.mkdirSync('reports', { recursive: true });
+            fs.writeFileSync('reports/frozen-training-cutoff.json', JSON.stringify(report, null, 2) + '\\n');
+            core.notice(name + ' frozen and verified: ' + value);
+            core.setOutput('cutoff', value);
 
-      - name: Publish cutoff report
-        if: always()
+      - name: Upload frozen cutoff verification artifact
         uses: actions/upload-artifact@v4
         with:
-          name: verified-training-cutoff
-          path: reports/training-cutoff.json
+          name: frozen-training-cutoff
+          path: reports/frozen-training-cutoff.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
