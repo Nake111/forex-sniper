@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-16T21:32:25.594Z",
-  "generatedAtSlovenia": "2026-11-16 22:32:25",
+  "generatedAt": "2026-11-16T21:34:27.201Z",
+  "generatedAtSlovenia": "2026-11-16 22:34:27",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-16T21:31:47.000Z",
-    "timestampUtc": "2026-11-16T21:31:47.000Z",
-    "timestampSlovenia": "2026-11-16T22:31:47+01:00",
+    "id": "2026-11-16T21:33:52.000Z",
+    "timestampUtc": "2026-11-16T21:33:52.000Z",
+    "timestampSlovenia": "2026-11-16T22:33:52+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-16T21:31:47.000Z",
-  "sourceReportAgeSeconds": 39,
+  "sourceReportGeneratedAt": "2026-11-16T21:33:52.000Z",
+  "sourceReportAgeSeconds": 35,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -24,13 +24,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 1.09971,
+        "entry": 1.09963,
         "signalReferenceEntry": 1.09975,
         "entryReference": "BID (validated executable-side quote)",
         "stopLoss": 1.10002,
         "takeProfit": 1.09921,
-        "riskReward": "1:1.61",
-        "riskRewardValue": 1.6116504854366491,
+        "riskReward": "1:1.07",
+        "riskRewardValue": 1.0745501285354264,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -58,12 +58,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.09971,
-        "ask": 1.09977,
+        "bid": 1.09963,
+        "ask": 1.09969,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794864720000,
+        "timestamp": 1794864841000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 7217,
+        "ageMs": 8194,
         "validated": true
       },
       "agents": {
@@ -224,6 +224,28 @@
           "agreementPct": 40,
           "rule": "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
         },
+        "fiveAgentValidationFramework": {
+          "status": "TRAINING_WINDOW_ONLY",
+          "totalClosedCandles": 240,
+          "trainingRange": {
+            "startIndex": 0,
+            "endIndexExclusive": 168,
+            "count": 168
+          },
+          "holdoutRange": {
+            "startIndex": 168,
+            "endIndexExclusive": 240,
+            "count": 72
+          },
+          "holdoutAccess": "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN",
+          "requiredValidation": [
+            "chronological walk-forward",
+            "realistic spread/commission/slippage",
+            "minimum 30 resolved trades",
+            "forward paper test"
+          ],
+          "optimizationApplied": false
+        },
         "marketIntelligenceApproved": false,
         "signalApprovalApproved": false,
         "entryVerificationApproved": false
@@ -244,7 +266,7 @@
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
           "Spread/ATR 0.3123 exceeds EURUSD limit 0.12",
-          "Executable-side quote is 0.208 ATR from signal reference entry; maximum is 0.2",
+          "Executable-side quote is 0.625 ATR from signal reference entry; maximum is 0.2",
           "Live-quote risk/reward is below 1:2",
           "Live provider bid/ask is missing, invalid, or stale",
           "Watchdog fail-closed protection"
@@ -254,12 +276,12 @@
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
-      "generatedAt": "2026-11-16T21:32:25.594Z",
-      "generatedAtSlovenia": "2026-11-16 22:32:25",
+      "generatedAt": "2026-11-16T21:34:27.201Z",
+      "generatedAtSlovenia": "2026-11-16 22:34:27",
       "analysisCycle": {
-        "id": "2026-11-16T21:31:47.000Z",
-        "timestampUtc": "2026-11-16T21:31:47.000Z",
-        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
+        "id": "2026-11-16T21:33:52.000Z",
+        "timestampUtc": "2026-11-16T21:33:52.000Z",
+        "timestampSlovenia": "2026-11-16T22:33:52+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -273,13 +295,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 65162.41,
+        "entry": 65129.49,
         "signalReferenceEntry": 65191.7,
         "entryReference": "ASK (validated executable-side quote)",
         "stopLoss": 64882.06,
         "takeProfit": 65810.97,
-        "riskReward": "1:2.31",
-        "riskRewardValue": 2.313432676104214,
+        "riskReward": "1:2.75",
+        "riskRewardValue": 2.754282210473391,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
@@ -307,12 +329,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 65162.4,
-        "ask": 65162.41,
+        "bid": 65129.48,
+        "ask": 65129.49,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794864728213,
+        "timestamp": 1794864852813,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1429,
+        "ageMs": 961,
         "validated": true
       },
       "agents": {
@@ -392,7 +414,7 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.00007396058958662486,
+              "spreadAtr": 0.00007396058953281145,
               "spreadLimit": 0.18,
               "spreadPass": true,
               "adx": 11.558419847470947,
@@ -473,6 +495,28 @@
           "agreementPct": 40,
           "rule": "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
         },
+        "fiveAgentValidationFramework": {
+          "status": "TRAINING_WINDOW_ONLY",
+          "totalClosedCandles": 240,
+          "trainingRange": {
+            "startIndex": 0,
+            "endIndexExclusive": 168,
+            "count": 168
+          },
+          "holdoutRange": {
+            "startIndex": 168,
+            "endIndexExclusive": 240,
+            "count": 72
+          },
+          "holdoutAccess": "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN",
+          "requiredValidation": [
+            "chronological walk-forward",
+            "realistic spread/commission/slippage",
+            "minimum 30 resolved trades",
+            "forward paper test"
+          ],
+          "optimizationApplied": false
+        },
         "marketIntelligenceApproved": false,
         "signalApprovalApproved": false,
         "entryVerificationApproved": false
@@ -488,22 +532,20 @@
           "Forward-paper net expectancy is not positive",
           "Forward-paper profit factor is below 1.1",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "Executable-side quote is 0.460 ATR from signal reference entry; maximum is 0.25"
         ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Live provider bid/ask is missing, invalid, or stale"
-        ]
+        "watchdog": "PASS",
+        "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:32:25.594Z",
-      "generatedAtSlovenia": "2026-11-16 22:32:25",
+      "generatedAt": "2026-11-16T21:34:27.201Z",
+      "generatedAtSlovenia": "2026-11-16 22:34:27",
       "analysisCycle": {
-        "id": "2026-11-16T21:31:47.000Z",
-        "timestampUtc": "2026-11-16T21:31:47.000Z",
-        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
+        "id": "2026-11-16T21:33:52.000Z",
+        "timestampUtc": "2026-11-16T21:33:52.000Z",
+        "timestampSlovenia": "2026-11-16T22:33:52+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -517,13 +559,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 3854.64,
+        "entry": 3855.19,
         "signalReferenceEntry": 3853.98,
         "entryReference": "BID (validated executable-side quote)",
         "stopLoss": 3857.93,
         "takeProfit": 3846.09,
-        "riskReward": "1:2.60",
-        "riskRewardValue": 2.597728011536431,
+        "riskReward": "1:3.32",
+        "riskRewardValue": 3.321302367801575,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -551,12 +593,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3854.635,
-        "ask": 3854.803,
+        "bid": 3855.186,
+        "ask": 3855.354,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794864743000,
+        "timestamp": 1794864864000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 2455,
+        "ageMs": 3045,
         "validated": true
       },
       "agents": {
@@ -717,6 +759,28 @@
           "agreementPct": 40,
           "rule": "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
         },
+        "fiveAgentValidationFramework": {
+          "status": "TRAINING_WINDOW_ONLY",
+          "totalClosedCandles": 240,
+          "trainingRange": {
+            "startIndex": 0,
+            "endIndexExclusive": 168,
+            "count": 168
+          },
+          "holdoutRange": {
+            "startIndex": 168,
+            "endIndexExclusive": 240,
+            "count": 72
+          },
+          "holdoutAccess": "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN",
+          "requiredValidation": [
+            "chronological walk-forward",
+            "realistic spread/commission/slippage",
+            "minimum 30 resolved trades",
+            "forward paper test"
+          ],
+          "optimizationApplied": false
+        },
         "marketIntelligenceApproved": false,
         "signalApprovalApproved": false,
         "entryVerificationApproved": false
@@ -733,23 +797,23 @@
           "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.266 ATR from signal reference entry; maximum is 0.2"
+          "Executable-side quote is 0.489 ATR from signal reference entry; maximum is 0.2"
         ],
         "watchdog": "PASS",
         "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:32:25.594Z",
-      "generatedAtSlovenia": "2026-11-16 22:32:25",
+      "generatedAt": "2026-11-16T21:34:27.201Z",
+      "generatedAtSlovenia": "2026-11-16 22:34:27",
       "analysisCycle": {
-        "id": "2026-11-16T21:31:47.000Z",
-        "timestampUtc": "2026-11-16T21:31:47.000Z",
-        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
+        "id": "2026-11-16T21:33:52.000Z",
+        "timestampUtc": "2026-11-16T21:33:52.000Z",
+        "timestampSlovenia": "2026-11-16T22:33:52+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
   },
   "watchdog": {
-    "checkedAt": "2026-11-16T21:32:25.886Z",
+    "checkedAt": "2026-11-16T21:34:27.621Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -762,20 +826,18 @@
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 145886,
-        "quoteAgeMs": 25886
+        "candleAgeMs": 267621,
+        "quoteAgeMs": 26621
       },
       "BTCUSD": {
-        "issues": [
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 145886,
-        "quoteAgeMs": 17673
+        "issues": [],
+        "candleAgeMs": 267621,
+        "quoteAgeMs": 14808
       },
       "XAUUSD": {
         "issues": [],
-        "candleAgeMs": 145886,
-        "quoteAgeMs": 2886
+        "candleAgeMs": 267621,
+        "quoteAgeMs": 3621
       }
     }
   }
