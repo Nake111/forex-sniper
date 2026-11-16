@@ -158,6 +158,10 @@ jobs:
         env:
           MAX_SIGNAL_REPORT_AGE_MS: "600000"
 
+      - name: Refresh provider bid/ask immediately before publication
+        continue-on-error: true
+        run: node scripts/refresh-publication-quotes.js
+
       - name: Build strategy performance report from append-only paper journal
         run: node scripts/publish-paper-performance.js
       - name: Validate and publish closed dashboard candles
