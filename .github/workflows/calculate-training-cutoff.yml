@@ -103,7 +103,7 @@ jobs:
             report.frozenAt = new Date().toISOString();
             report.holdoutRead = false;
             fs.mkdirSync('reports', { recursive: true });
-            fs.writeFileSync('reports/frozen-training-cutoff.json', JSON.stringify(report, null, 2) + '\\n');
+            fs.writeFileSync('reports/frozen-training-cutoff.json', JSON.stringify(report, null, 2) + '\n');
             core.notice(name + ' frozen and verified: ' + value);
             core.setOutput('cutoff', value);
 
