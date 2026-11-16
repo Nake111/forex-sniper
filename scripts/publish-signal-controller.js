@@ -116,6 +116,7 @@ for (const market of markets) {
   const marketReview = jsonLine(section, "AGENT 1 — BID/ASK + BUYER/SELLER REVIEW:");
   const fiveDirectionalAgents = optionalJsonLine(section, "FIVE INDEPENDENT SIGNAL AGENTS:", []);
   const fiveAgentConsensus = optionalJsonLine(section, "FIVE-AGENT CONSENSUS:", null);
+  const fiveAgentValidationFramework = optionalJsonLine(section, "FIVE-AGENT VALIDATION FRAMEWORK:", null);
   const quote = jsonLine(section, "BID/ASK MARKET QUOTE:");
   const layer2 = statusEvidence(section, "LAYER 2 VERIFICATION:", {
     statusKey: "status", blockersKey: "blockers"
@@ -210,6 +211,7 @@ for (const market of markets) {
     agents: {
       fiveDirectionalAgents,
       fiveAgentConsensus,
+      fiveAgentValidationFramework,
       marketIntelligenceApproved: marketReview.approved === true,
       signalApprovalApproved: approval.approved === true,
       entryVerificationApproved: verification.approved === true
