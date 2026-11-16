@@ -53,6 +53,7 @@ on:
       - "market.test.js"
       - "dashboard/market-data.js"
       - "dashboard/performance.html"
+      - "scripts/verify-snapshot.js"
       - "package.json"
   # GitHub Actions schedule: five-minute target cadence. The separate stale-data watchdog blocks old publications if Actions delays a run.
   schedule:
@@ -67,6 +68,8 @@ permissions:
 
 jobs:
   refresh-and-signal:
+    # Wait for the separately verified 70/30 cutoff to be frozen in repository variables.
+    if: vars.AGENT_TRAINING_CUTOFF != ''
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -98,6 +101,19 @@ jobs:
         run: |
           npm run check
           npm test
+      - name: Require verified frozen training cutoff
+        env:
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF }}
+        run: |
+          node --input-type=module <<'NODE'
+          const raw = process.env.AGENT_TRAINING_CUTOFF;
+          const cutoff = Date.parse(raw ?? '');
+          if (!Number.isFinite(cutoff) || cutoff > Date.now()) {
+            throw new Error('AGENT_TRAINING_CUTOFF is missing, invalid, or future-dated; refusing analysis.');
+          }
+          console.log('Frozen chronological training cutoff verified:', new Date(cutoff).toISOString());
+          console.log('Holdout policy: final 30% remains locked; no holdout optimization or outcome reads.');
+          NODE
       - name: Refresh EUR/USD, BTC/USD and XAU/USD candles
         run: npm run download
         env:
