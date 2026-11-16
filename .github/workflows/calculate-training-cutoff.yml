@@ -27,6 +27,8 @@ jobs:
       - name: Validate artifact evidence and freeze repository variable
         id: freeze
         uses: actions/github-script@v7
+        env:
+          TRAINING_CUTOFF_ADMIN_TOKEN: ${{ secrets.TRAINING_CUTOFF_ADMIN_TOKEN }}
         with:
           script: |
             const fs = require('fs');
@@ -79,32 +81,35 @@ jobs:
 
             const name = 'AGENT_TRAINING_CUTOFF';
             const value = new Date(cutoffMs).toISOString();
-            const { owner, repo } = context.repo;
-            let exists = true;
-            try {
-              await github.rest.actions.getRepoVariable({ owner, repo, name });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-              exists = false;
-            }
-            if (exists) {
-              await github.rest.actions.updateRepoVariable({ owner, repo, name, value });
+            const token = process.env.TRAINING_CUTOFF_ADMIN_TOKEN;
+            if (token) {
+              const admin = github.getOctokit(token);
+              const { owner, repo } = context.repo;
+              let exists = true;
+              try {
+                await admin.rest.actions.getRepoVariable({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                exists = false;
+              }
+              if (exists) await admin.rest.actions.updateRepoVariable({ owner, repo, name, value });
+              else await admin.rest.actions.createRepoVariable({ owner, repo, name, value });
+              const verified = await admin.rest.actions.getRepoVariable({ owner, repo, name });
+              if (verified.data.value !== value) throw new Error('Repository variable read-back did not match the approved cutoff.');
+              report.status = 'FROZEN';
+              report.variableVerified = true;
+              report.frozenAt = new Date().toISOString();
+              core.notice(name + ' frozen and verified: ' + value);
             } else {
-              await github.rest.actions.createRepoVariable({ owner, repo, name, value });
+              report.status = 'VERIFIED_AWAITING_REPOSITORY_VARIABLE';
+              report.variableVerified = false;
+              report.requiredManualSetting = 'Repository Settings → Secrets and variables → Actions → Variables → AGENT_TRAINING_CUTOFF';
+              core.warning('Artifact verified, but GitHub integration cannot write repository variables. Configure AGENT_TRAINING_CUTOFF manually or add TRAINING_CUTOFF_ADMIN_TOKEN with Actions variables read/write access.');
             }
-            const verified = await github.rest.actions.getRepoVariable({ owner, repo, name });
-            if (verified.data.value !== value) {
-              throw new Error('Repository variable read-back did not match the approved cutoff.');
-            }
-
-            report.status = 'FROZEN';
             report.variableName = name;
-            report.variableVerified = true;
-            report.frozenAt = new Date().toISOString();
             report.holdoutRead = false;
             fs.mkdirSync('reports', { recursive: true });
             fs.writeFileSync('reports/frozen-training-cutoff.json', JSON.stringify(report, null, 2) + '\n');
-            core.notice(name + ' frozen and verified: ' + value);
             core.setOutput('cutoff', value);
 
       - name: Upload frozen cutoff verification artifact
