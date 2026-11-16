@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-16T21:31:04.338Z",
-  "generatedAtSlovenia": "2026-11-16 22:31:04",
+  "generatedAt": "2026-11-16T21:32:25.594Z",
+  "generatedAtSlovenia": "2026-11-16 22:32:25",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-16T21:30:33.000Z",
-    "timestampUtc": "2026-11-16T21:30:33.000Z",
-    "timestampSlovenia": "2026-11-16T22:30:33+01:00",
+    "id": "2026-11-16T21:31:47.000Z",
+    "timestampUtc": "2026-11-16T21:31:47.000Z",
+    "timestampSlovenia": "2026-11-16T22:31:47+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-16T21:30:33.000Z",
-  "sourceReportAgeSeconds": 31,
+  "sourceReportGeneratedAt": "2026-11-16T21:31:47.000Z",
+  "sourceReportAgeSeconds": 39,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -24,13 +24,13 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 1.09965,
-        "signalReferenceEntry": 1.09967,
+        "entry": 1.09971,
+        "signalReferenceEntry": 1.09975,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 1.09994,
-        "takeProfit": 1.09913,
-        "riskReward": "1:1.79",
-        "riskRewardValue": 1.7923875432535283,
+        "stopLoss": 1.10002,
+        "takeProfit": 1.09921,
+        "riskReward": "1:1.61",
+        "riskRewardValue": 1.6116504854366491,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -58,12 +58,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 1.09965,
-        "ask": 1.09971,
+        "bid": 1.09971,
+        "ask": 1.09977,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794864649000,
+        "timestamp": 1794864720000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 6016,
+        "ageMs": 7217,
         "validated": true
       },
       "agents": {
@@ -148,7 +148,7 @@
               "spreadPass": false,
               "adx": 21.14606001890576,
               "adxPass": true,
-              "rsi": 39.00001499571623,
+              "rsi": 42.510157219841915,
               "rsiDirection": "SELL",
               "trendDirection": "SELL"
             },
@@ -167,11 +167,11 @@
             "direction": "SELL",
             "status": "DIRECTIONAL_SIGNAL",
             "evidence": {
-              "ma32": 1.1000800000000002,
-              "ma64": 1.1002292187500002,
-              "ma128": 1.1006017968750001,
+              "ma32": 1.1000825,
+              "ma64": 1.1002304687500002,
+              "ma128": 1.1006024218750001,
               "octaveMidpoint": 1.1002200000000002,
-              "price": 1.09967,
+              "price": 1.09975,
               "rangeLow": 1.09912,
               "rangeHigh": 1.10132
             },
@@ -190,11 +190,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 1.09967,
+              "close": 1.09975,
               "prior20High": 1.10089,
               "prior20Low": 1.09941,
-              "sma20": 1.0999655,
-              "sma50": 1.1000805999999996
+              "sma20": 1.0999694999999998,
+              "sma50": 1.1000821999999997
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
             "baseWeight": 1,
@@ -235,12 +235,16 @@
           "M5 closed candle does not confirm the higher-timeframe direction",
           "EURUSD spread/ATR 0.3123 exceeds the 0.12 limit",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
+          "Insufficient forward-paper sample: 1/30 resolved trades",
+          "Forward-paper net expectancy is not positive",
+          "Forward-paper profit factor is below 1.1",
           "Risk/reward is below 1:2",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
           "Spread/ATR 0.3123 exceeds EURUSD limit 0.12",
+          "Executable-side quote is 0.208 ATR from signal reference entry; maximum is 0.2",
           "Live-quote risk/reward is below 1:2",
           "Live provider bid/ask is missing, invalid, or stale",
           "Watchdog fail-closed protection"
@@ -250,12 +254,12 @@
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
-      "generatedAt": "2026-11-16T21:31:04.338Z",
-      "generatedAtSlovenia": "2026-11-16 22:31:04",
+      "generatedAt": "2026-11-16T21:32:25.594Z",
+      "generatedAtSlovenia": "2026-11-16 22:32:25",
       "analysisCycle": {
-        "id": "2026-11-16T21:30:33.000Z",
-        "timestampUtc": "2026-11-16T21:30:33.000Z",
-        "timestampSlovenia": "2026-11-16T22:30:33+01:00",
+        "id": "2026-11-16T21:31:47.000Z",
+        "timestampUtc": "2026-11-16T21:31:47.000Z",
+        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -268,14 +272,14 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 65201.68,
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+        "entry": 65162.41,
         "signalReferenceEntry": 65191.7,
         "entryReference": "ASK (validated executable-side quote)",
         "stopLoss": 64882.06,
         "takeProfit": 65810.97,
-        "riskReward": "1:1.91",
-        "riskRewardValue": 1.9063254669311778,
+        "riskReward": "1:2.31",
+        "riskRewardValue": 2.313432676104214,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
@@ -303,12 +307,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 65201.67,
-        "ask": 65201.68,
+        "bid": 65162.4,
+        "ask": 65162.41,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794864656159,
+        "timestamp": 1794864728213,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1122,
+        "ageMs": 1429,
         "validated": true
       },
       "agents": {
@@ -480,22 +484,26 @@
           "H1 volatility squeeze is still active; wait for a closed-bar release",
           "H1 squeeze release is not confirmed by the latest closed H1 candle",
           "H1 EMA/regime trend does not agree with squeeze momentum",
-          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
-          "Risk/reward is below 1:2",
+          "Insufficient forward-paper sample: 2/30 resolved trades",
+          "Forward-paper net expectancy is not positive",
+          "Forward-paper profit factor is below 1.1",
           "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2"
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
-      "generatedAt": "2026-11-16T21:31:04.338Z",
-      "generatedAtSlovenia": "2026-11-16 22:31:04",
+      "generatedAt": "2026-11-16T21:32:25.594Z",
+      "generatedAtSlovenia": "2026-11-16 22:32:25",
       "analysisCycle": {
-        "id": "2026-11-16T21:30:33.000Z",
-        "timestampUtc": "2026-11-16T21:30:33.000Z",
-        "timestampSlovenia": "2026-11-16T22:30:33+01:00",
+        "id": "2026-11-16T21:31:47.000Z",
+        "timestampUtc": "2026-11-16T21:31:47.000Z",
+        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     },
@@ -508,14 +516,14 @@
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 3853.7,
-        "signalReferenceEntry": 3853.77,
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+        "entry": 3854.64,
+        "signalReferenceEntry": 3853.98,
         "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 3857.71,
-        "takeProfit": 3845.9,
-        "riskReward": "1:1.95",
-        "riskRewardValue": 1.9458587873938757,
+        "stopLoss": 3857.93,
+        "takeProfit": 3846.09,
+        "riskReward": "1:2.60",
+        "riskRewardValue": 2.597728011536431,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
@@ -543,12 +551,12 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "bid": 3853.699,
-        "ask": 3853.867,
+        "bid": 3854.635,
+        "ask": 3854.803,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794864663000,
+        "timestamp": 1794864743000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1160,
+        "ageMs": 2455,
         "validated": true
       },
       "agents": {
@@ -628,12 +636,12 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.06832930775327489,
+              "spreadAtr": 0.06811442644424671,
               "spreadLimit": 0.15,
               "spreadPass": true,
-              "adx": 23.822168670477286,
+              "adx": 23.769482790321213,
               "adxPass": true,
-              "rsi": 46.321032692934594,
+              "rsi": 46.78029312792004,
               "rsiDirection": "NO_SIGNAL",
               "trendDirection": "SELL"
             },
@@ -652,11 +660,11 @@
             "direction": "SELL",
             "status": "DIRECTIONAL_SIGNAL",
             "evidence": {
-              "ma32": 3857.597332187499,
-              "ma64": 3857.7544374999993,
-              "ma128": 3863.9405010156242,
+              "ma32": 3857.603834062499,
+              "ma64": 3857.7576884374994,
+              "ma128": 3863.942126484374,
               "octaveMidpoint": 3855.9993400000003,
-              "price": 3853.7713,
+              "price": 3853.97936,
               "rangeLow": 3841.13083,
               "rangeHigh": 3870.86785
             },
@@ -675,11 +683,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 3853.7713,
+              "close": 3853.97936,
               "prior20High": 3866.25575,
               "prior20Low": 3849.26287,
-              "sma20": 3856.2787664999987,
-              "sma50": 3856.5637652
+              "sma20": 3856.289169499999,
+              "sma50": 3856.5679264
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
             "baseWeight": 1,
@@ -718,28 +726,30 @@
         "layer3": "REJECTED",
         "blockers": [
           "Gold M5 trigger candle does not confirm H1/M15 direction",
-          "Frozen AGENT_TRAINING_CUTOFF is missing; out-of-sample boundary is not established",
-          "Risk/reward is below 1:2",
+          "Insufficient forward-paper sample: 0/30 resolved trades",
+          "Forward-paper net expectancy is not positive",
+          "Forward-paper profit factor is below 1.1",
           "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2"
+          "Executable-side quote is 0.266 ATR from signal reference entry; maximum is 0.2"
         ],
         "watchdog": "PASS",
         "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:31:04.338Z",
-      "generatedAtSlovenia": "2026-11-16 22:31:04",
+      "generatedAt": "2026-11-16T21:32:25.594Z",
+      "generatedAtSlovenia": "2026-11-16 22:32:25",
       "analysisCycle": {
-        "id": "2026-11-16T21:30:33.000Z",
-        "timestampUtc": "2026-11-16T21:30:33.000Z",
-        "timestampSlovenia": "2026-11-16T22:30:33+01:00",
+        "id": "2026-11-16T21:31:47.000Z",
+        "timestampUtc": "2026-11-16T21:31:47.000Z",
+        "timestampSlovenia": "2026-11-16T22:31:47+01:00",
         "timeZone": "Europe/Ljubljana"
       }
     }
   },
   "watchdog": {
-    "checkedAt": "2026-11-16T21:31:04.762Z",
+    "checkedAt": "2026-11-16T21:32:25.886Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -752,18 +762,20 @@
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 64762,
-        "quoteAgeMs": 15762
+        "candleAgeMs": 145886,
+        "quoteAgeMs": 25886
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 64762,
-        "quoteAgeMs": 8603
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 145886,
+        "quoteAgeMs": 17673
       },
       "XAUUSD": {
         "issues": [],
-        "candleAgeMs": 64762,
-        "quoteAgeMs": 1762
+        "candleAgeMs": 145886,
+        "quoteAgeMs": 2886
       }
     }
   }
