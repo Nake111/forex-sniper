@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-16T21:42:04.424Z",
-  "generatedAtSlovenia": "2026-11-16 22:42:04",
+  "generatedAt": "2026-11-16T21:43:31.281Z",
+  "generatedAtSlovenia": "2026-11-16 22:43:31",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-16T21:41:04.000Z",
-    "timestampUtc": "2026-11-16T21:41:04.000Z",
-    "timestampSlovenia": "2026-11-16T22:41:04+01:00",
+    "id": "2026-11-16T21:42:37.000Z",
+    "timestampUtc": "2026-11-16T21:42:37.000Z",
+    "timestampSlovenia": "2026-11-16T22:42:37+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-16T21:41:04.000Z",
-  "sourceReportAgeSeconds": 60,
+  "sourceReportGeneratedAt": "2026-11-16T21:42:37.000Z",
+  "sourceReportAgeSeconds": 54,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -22,13 +22,48 @@
       "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
-      "candidatePlan": null,
+      "candidatePlan": {
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
+        "entry": 1.09975,
+        "signalReferenceEntry": 1.09983,
+        "entryReference": "BID (validated executable-side quote)",
+        "stopLoss": 1.1001,
+        "takeProfit": 1.09929,
+        "riskReward": "1:1.32",
+        "riskRewardValue": 1.3162393162386135,
+        "entryTriggerConfirmed": false,
+        "stopMethod": "MARKET_SPECIFIC_ATR"
+      },
       "m5Atr14": 0.00019357142857141202,
-      "score": "65/100 candidate strength · 90% evidence coverage",
+      "marketDataQuality": {
+        "market": "EURUSD",
+        "volume": {
+          "status": "UNAVAILABLE",
+          "candleCount": 240,
+          "candlesWithPositiveVolume": 0,
+          "candlesWithoutPositiveVolume": 240,
+          "coveragePct": 0,
+          "usableForVolumeProfile": false
+        },
+        "quoteCandleBasis": {
+          "status": "DIVERGENCE_REVIEW",
+          "quoteVenue": "MetaTrader 5 (Broker 1)",
+          "quoteSource": "Biquote live bid/ask",
+          "candleSource": "Twelve Data EUR/USD",
+          "sourceLabelsDiffer": true,
+          "quoteMidpoint": 1.09978,
+          "latestClosedCandleClose": 1.09983,
+          "difference": -0.000050000000000105516,
+          "differenceAtr": 0.2583,
+          "diagnosticOnly": true,
+          "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
+        }
+      },
+      "score": "65/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
         "score": 65,
         "maxScore": 100,
-        "evidenceCoveragePct": 90,
+        "evidenceCoveragePct": 100,
         "label": "Candidate strength",
         "interpretation": "Heuristic points, not trade probability"
       },
@@ -49,18 +84,18 @@
       "riskReward": null,
       "quote": {
         "market": "EURUSD",
-        "bid": 1.09964,
-        "ask": 1.0997,
-        "timestamp": 1794865323000,
-        "receivedAt": 1794865325046,
+        "bid": 1.09968,
+        "ask": 1.09974,
+        "timestamp": 1794865407000,
+        "receivedAt": 1794865411739,
         "timestampQuality": "PROVIDER_TIMESTAMP",
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)",
         "tradeable": true,
-        "ageMs": 2093,
-        "receiveAgeMs": 47,
+        "ageMs": 4784,
+        "receiveAgeMs": 45,
         "validated": true,
-        "snapshotId": "EURUSD|1794865323000|1794865325046|1.09964|1.0997|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
+        "snapshotId": "EURUSD|1794865407000|1794865411739|1.09968|1.09974|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
       },
       "agents": {
         "fiveDirectionalAgents": [
@@ -139,7 +174,7 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": null,
+              "spreadAtr": 0.30996309963075924,
               "spreadLimit": 0.12,
               "spreadPass": false,
               "adx": 19.508198649545246,
@@ -251,47 +286,45 @@
         "layer3": "REJECTED",
         "blockers": [
           "M5 closed candle does not confirm the higher-timeframe direction",
-          "EURUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
+          "EURUSD spread/ATR 0.3100 exceeds the 0.12 limit",
           "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
           "Insufficient forward-paper sample: 1/30 resolved trades",
           "Forward-paper net expectancy is not positive",
           "Forward-paper profit factor is below 1.1",
-          "Entry/stop/target plan is incomplete",
-          "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
-          "Quote snapshot identity is missing or inconsistent",
-          "Quote snapshot expired or lacks a fresh provider-supplied timestamp at approval",
-          "Bid/ask quote missing",
+          "Risk/reward is below 1:2",
+          "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "A positive, uncrossed live bid/ask pair is required",
-          "Entry, stop-loss or take-profit is missing",
-          "Spread-to-ATR cannot be independently verified"
+          "Spread/ATR 0.3100 exceeds EURUSD limit 0.12",
+          "Executable-side quote is 0.413 ATR from signal reference entry; maximum is 0.2",
+          "Live-quote risk/reward is below 1:2"
         ],
         "watchdog": "PASS",
         "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:42:04.424Z",
-      "generatedAtSlovenia": "2026-11-16 22:42:04",
+      "generatedAt": "2026-11-16T21:43:31.281Z",
+      "generatedAtSlovenia": "2026-11-16 22:43:31",
       "analysisCycle": {
-        "id": "2026-11-16T21:41:04.000Z",
-        "timestampUtc": "2026-11-16T21:41:04.000Z",
-        "timestampSlovenia": "2026-11-16T22:41:04+01:00",
+        "id": "2026-11-16T21:42:37.000Z",
+        "timestampUtc": "2026-11-16T21:42:37.000Z",
+        "timestampSlovenia": "2026-11-16T22:42:37+01:00",
         "timeZone": "Europe/Ljubljana"
       },
       "analysisQuote": {
-        "bid": null,
-        "ask": null,
-        "source": "unavailable",
-        "timestamp": null,
+        "bid": 1.09975,
+        "ask": 1.09981,
+        "source": "Biquote live bid/ask",
+        "timestamp": 1794865375000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 0,
-        "validated": false
+        "ageMs": 468,
+        "validated": true
       },
       "quoteRefresh": {
         "status": "PASS",
-        "checkedAt": "2026-11-16T21:42:05.093Z",
-        "providerTimestamp": "2026-11-16T21:42:03.000Z",
-        "ageMs": 2093,
+        "checkedAt": "2026-11-16T21:43:31.784Z",
+        "providerTimestamp": "2026-11-16T21:43:27.000Z",
+        "ageMs": 4784,
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)"
       }
@@ -306,17 +339,41 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_NOT_APPROVED",
-        "entry": 65248.93,
+        "entry": 65278.84,
         "signalReferenceEntry": 65282.7,
         "entryReference": "ASK (validated executable-side quote)",
         "stopLoss": 64882.96,
         "takeProfit": 66082.17,
-        "riskReward": "1:2.28",
-        "riskRewardValue": 2.2768289950432288,
+        "riskReward": "1:2.03",
+        "riskRewardValue": 2.0292515838292844,
         "entryTriggerConfirmed": true,
         "stopMethod": "MARKET_STRUCTURE"
       },
       "m5Atr14": 130.19999999999968,
+      "marketDataQuality": {
+        "market": "BTCUSD",
+        "volume": {
+          "status": "REPORTED",
+          "candleCount": 240,
+          "candlesWithPositiveVolume": 240,
+          "candlesWithoutPositiveVolume": 0,
+          "coveragePct": 100,
+          "usableForVolumeProfile": true
+        },
+        "quoteCandleBasis": {
+          "status": "WITHIN_REVIEW_BAND",
+          "quoteVenue": "Coinbase Exchange",
+          "quoteSource": "Coinbase Exchange BTC-USD ticker REST",
+          "candleSource": "Kraken XBT/USD spot",
+          "sourceLabelsDiffer": true,
+          "quoteMidpoint": 65278.835,
+          "latestClosedCandleClose": 65282.7,
+          "difference": -3.8649999999979627,
+          "differenceAtr": 0.0297,
+          "diagnosticOnly": true,
+          "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
+        }
+      },
       "score": "75/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
         "score": 75,
@@ -342,18 +399,18 @@
       "riskReward": null,
       "quote": {
         "market": "BTCUSD",
-        "bid": 65232.49,
-        "ask": 65232.5,
-        "timestamp": 1794865316513,
-        "receivedAt": 1794865325093,
+        "bid": 65293.17,
+        "ask": 65293.18,
+        "timestamp": 1794865411239,
+        "receivedAt": 1794865411784,
         "timestampQuality": "PROVIDER_TIMESTAMP",
         "source": "Coinbase Exchange BTC-USD ticker REST",
         "venue": "Coinbase Exchange",
         "tradeable": true,
-        "ageMs": 8580,
+        "ageMs": 545,
         "receiveAgeMs": 0,
         "validated": true,
-        "snapshotId": "BTCUSD|1794865316513|1794865325093|65232.49|65232.5|Coinbase Exchange BTC-USD ticker REST|Coinbase Exchange"
+        "snapshotId": "BTCUSD|1794865411239|1794865411784|65293.17|65293.18|Coinbase Exchange BTC-USD ticker REST|Coinbase Exchange"
       },
       "agents": {
         "fiveDirectionalAgents": [
@@ -432,7 +489,7 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.00007680491553024034,
+              "spreadAtr": 0.00007680491547435742,
               "spreadLimit": 0.18,
               "spreadPass": true,
               "adx": 14.434727243412393,
@@ -549,36 +606,34 @@
           "Insufficient forward-paper sample: 2/30 resolved trades",
           "Forward-paper net expectancy is not positive",
           "Forward-paper profit factor is below 1.1",
-          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.259 ATR from signal reference entry; maximum is 0.25"
+          "market-intelligence agent did not independently confirm this direction"
         ],
         "watchdog": "PASS",
         "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:42:04.424Z",
-      "generatedAtSlovenia": "2026-11-16 22:42:04",
+      "generatedAt": "2026-11-16T21:43:31.281Z",
+      "generatedAtSlovenia": "2026-11-16 22:43:31",
       "analysisCycle": {
-        "id": "2026-11-16T21:41:04.000Z",
-        "timestampUtc": "2026-11-16T21:41:04.000Z",
-        "timestampSlovenia": "2026-11-16T22:41:04+01:00",
+        "id": "2026-11-16T21:42:37.000Z",
+        "timestampUtc": "2026-11-16T21:42:37.000Z",
+        "timestampSlovenia": "2026-11-16T22:42:37+01:00",
         "timeZone": "Europe/Ljubljana"
       },
       "analysisQuote": {
-        "bid": 65248.92,
-        "ask": 65248.93,
+        "bid": 65278.83,
+        "ask": 65278.84,
         "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1794865294201,
+        "timestamp": 1794865376769,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 871,
+        "ageMs": 958,
         "validated": true
       },
       "quoteRefresh": {
         "status": "PASS",
-        "checkedAt": "2026-11-16T21:42:05.093Z",
-        "providerTimestamp": "2026-11-16T21:41:56.513Z",
-        "ageMs": 8580,
+        "checkedAt": "2026-11-16T21:43:31.784Z",
+        "providerTimestamp": "2026-11-16T21:43:31.239Z",
+        "ageMs": 545,
         "source": "Coinbase Exchange BTC-USD ticker REST",
         "venue": "Coinbase Exchange"
       }
@@ -593,17 +648,41 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_NOT_APPROVED",
-        "entry": 3856.83,
+        "entry": 3857.19,
         "signalReferenceEntry": 3858.28,
         "entryReference": "ASK (validated executable-side quote)",
         "stopLoss": 3854.46,
         "takeProfit": 3865.92,
-        "riskReward": "1:3.83",
-        "riskRewardValue": 3.82650568164361,
+        "riskReward": "1:3.19",
+        "riskRewardValue": 3.1864481702267247,
         "entryTriggerConfirmed": true,
         "stopMethod": "MARKET_SPECIFIC_ATR"
       },
       "m5Atr14": 2.3873985714285806,
+      "marketDataQuality": {
+        "market": "XAUUSD",
+        "volume": {
+          "status": "UNAVAILABLE",
+          "candleCount": 240,
+          "candlesWithPositiveVolume": 0,
+          "candlesWithoutPositiveVolume": 240,
+          "coveragePct": 0,
+          "usableForVolumeProfile": false
+        },
+        "quoteCandleBasis": {
+          "status": "DIVERGENCE_REVIEW",
+          "quoteVenue": "MetaTrader 5 (Broker 1)",
+          "quoteSource": "Biquote live bid/ask",
+          "candleSource": "Twelve Data XAU/USD",
+          "sourceLabelsDiffer": true,
+          "quoteMidpoint": 3857.1090000000004,
+          "latestClosedCandleClose": 3858.27555,
+          "difference": -1.1665499999994609,
+          "differenceAtr": 0.4886,
+          "diagnosticOnly": true,
+          "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
+        }
+      },
       "score": "45/100 candidate strength · 100% evidence coverage",
       "candidateStrength": {
         "score": 45,
@@ -629,18 +708,18 @@
       "riskReward": null,
       "quote": {
         "market": "XAUUSD",
-        "bid": 3856.63,
-        "ask": 3856.798,
-        "timestamp": 1794865324000,
-        "receivedAt": 1794865325044,
+        "bid": 3857.025,
+        "ask": 3857.193,
+        "timestamp": 1794865410000,
+        "receivedAt": 1794865411738,
         "timestampQuality": "PROVIDER_TIMESTAMP",
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)",
         "tradeable": true,
-        "ageMs": 1093,
-        "receiveAgeMs": 49,
+        "ageMs": 1784,
+        "receiveAgeMs": 46,
         "validated": true,
-        "snapshotId": "XAUUSD|1794865324000|1794865325044|3856.63|3856.798|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
+        "snapshotId": "XAUUSD|1794865410000|1794865411738|3857.025|3857.193|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
       },
       "agents": {
         "fiveDirectionalAgents": [
@@ -838,33 +917,33 @@
           "Current executable-side quote has moved more than 0.2 ATR from the planned entry",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Executable-side quote is 0.605 ATR from signal reference entry; maximum is 0.2"
+          "Executable-side quote is 0.453 ATR from signal reference entry; maximum is 0.2"
         ],
         "watchdog": "PASS",
         "watchdogFailures": []
       },
-      "generatedAt": "2026-11-16T21:42:04.424Z",
-      "generatedAtSlovenia": "2026-11-16 22:42:04",
+      "generatedAt": "2026-11-16T21:43:31.281Z",
+      "generatedAtSlovenia": "2026-11-16 22:43:31",
       "analysisCycle": {
-        "id": "2026-11-16T21:41:04.000Z",
-        "timestampUtc": "2026-11-16T21:41:04.000Z",
-        "timestampSlovenia": "2026-11-16T22:41:04+01:00",
+        "id": "2026-11-16T21:42:37.000Z",
+        "timestampUtc": "2026-11-16T21:42:37.000Z",
+        "timestampSlovenia": "2026-11-16T22:42:37+01:00",
         "timeZone": "Europe/Ljubljana"
       },
       "analysisQuote": {
-        "bid": 3856.662,
-        "ask": 3856.83,
+        "bid": 3857.025,
+        "ask": 3857.193,
         "source": "Biquote live bid/ask",
-        "timestamp": 1794865323000,
+        "timestamp": 1794865410000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1285,
+        "ageMs": 1147,
         "validated": true
       },
       "quoteRefresh": {
         "status": "PASS",
-        "checkedAt": "2026-11-16T21:42:05.093Z",
-        "providerTimestamp": "2026-11-16T21:42:04.000Z",
-        "ageMs": 1093,
+        "checkedAt": "2026-11-16T21:43:31.784Z",
+        "providerTimestamp": "2026-11-16T21:43:30.000Z",
+        "ageMs": 1784,
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)"
       }
@@ -872,12 +951,12 @@
   },
   "quoteRefresh": {
     "status": "PASS",
-    "checkedAt": "2026-11-16T21:42:05.093Z",
+    "checkedAt": "2026-11-16T21:43:31.784Z",
     "provider": "Biquote EURUSD/XAUUSD + Coinbase BTCUSD (Twelve Data timestamped fallback; no Railway dependency)",
     "failures": []
   },
   "watchdog": {
-    "checkedAt": "2026-11-16T21:42:05.427Z",
+    "checkedAt": "2026-11-16T21:43:32.131Z",
     "status": "PASS",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -888,18 +967,18 @@
     "markets": {
       "EURUSD": {
         "issues": [],
-        "candleAgeMs": 125427,
-        "quoteAgeMs": 2427
+        "candleAgeMs": 212131,
+        "quoteAgeMs": 5131
       },
       "BTCUSD": {
         "issues": [],
-        "candleAgeMs": 125427,
-        "quoteAgeMs": 8914
+        "candleAgeMs": 212131,
+        "quoteAgeMs": 892
       },
       "XAUUSD": {
         "issues": [],
-        "candleAgeMs": 125427,
-        "quoteAgeMs": 1427
+        "candleAgeMs": 212131,
+        "quoteAgeMs": 2131
       }
     }
   }
