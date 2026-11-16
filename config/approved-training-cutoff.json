@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "status": "APPROVED_TO_FREEZE",
+  "method": "70% of unique chronological M5 timestamps across the shared EURUSD/BTCUSD/XAUUSD history window; final 30% remains untouched holdout",
+  "timezone": "UTC",
+  "commonWindowStart": "2026-05-19T09:10:00.000Z",
+  "commonWindowEnd": "2026-11-13T21:55:00.000Z",
+  "trainingCandleCount": 35980,
+  "totalUniqueTimestamps": 51401,
+  "trainingCutoff": "2026-09-21T07:25:00.000Z",
+  "holdoutStartsAt": "2026-09-21T07:30:00.000Z",
+  "holdoutRead": false,
+  "sourceArtifact": {
+    "workflowRunId": 43697661964,
+    "artifactId": 14154733625,
+    "artifactName": "verified-training-cutoff",
+    "artifactSha256": "a6ca279c94f464abbc2a0ddcd63fa48a0c4252ec6ee529ff7f6bd855f19f778d",
+    "verifiedAt": "2026-11-16T21:33:00Z"
+  },
+  "datasets": [
+    {
+      "market": "EURUSD",
+      "file": "data/eurusd-m5.json",
+      "sha256": "7031134c018e420f5a7bf9dd5991a3791c69851ce02ddea66de0a5bb580b7475",
+      "candlesInCommonWindow": 37003,
+      "trainingCandles": 25611,
+      "holdoutCandles": 11392,
+      "trainingSharePct": 69.21,
+      "firstCandle": "2026-05-19T09:10:00.000Z",
+      "lastCandle": "2026-11-13T21:55:00.000Z"
+    },
+    {
+      "market": "BTCUSD",
+      "file": "data/btcusd-m5.json",
+      "sha256": "97d70bf510661a3335e2c5ea26b9dc8c4d4c2e8876ab14e9977a5dff7ba00d09",
+      "candlesInCommonWindow": 51387,
+      "trainingCandles": 35966,
+      "holdoutCandles": 15421,
+      "trainingSharePct": 69.99,
+      "firstCandle": "2026-05-19T09:10:00.000Z",
+      "lastCandle": "2026-11-13T21:55:00.000Z"
+    },
+    {
+      "market": "XAUUSD",
+      "file": "data/xauusd-m5.json",
+      "sha256": "7707498bd9dff7a54d1a6b4e9fb8b7122a4e22e7b497cacc2f6aecd0f27a4a11",
+      "candlesInCommonWindow": 35314,
+      "trainingCandles": 24388,
+      "holdoutCandles": 10926,
+      "trainingSharePct": 69.06,
+      "firstCandle": "2026-05-19T09:10:00.000Z",
+      "lastCandle": "2026-11-13T21:55:00.000Z"
+    }
+  ]
+}
