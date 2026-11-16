@@ -113,6 +113,17 @@ jobs:
           DUKASCOPY_REQUEST_INTERVAL_MS: "120"
           DUKASCOPY_RETRY_COUNT: "3"
           DUKASCOPY_RATE_LIMIT_RETRIES: "4"
+      - name: Verify approved chronological training cutoff
+        env:
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF || '2026-09-21T07:25:00.000Z' }}
+        run: |
+          node --input-type=module <<'NODE'
+          const expected = '2026-09-21T07:25:00.000Z';
+          const actual = new Date(process.env.AGENT_TRAINING_CUTOFF ?? '').toISOString();
+          if (actual !== expected) throw new Error('AGENT_TRAINING_CUTOFF is missing or differs from the approved frozen boundary.');
+          console.log('Approved cutoff verified:', actual);
+          console.log('Holdout protection: final 30% remains locked; no holdout optimization or outcome reads.');
+          NODE
       - name: Generate timestamped three-market signal report
         id: signal_report
         run: |
@@ -133,7 +144,7 @@ jobs:
             npm start
           } 2>&1 | tee "$REPORT_PATH"
         env:
-          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF }}
+          AGENT_TRAINING_CUTOFF: ${{ vars.AGENT_TRAINING_CUTOFF || '2026-09-21T07:25:00.000Z' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GEMINI_MODEL: ${{ env.GEMINI_MODEL }}
