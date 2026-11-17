@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-17T22:29:45.803Z",
+  "generatedAt": "2026-11-17T23:06:38.136Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured, otherwise reported net R excludes commission. No broker fills are assumed.",
   "totals": {
@@ -166,11 +166,11 @@
   "agentAccountability": {
     "FxTT market scanner": {
       "BUY": {
-        "predictions": 11,
-        "correct": 2,
+        "predictions": 12,
+        "correct": 3,
         "falseSignals": 9,
-        "accuracyPct": 18.18,
-        "falseSignalRatePct": 81.82
+        "accuracyPct": 25,
+        "falseSignalRatePct": 75
       },
       "SELL": {
         "predictions": 8,
@@ -189,11 +189,11 @@
         "falseSignalRatePct": 60
       },
       "SELL": {
-        "predictions": 29,
-        "correct": 11,
+        "predictions": 30,
+        "correct": 12,
         "falseSignals": 18,
-        "accuracyPct": 37.93,
-        "falseSignalRatePct": 62.07
+        "accuracyPct": 40,
+        "falseSignalRatePct": 60
       }
     },
     "Higher-timeframe confluence analyst": {
@@ -246,18 +246,18 @@
     },
     "M5 candle-quality analyst": {
       "BUY": {
-        "predictions": 25,
+        "predictions": 26,
         "correct": 6,
-        "falseSignals": 19,
-        "accuracyPct": 24,
-        "falseSignalRatePct": 76
+        "falseSignals": 20,
+        "accuracyPct": 23.08,
+        "falseSignalRatePct": 76.92
       },
       "SELL": {
-        "predictions": 23,
-        "correct": 11,
-        "falseSignals": 12,
-        "accuracyPct": 47.83,
-        "falseSignalRatePct": 52.17
+        "predictions": 25,
+        "correct": 12,
+        "falseSignals": 13,
+        "accuracyPct": 48,
+        "falseSignalRatePct": 52
       }
     },
     "Macro and news analyst": {
@@ -278,18 +278,18 @@
     },
     "Momentum analyst": {
       "BUY": {
-        "predictions": 37,
-        "correct": 10,
+        "predictions": 38,
+        "correct": 11,
         "falseSignals": 27,
-        "accuracyPct": 27.03,
-        "falseSignalRatePct": 72.97
+        "accuracyPct": 28.95,
+        "falseSignalRatePct": 71.05
       },
       "SELL": {
-        "predictions": 24,
-        "correct": 10,
+        "predictions": 25,
+        "correct": 11,
         "falseSignals": 14,
-        "accuracyPct": 41.67,
-        "falseSignalRatePct": 58.33
+        "accuracyPct": 44,
+        "falseSignalRatePct": 56
       }
     },
     "Momentum exhaustion analyst": {
@@ -342,34 +342,34 @@
     },
     "Quantitative agent 3 — Kalman filter": {
       "BUY": {
-        "predictions": 17,
-        "correct": 7,
-        "falseSignals": 10,
-        "accuracyPct": 41.18,
-        "falseSignalRatePct": 58.82
+        "predictions": 19,
+        "correct": 8,
+        "falseSignals": 11,
+        "accuracyPct": 42.11,
+        "falseSignalRatePct": 57.89
       },
       "SELL": {
-        "predictions": 14,
-        "correct": 7,
+        "predictions": 15,
+        "correct": 8,
         "falseSignals": 7,
-        "accuracyPct": 50,
-        "falseSignalRatePct": 50
+        "accuracyPct": 53.33,
+        "falseSignalRatePct": 46.67
       }
     },
     "Quantitative agent 4 — EWMA volatility": {
       "BUY": {
-        "predictions": 17,
-        "correct": 6,
+        "predictions": 18,
+        "correct": 7,
         "falseSignals": 11,
-        "accuracyPct": 35.29,
-        "falseSignalRatePct": 64.71
+        "accuracyPct": 38.89,
+        "falseSignalRatePct": 61.11
       },
       "SELL": {
-        "predictions": 11,
-        "correct": 5,
+        "predictions": 12,
+        "correct": 6,
         "falseSignals": 6,
-        "accuracyPct": 45.45,
-        "falseSignalRatePct": 54.55
+        "accuracyPct": 50,
+        "falseSignalRatePct": 50
       }
     },
     "Quantitative agent 5 — cycle model": {
@@ -397,11 +397,11 @@
         "falseSignalRatePct": 78.57
       },
       "SELL": {
-        "predictions": 23,
-        "correct": 7,
-        "falseSignals": 16,
-        "accuracyPct": 30.43,
-        "falseSignalRatePct": 69.57
+        "predictions": 25,
+        "correct": 8,
+        "falseSignals": 17,
+        "accuracyPct": 32,
+        "falseSignalRatePct": 68
       }
     },
     "SMC and liquidity analyst": {
@@ -445,11 +445,11 @@
         "falseSignalRatePct": 100
       },
       "SELL": {
-        "predictions": 33,
-        "correct": 15,
+        "predictions": 34,
+        "correct": 16,
         "falseSignals": 18,
-        "accuracyPct": 45.45,
-        "falseSignalRatePct": 54.55
+        "accuracyPct": 47.06,
+        "falseSignalRatePct": 52.94
       }
     },
     "Trading-session breakout analyst": {
@@ -477,11 +477,11 @@
         "falseSignalRatePct": 100
       },
       "SELL": {
-        "predictions": 12,
-        "correct": 7,
+        "predictions": 13,
+        "correct": 8,
         "falseSignals": 5,
-        "accuracyPct": 58.33,
-        "falseSignalRatePct": 41.67
+        "accuracyPct": 61.54,
+        "falseSignalRatePct": 38.46
       }
     },
     "Volume and auction analyst": {
