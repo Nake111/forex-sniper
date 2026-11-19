@@ -108,8 +108,10 @@ export async function updateSecondBrain({
       if (!stopHit && !targetHit && !timedOut) continue;
       const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : stopHit ? "LOSS" : "TIMEOUT";
       const resolutionPrice = ambiguous ? null : targetHit ? record.takeProfit : stopHit ? record.stopLoss : Number(candle.close);
-      const entry = Number(record.indicativeEntry);
-      const stop = Number(record.stopLoss);
+      const entryValue = Number(record.indicativeEntry);
+      const stopValue = Number(record.stopLoss);
+      const entry = record.indicativeEntry !== null && record.indicativeEntry !== undefined && finite(entryValue) ? entryValue : NaN;
+      const stop = record.stopLoss !== null && record.stopLoss !== undefined && finite(stopValue) ? stopValue : NaN;
       const riskDistance = Math.abs(entry - stop);
       const grossR = !ambiguous && finite(entry) && finite(stop) && riskDistance > 0
         ? (record.side === "BUY" ? resolutionPrice - entry : entry - resolutionPrice) / riskDistance
