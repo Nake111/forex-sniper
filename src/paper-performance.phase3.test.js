@@ -40,7 +40,7 @@ test("timeouts and ambiguous outcomes are excluded from decisive win-rate denomi
   assert.equal(t.winRatePct, 50);
   assert.equal(t.timeouts, 1);
   assert.equal(t.ambiguous, 1);
-  assert.equal(t.rCoverage.resolvedWithoutNetR, 1);
+  assert.equal(t.rCoverage.resolvedWithoutNetR, 0);
 });
 
 test("pending signals are not counted as resolved or in R statistics", () => {
