@@ -25,6 +25,8 @@ function summarize(rows) {
     peak = Math.max(peak, equity);
     maxDrawdown = Math.max(maxDrawdown, peak - equity);
   }
+  const mfeRows = resolved.filter(row => finite(row.maxFavorableExcursionR)).map(row => row.maxFavorableExcursionR);
+  const maeRows = resolved.filter(row => finite(row.maxAdverseExcursionR)).map(row => row.maxAdverseExcursionR);
   const winRs = resolved.filter(row => finite(row.netEstimatedR) && row.netEstimatedR > 0).map(row => row.netEstimatedR);
   const lossRs = resolved.filter(row => finite(row.netEstimatedR) && row.netEstimatedR < 0).map(row => row.netEstimatedR);
   const decisive = wins + losses;
@@ -41,6 +43,8 @@ function summarize(rows) {
       ? round(avg(winRs) / Math.abs(avg(lossRs)), 3) : null,
     profitFactor: negative > 0 ? round(positive / negative, 3) : positive > 0 ? null : 0,
     maxDrawdownR: round(maxDrawdown),
+    averageMfeR: avg(mfeRows), averageMaeR: avg(maeRows),
+    excursionCoverage: { resolvedWithExcursions: Math.min(mfeRows.length, maeRows.length), resolvedWithoutExcursions: resolved.length - Math.min(mfeRows.length, maeRows.length) },
     rCoverage: { resolvedWithNetR: rRows.length, resolvedWithoutNetR: resolved.length - rRows.length },
     costCoverage: {
       withEstimatedCommission: resolved.filter(row => row.commissionIncluded).length,
@@ -94,6 +98,9 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
       createdAt: row.createdAt, strategy: row.strategy ?? { strategyId: "LEGACY_UNATTRIBUTED" },
       outcome: row.outcome, resolvedAt: row.resolvedAt ?? null,
       grossR: row.grossR ?? null, netEstimatedR: row.netEstimatedR ?? null,
+      maxFavorableExcursionR: row.maxFavorableExcursionR ?? null,
+      maxAdverseExcursionR: row.maxAdverseExcursionR ?? null,
+      excursionBars: row.excursionBars ?? null, excursionCoverage: row.excursionCoverage === true,
       commissionIncluded: row.commissionIncluded
     }))
   };
