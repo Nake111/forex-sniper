@@ -63,6 +63,10 @@ Credit: [Economic calendar by ShowMyTrades](https://showmytrades.com/tools/econo
 
 Headline news remains supplemental and cannot override the calendar gate. A clear calendar window is only one risk check; it does not by itself authorize a BUY/SELL signal or broker order.
 
+## Eight-agent Quant Desk (research-only)
+
+A role-separated desk inspired by the supplied reference is integrated as a zero-weight observer: Scout, Auditor, Trigger, Tracker, Warden, Trail, Pulse and Chief. It publishes specialist diagnostics into the existing analysis and Second Brain journal, but cannot approve or alter a signal. FX-specific data limitations are explicit; crypto-only token checks and smart-wallet assumptions are not fabricated. See [docs/eight-agent-quant-desk.md](docs/eight-agent-quant-desk.md).
+
 ## Multi-agent decision layer
 
 The local decision panel now contains 11 technical specialists plus six independent quantitative forecasting agents. The forecast agents use closed M5 candle history and estimate the next three candles with:
