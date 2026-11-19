@@ -63,7 +63,7 @@ Credit: [Economic calendar by ShowMyTrades](https://showmytrades.com/tools/econo
 
 Headline news remains supplemental and cannot override the calendar gate. A clear calendar window is only one risk check; it does not by itself authorize a BUY/SELL signal or broker order.
 
-## Phase 2 — Agent Accountability
+## Phase 3 — Forward-Paper Performance & Risk Metrics\n\nThe Strategy Performance page now reports expectancy, profit factor, average win/loss R, payoff ratio, cumulative-R maximum drawdown, decisive win rate and cost/data coverage. These remain paper OHLC-path estimates, not broker fills. Strategy samples below 30 resolved outcomes are not qualified; 30 is not proof of edge. The protected final 30% chronological holdout and all signal approval gates remain unchanged. See [docs/phase3-paper-risk-metrics.md](docs/phase3-paper-risk-metrics.md).\n\n## Phase 2 — Agent Accountability
 
 The Strategy Performance page includes per-agent forward-paper scorecards, market/regime breakdowns, and Chief consensus/disagreement history. All weights remain zero and all approval/risk gates remain unchanged. See [docs/phase2-agent-accountability.md](docs/phase2-agent-accountability.md).
 
