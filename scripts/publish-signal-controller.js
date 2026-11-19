@@ -117,6 +117,7 @@ for (const market of markets) {
   const fiveDirectionalAgents = optionalJsonLine(section, "FIVE INDEPENDENT SIGNAL AGENTS:", []);
   const fiveAgentConsensus = optionalJsonLine(section, "FIVE-AGENT CONSENSUS:", null);
   const fiveAgentValidationFramework = optionalJsonLine(section, "FIVE-AGENT VALIDATION FRAMEWORK:", null);
+  const quantDesk = optionalJsonLine(section, "EIGHT-AGENT QUANT DESK — RESEARCH ONLY:", null);
   const quote = jsonLine(section, "BID/ASK MARKET QUOTE:");
   const layer2 = statusEvidence(section, "LAYER 2 VERIFICATION:", {
     statusKey: "status", blockersKey: "blockers"
@@ -212,6 +213,7 @@ for (const market of markets) {
       ageMs: Number.isFinite(quoteAgeMs) ? quoteAgeMs : null,
       validated: quoteValid
     },
+    quantDesk,
     agents: {
       fiveDirectionalAgents,
       fiveAgentConsensus,
