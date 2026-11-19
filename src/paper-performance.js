@@ -1,3 +1,4 @@
+import { buildPhase2Intelligence } from "./phase2-intelligence.js";
 import { measureDirectionalAccuracy } from "./signal-quality.js";
 
 const finite = Number.isFinite;
@@ -59,6 +60,7 @@ export function buildPaperPerformance(events, generatedAt = new Date().toISOStri
     },
     bySession: groupBy(row => row.strategy?.session ?? "UNKNOWN"),
     byProfile: groupBy(row => row.strategy?.profile ?? "UNKNOWN"),
+    phase2Intelligence: buildPhase2Intelligence(events, generatedAt),
     agentAccountability: Object.fromEntries([...new Set(events.filter(event => event.eventType === "AGENT_FORECAST_OUTCOME").map(event => event.agent))].sort().map(agent => {
       const rows = events.filter(event => event.eventType === "AGENT_FORECAST_OUTCOME" && event.agent === agent);
       return [agent, measureDirectionalAccuracy(rows)];
