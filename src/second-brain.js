@@ -1,6 +1,7 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { buildAgentForecasts, measureDirectionalAccuracy, classifyMarketRegime } from "./signal-quality.js";
+import { calculateTradeExcursions } from "./trade-excursions.js";
 
 const finite = Number.isFinite;
 const round = (value, digits = 8) => finite(value) ? Number(value.toFixed(digits)) : null;
@@ -93,14 +94,16 @@ export async function updateSecondBrain({
   }
   for (const [signalId, record] of signals) {
     if (resolved.has(signalId) || record.market !== market) continue;
-    for (const candle of validCandles) {
+    const signalTime = Number(record.signalCandleAt ?? record.createdAt);
+    const tradePath = validCandles.filter(item => candleTime(item) > signalTime);
+    for (let pathIndex = 0; pathIndex < tradePath.length; pathIndex++) {
+      const candle = tradePath[pathIndex];
       const at = candleTime(candle);
-      if (at <= Number(record.signalCandleAt ?? record.createdAt)) continue;
       const high = Number(candle.high), low = Number(candle.low);
       const stopHit = record.side === "BUY" ? low <= record.stopLoss : high >= record.stopLoss;
       const targetHit = record.side === "BUY" ? high >= record.takeProfit : low <= record.takeProfit;
       const ambiguous = stopHit && targetHit;
-      const barsSinceSignal = validCandles.filter(item => candleTime(item) > Number(record.signalCandleAt ?? record.createdAt) && candleTime(item) <= at).length;
+      const barsSinceSignal = pathIndex + 1;
       const timedOut = !stopHit && !targetHit && barsSinceSignal >= 180;
       if (!stopHit && !targetHit && !timedOut) continue;
       const outcome = ambiguous ? "AMBIGUOUS" : targetHit ? "WIN" : stopHit ? "LOSS" : "TIMEOUT";
@@ -111,6 +114,9 @@ export async function updateSecondBrain({
       const grossR = !ambiguous && finite(entry) && finite(stop) && riskDistance > 0
         ? (record.side === "BUY" ? resolutionPrice - entry : entry - resolutionPrice) / riskDistance
         : null;
+      const excursions = calculateTradeExcursions({
+        candles: tradePath.slice(0, barsSinceSignal), side: record.side, entry, stop
+      });
       const spreadAndSlippageBps = record.quoteEvidence?.costs?.estimatedSpreadAndSlippageBps;
       const commissionBps = record.quoteEvidence?.costs?.estimatedCommissionBpsRoundTrip;
       const midpoint = Number(record.quoteEvidence?.midpoint);
@@ -130,7 +136,7 @@ export async function updateSecondBrain({
         eventId: `OUTCOME:${signalId}`, eventType: "PAPER_OUTCOME",
         signalId, market, outcome, strategy: record.strategy ?? {},
         resolvedAt: at, resolutionPrice, barsHeld: barsSinceSignal,
-        grossR: round(grossR, 4),
+        grossR: round(grossR, 4), ...excursions,
         estimatedSpreadAndSlippageCostPrice: round(spreadAndSlippagePrice),
         estimatedSpreadAndSlippageCostR: round(spreadAndSlippageR, 4),
         estimatedCommissionCostPrice: round(commissionPrice),
