@@ -34,3 +34,7 @@ Run:
 npm run check
 npm test
 ```
+
+## Dashboard
+
+The visual role board is implemented in `dashboard/quant-desk.js` and loaded by `dashboard/index.html`. It reads only the published `dashboard/data/signals.json` snapshot, selects BTC/USD, EUR/USD or XAU/USD, and displays each specialist's actual status/evidence plus the Chief handoff. It hides agent cards when the snapshot is missing, invalid or older than ten minutes. The signal publisher carries the desk report into each market object. GitHub Pages deployment watches the new dashboard asset and publisher changes.
