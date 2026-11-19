@@ -35,6 +35,7 @@ import { discoverSetups } from "./setup-discovery.js";
 import { evaluateA1Heart } from "./a1-heart.js";
 import { evaluateGithubResearchIntegrations } from "./github-research-confluence.js";
 import { assessCandleVolume, assessQuoteCandleBasis } from "./market-data-quality.js";
+import { runEightAgentQuantDesk } from "./quant-desk.js";
 
 const DATA_DIR = process.env.DATA_DIR ?? "data";
 const WINDOW = 240;
@@ -608,6 +609,24 @@ async function analyseMarket(market, macroContext) {
   });
   console.log("WEIGHTED VERIFICATION SCORE:", JSON.stringify(weightedScore));
 
+  // Eight-agent Quant Desk is a research-only observer. It has zero vote weight
+  // and cannot change the candidate, approval chain, risk gates or final action.
+  const quantDesk = runEightAgentQuantDesk({
+    market: market.symbol,
+    candidate: directionalCandidate,
+    weightedScore,
+    frames: results,
+    quoteValidation,
+    spreadVerified,
+    staleTimeframes: staleTimeframes.map(tf => tf.key),
+    macroBlocked: calendarBlocked || goldMacroBlocked || Boolean(macroContext.dataStale) || Boolean(goldNewsWindow?.blockNewEntries),
+    macro: macroContext,
+    marketReview,
+    plan,
+    candles: frames.find(frame => frame.key === "M5")?.candles ?? []
+  });
+  console.log("EIGHT-AGENT QUANT DESK — RESEARCH ONLY:", JSON.stringify(quantDesk));
+
   // Publish the research candidate as soon as deterministic market scoring is
   // available. This is deliberately before independent approval agents and
   // never changes the candidate or relaxes any downstream hard gate.
@@ -742,6 +761,7 @@ async function analyseMarket(market, macroContext) {
       approval,
       verification,
       githubAgentEvidence: githubResearch,
+      quantDesk,
       strategyAttribution: {
         profile: SIGNAL_PROFILE,
         strategyId: tieredReport?.setupType ?? "CORE_MULTI_TIMEFRAME",
