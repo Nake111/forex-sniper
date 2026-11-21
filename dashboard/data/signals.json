@@ -391,10 +391,12 @@
           "Entry, stop-loss or take-profit is missing",
           "Spread-to-ATR cannot be independently verified",
           "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "Watchdog fail-closed protection",
+          "M5 provider candle is missing, failed, or stale"
         ],
         "watchdog": "BLOCKED",
         "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
@@ -807,10 +809,16 @@
           "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2"
+          "Live-quote risk/reward is below 1:2",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-21T23:16:22.640Z",
       "generatedAtSlovenia": "2026-11-22 00:16:22",
@@ -1220,10 +1228,12 @@
           "Entry, stop-loss or take-profit is missing",
           "Spread-to-ATR cannot be independently verified",
           "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "Watchdog fail-closed protection",
+          "M5 provider candle is missing, failed, or stale"
         ],
         "watchdog": "BLOCKED",
         "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
@@ -1261,7 +1271,7 @@
     ]
   },
   "watchdog": {
-    "checkedAt": "2026-11-21T23:16:23.714Z",
+    "checkedAt": "2026-11-21T23:26:13.789Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -1272,22 +1282,27 @@
     "markets": {
       "EURUSD": {
         "issues": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 83714,
-        "quoteAgeMs": 1795302983714
+        "candleAgeMs": 673789,
+        "quoteAgeMs": 1795303573789
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 83714,
-        "quoteAgeMs": 1790
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 673789,
+        "quoteAgeMs": 591865
       },
       "XAUUSD": {
         "issues": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 83714,
-        "quoteAgeMs": 1795302983714
+        "candleAgeMs": 673789,
+        "quoteAgeMs": 1795303573789
       }
     }
   }
