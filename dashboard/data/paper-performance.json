@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-20T23:06:28.216Z",
+  "generatedAt": "2026-11-21T03:31:35.270Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net estimated R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured. When commission is not configured, the report falls back to net R excluding commission and flags that coverage. No broker fills are assumed. Drawdown is peak-to-trough cumulative resolved net estimated R, not account-currency or equity drawdown.",
   "totals": {
@@ -365,23 +365,23 @@
   },
   "phase2Intelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-11-20T23:06:28.216Z",
+    "generatedAt": "2026-11-21T03:31:35.270Z",
     "mode": "FORWARD_PAPER_DIAGNOSTICS_ONLY",
     "minimumResolvedForecastsForQualification": 30,
     "agentScorecards": {
       "FxTT market scanner": {
-        "forecasts": 51,
-        "resolved": 49,
-        "pending": 2,
+        "forecasts": 52,
+        "resolved": 51,
+        "pending": 1,
         "correct": 24,
-        "incorrect": 25,
-        "accuracyPct": 48.98,
-        "falseDirectionalPct": 51.02,
+        "incorrect": 27,
+        "accuracyPct": 47.06,
+        "falseDirectionalPct": 52.94,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 28,
+            "resolved": 30,
             "correct": 11,
-            "accuracyPct": 39.29
+            "accuracyPct": 36.67
           },
           "XAUUSD": {
             "resolved": 21,
@@ -411,9 +411,9 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 10,
+            "resolved": 12,
             "correct": 3,
-            "accuracyPct": 30
+            "accuracyPct": 25
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -421,12 +421,12 @@
       },
       "Gann/Hurst trend": {
         "forecasts": 91,
-        "resolved": 90,
-        "pending": 1,
+        "resolved": 91,
+        "pending": 0,
         "correct": 46,
-        "incorrect": 44,
-        "accuracyPct": 51.11,
-        "falseDirectionalPct": 48.89,
+        "incorrect": 45,
+        "accuracyPct": 50.55,
+        "falseDirectionalPct": 49.45,
         "byMarket": {
           "BTCUSD": {
             "resolved": 29,
@@ -434,9 +434,9 @@
             "accuracyPct": 44.83
           },
           "EURUSD": {
-            "resolved": 31,
+            "resolved": 32,
             "correct": 16,
-            "accuracyPct": 51.61
+            "accuracyPct": 50
           },
           "XAUUSD": {
             "resolved": 30,
@@ -466,27 +466,27 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 18,
+            "resolved": 19,
             "correct": 6,
-            "accuracyPct": 33.33
+            "accuracyPct": 31.58
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
         "votingWeight": 0
       },
       "Higher-timeframe confluence analyst": {
-        "forecasts": 60,
-        "resolved": 56,
-        "pending": 4,
-        "correct": 39,
-        "incorrect": 17,
-        "accuracyPct": 69.64,
-        "falseDirectionalPct": 30.36,
+        "forecasts": 61,
+        "resolved": 60,
+        "pending": 1,
+        "correct": 41,
+        "incorrect": 19,
+        "accuracyPct": 68.33,
+        "falseDirectionalPct": 31.67,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 15,
-            "correct": 13,
-            "accuracyPct": 86.67
+            "resolved": 17,
+            "correct": 15,
+            "accuracyPct": 88.24
           },
           "EURUSD": {
             "resolved": 28,
@@ -494,9 +494,9 @@
             "accuracyPct": 53.57
           },
           "XAUUSD": {
-            "resolved": 13,
+            "resolved": 15,
             "correct": 11,
-            "accuracyPct": 84.62
+            "accuracyPct": 73.33
           }
         },
         "byRegime": {
@@ -521,9 +521,9 @@
             "accuracyPct": 50
           },
           "RANGE": {
-            "resolved": 18,
-            "correct": 11,
-            "accuracyPct": 61.11
+            "resolved": 22,
+            "correct": 13,
+            "accuracyPct": 59.09
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -531,12 +531,12 @@
       },
       "ICT/SMC structure": {
         "forecasts": 41,
-        "resolved": 40,
-        "pending": 1,
+        "resolved": 41,
+        "pending": 0,
         "correct": 15,
-        "incorrect": 25,
-        "accuracyPct": 37.5,
-        "falseDirectionalPct": 62.5,
+        "incorrect": 26,
+        "accuracyPct": 36.59,
+        "falseDirectionalPct": 63.41,
         "byMarket": {
           "BTCUSD": {
             "resolved": 12,
@@ -544,9 +544,9 @@
             "accuracyPct": 41.67
           },
           "EURUSD": {
-            "resolved": 9,
+            "resolved": 10,
             "correct": 5,
-            "accuracyPct": 55.56
+            "accuracyPct": 50
           },
           "XAUUSD": {
             "resolved": 19,
@@ -576,9 +576,9 @@
             "accuracyPct": 0
           },
           "RANGE": {
-            "resolved": 20,
+            "resolved": 21,
             "correct": 4,
-            "accuracyPct": 20
+            "accuracyPct": 19.05
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -620,18 +620,18 @@
         "votingWeight": 0
       },
       "M5 candle-quality analyst": {
-        "forecasts": 102,
-        "resolved": 99,
+        "forecasts": 105,
+        "resolved": 102,
         "pending": 3,
         "correct": 37,
-        "incorrect": 62,
-        "accuracyPct": 37.37,
-        "falseDirectionalPct": 62.63,
+        "incorrect": 65,
+        "accuracyPct": 36.27,
+        "falseDirectionalPct": 63.73,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 32,
+            "resolved": 34,
             "correct": 12,
-            "accuracyPct": 37.5
+            "accuracyPct": 35.29
           },
           "EURUSD": {
             "resolved": 33,
@@ -639,9 +639,9 @@
             "accuracyPct": 33.33
           },
           "XAUUSD": {
-            "resolved": 34,
+            "resolved": 35,
             "correct": 14,
-            "accuracyPct": 41.18
+            "accuracyPct": 40
           }
         },
         "byRegime": {
@@ -666,37 +666,37 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 47,
+            "resolved": 50,
             "correct": 8,
-            "accuracyPct": 17.02
+            "accuracyPct": 16
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
         "votingWeight": 0
       },
       "Momentum analyst": {
-        "forecasts": 125,
-        "resolved": 119,
-        "pending": 6,
+        "forecasts": 127,
+        "resolved": 125,
+        "pending": 2,
         "correct": 53,
-        "incorrect": 66,
-        "accuracyPct": 44.54,
-        "falseDirectionalPct": 55.46,
+        "incorrect": 72,
+        "accuracyPct": 42.4,
+        "falseDirectionalPct": 57.6,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 40,
+            "resolved": 42,
             "correct": 19,
-            "accuracyPct": 47.5
+            "accuracyPct": 45.24
           },
           "EURUSD": {
-            "resolved": 39,
+            "resolved": 41,
             "correct": 18,
-            "accuracyPct": 46.15
+            "accuracyPct": 43.9
           },
           "XAUUSD": {
-            "resolved": 40,
+            "resolved": 42,
             "correct": 16,
-            "accuracyPct": 40
+            "accuracyPct": 38.1
           }
         },
         "byRegime": {
@@ -716,14 +716,14 @@
             "accuracyPct": 20
           },
           "HIGH_VOLATILITY": {
-            "resolved": 4,
+            "resolved": 5,
             "correct": 1,
-            "accuracyPct": 25
+            "accuracyPct": 20
           },
           "RANGE": {
-            "resolved": 54,
+            "resolved": 59,
             "correct": 24,
-            "accuracyPct": 44.44
+            "accuracyPct": 40.68
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -731,17 +731,17 @@
       },
       "Momentum exhaustion analyst": {
         "forecasts": 49,
-        "resolved": 48,
-        "pending": 1,
+        "resolved": 49,
+        "pending": 0,
         "correct": 25,
-        "incorrect": 23,
-        "accuracyPct": 52.08,
-        "falseDirectionalPct": 47.92,
+        "incorrect": 24,
+        "accuracyPct": 51.02,
+        "falseDirectionalPct": 48.98,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 20,
+            "resolved": 21,
             "correct": 10,
-            "accuracyPct": 50
+            "accuracyPct": 47.62
           },
           "EURUSD": {
             "resolved": 11,
@@ -771,9 +771,9 @@
             "accuracyPct": 100
           },
           "RANGE": {
-            "resolved": 21,
+            "resolved": 22,
             "correct": 9,
-            "accuracyPct": 42.86
+            "accuracyPct": 40.91
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -781,17 +781,17 @@
       },
       "Quantitative agent 2 — autoregression": {
         "forecasts": 26,
-        "resolved": 25,
-        "pending": 1,
-        "correct": 14,
+        "resolved": 26,
+        "pending": 0,
+        "correct": 15,
         "incorrect": 11,
-        "accuracyPct": 56,
-        "falseDirectionalPct": 44,
+        "accuracyPct": 57.69,
+        "falseDirectionalPct": 42.31,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 11,
-            "correct": 3,
-            "accuracyPct": 27.27
+            "resolved": 12,
+            "correct": 4,
+            "accuracyPct": 33.33
           },
           "EURUSD": {
             "resolved": 3,
@@ -826,22 +826,22 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 5,
-            "correct": 2,
-            "accuracyPct": 40
+            "resolved": 6,
+            "correct": 3,
+            "accuracyPct": 50
           }
         },
         "qualification": "INSUFFICIENT_SAMPLE",
         "votingWeight": 0
       },
       "Quantitative agent 3 — Kalman filter": {
-        "forecasts": 75,
-        "resolved": 73,
-        "pending": 2,
+        "forecasts": 76,
+        "resolved": 75,
+        "pending": 1,
         "correct": 35,
-        "incorrect": 38,
-        "accuracyPct": 47.95,
-        "falseDirectionalPct": 52.05,
+        "incorrect": 40,
+        "accuracyPct": 46.67,
+        "falseDirectionalPct": 53.33,
         "byMarket": {
           "BTCUSD": {
             "resolved": 29,
@@ -849,9 +849,9 @@
             "accuracyPct": 58.62
           },
           "EURUSD": {
-            "resolved": 20,
+            "resolved": 22,
             "correct": 11,
-            "accuracyPct": 55
+            "accuracyPct": 50
           },
           "XAUUSD": {
             "resolved": 24,
@@ -876,27 +876,27 @@
             "accuracyPct": 22.22
           },
           "HIGH_VOLATILITY": {
-            "resolved": 2,
+            "resolved": 3,
             "correct": 0,
             "accuracyPct": 0
           },
           "RANGE": {
-            "resolved": 31,
+            "resolved": 32,
             "correct": 14,
-            "accuracyPct": 45.16
+            "accuracyPct": 43.75
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
         "votingWeight": 0
       },
       "Quantitative agent 4 — EWMA volatility": {
-        "forecasts": 69,
-        "resolved": 67,
-        "pending": 2,
+        "forecasts": 70,
+        "resolved": 69,
+        "pending": 1,
         "correct": 31,
-        "incorrect": 36,
-        "accuracyPct": 46.27,
-        "falseDirectionalPct": 53.73,
+        "incorrect": 38,
+        "accuracyPct": 44.93,
+        "falseDirectionalPct": 55.07,
         "byMarket": {
           "BTCUSD": {
             "resolved": 25,
@@ -904,14 +904,14 @@
             "accuracyPct": 56
           },
           "EURUSD": {
-            "resolved": 18,
+            "resolved": 19,
             "correct": 9,
-            "accuracyPct": 50
+            "accuracyPct": 47.37
           },
           "XAUUSD": {
-            "resolved": 24,
+            "resolved": 25,
             "correct": 8,
-            "accuracyPct": 33.33
+            "accuracyPct": 32
           }
         },
         "byRegime": {
@@ -936,9 +936,9 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 29,
+            "resolved": 31,
             "correct": 11,
-            "accuracyPct": 37.93
+            "accuracyPct": 35.48
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -946,12 +946,12 @@
       },
       "Quantitative agent 5 — cycle model": {
         "forecasts": 38,
-        "resolved": 37,
-        "pending": 1,
+        "resolved": 38,
+        "pending": 0,
         "correct": 17,
-        "incorrect": 20,
-        "accuracyPct": 45.95,
-        "falseDirectionalPct": 54.05,
+        "incorrect": 21,
+        "accuracyPct": 44.74,
+        "falseDirectionalPct": 55.26,
         "byMarket": {
           "BTCUSD": {
             "resolved": 8,
@@ -964,9 +964,9 @@
             "accuracyPct": 55.56
           },
           "XAUUSD": {
-            "resolved": 20,
+            "resolved": 21,
             "correct": 10,
-            "accuracyPct": 50
+            "accuracyPct": 47.62
           }
         },
         "byRegime": {
@@ -986,27 +986,27 @@
             "accuracyPct": 33.33
           },
           "RANGE": {
-            "resolved": 22,
+            "resolved": 23,
             "correct": 10,
-            "accuracyPct": 45.45
+            "accuracyPct": 43.48
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
         "votingWeight": 0
       },
       "Quantitative agent 6 — analog search": {
-        "forecasts": 71,
-        "resolved": 69,
-        "pending": 2,
-        "correct": 25,
-        "incorrect": 44,
-        "accuracyPct": 36.23,
-        "falseDirectionalPct": 63.77,
+        "forecasts": 72,
+        "resolved": 71,
+        "pending": 1,
+        "correct": 26,
+        "incorrect": 45,
+        "accuracyPct": 36.62,
+        "falseDirectionalPct": 63.38,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 18,
-            "correct": 6,
-            "accuracyPct": 33.33
+            "resolved": 19,
+            "correct": 7,
+            "accuracyPct": 36.84
           },
           "EURUSD": {
             "resolved": 22,
@@ -1014,9 +1014,9 @@
             "accuracyPct": 36.36
           },
           "XAUUSD": {
-            "resolved": 29,
+            "resolved": 30,
             "correct": 11,
-            "accuracyPct": 37.93
+            "accuracyPct": 36.67
           }
         },
         "byRegime": {
@@ -1041,9 +1041,9 @@
             "accuracyPct": 50
           },
           "RANGE": {
-            "resolved": 32,
-            "correct": 14,
-            "accuracyPct": 43.75
+            "resolved": 34,
+            "correct": 15,
+            "accuracyPct": 44.12
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -1155,18 +1155,18 @@
         "votingWeight": 0
       },
       "Technical analyst": {
-        "forecasts": 85,
-        "resolved": 81,
-        "pending": 4,
-        "correct": 51,
-        "incorrect": 30,
-        "accuracyPct": 62.96,
-        "falseDirectionalPct": 37.04,
+        "forecasts": 87,
+        "resolved": 85,
+        "pending": 2,
+        "correct": 53,
+        "incorrect": 32,
+        "accuracyPct": 62.35,
+        "falseDirectionalPct": 37.65,
         "byMarket": {
           "BTCUSD": {
-            "resolved": 25,
-            "correct": 17,
-            "accuracyPct": 68
+            "resolved": 27,
+            "correct": 19,
+            "accuracyPct": 70.37
           },
           "EURUSD": {
             "resolved": 30,
@@ -1174,9 +1174,9 @@
             "accuracyPct": 56.67
           },
           "XAUUSD": {
-            "resolved": 26,
+            "resolved": 28,
             "correct": 17,
-            "accuracyPct": 65.38
+            "accuracyPct": 60.71
           }
         },
         "byRegime": {
@@ -1201,9 +1201,9 @@
             "accuracyPct": 50
           },
           "RANGE": {
-            "resolved": 20,
-            "correct": 12,
-            "accuracyPct": 60
+            "resolved": 24,
+            "correct": 14,
+            "accuracyPct": 58.33
           }
         },
         "qualification": "SAMPLE_THRESHOLD_MET_NOT_PROOF",
@@ -1265,9 +1265,9 @@
         "votingWeight": 0
       },
       "Volatility and regime analyst": {
-        "forecasts": 36,
+        "forecasts": 37,
         "resolved": 36,
-        "pending": 0,
+        "pending": 1,
         "correct": 25,
         "incorrect": 11,
         "accuracyPct": 69.44,
@@ -1335,9 +1335,9 @@
         "votingWeight": 0
       },
       "hpFX multi-timeframe": {
-        "forecasts": 48,
+        "forecasts": 49,
         "resolved": 48,
-        "pending": 0,
+        "pending": 1,
         "correct": 25,
         "incorrect": 23,
         "accuracyPct": 52.08,
@@ -1391,18 +1391,63 @@
       }
     },
     "chiefConsensus": {
-      "cycles": 165,
-      "resolvedCycles": 147,
+      "cycles": 168,
+      "resolvedCycles": 150,
       "correctCycles": 67,
-      "incorrectCycles": 80,
-      "accuracyPct": 45.58,
-      "disagreementCycles": 95,
-      "averageAgreementPct": 84.078,
+      "incorrectCycles": 83,
+      "accuracyPct": 44.67,
+      "disagreementCycles": 97,
+      "averageAgreementPct": 83.916,
       "authority": "NONE",
       "votingWeight": 0,
       "note": "Consensus accuracy is descriptive, not independent evidence of edge; correlated agents are not counted as independent votes."
     },
     "recentCycles": [
+      {
+        "market": "XAUUSD",
+        "forecastAt": "2026-11-21T03:25:00.000Z",
+        "participatingAgents": 2,
+        "directionalVotes": 2,
+        "buyVotes": 1,
+        "sellVotes": 1,
+        "agreementPct": 50,
+        "chiefDirection": "SPLIT",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": true,
+        "authority": "NONE"
+      },
+      {
+        "market": "BTCUSD",
+        "forecastAt": "2026-11-21T03:25:00.000Z",
+        "participatingAgents": 8,
+        "directionalVotes": 8,
+        "buyVotes": 0,
+        "sellVotes": 8,
+        "agreementPct": 100,
+        "chiefDirection": "SELL",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": false,
+        "authority": "NONE"
+      },
+      {
+        "market": "EURUSD",
+        "forecastAt": "2026-11-21T03:25:00.000Z",
+        "participatingAgents": 4,
+        "directionalVotes": 4,
+        "buyVotes": 1,
+        "sellVotes": 3,
+        "agreementPct": 75,
+        "chiefDirection": "SELL",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": true,
+        "authority": "NONE"
+      },
       {
         "market": "XAUUSD",
         "forecastAt": "2026-11-20T23:00:00.000Z",
@@ -1412,8 +1457,8 @@
         "sellVotes": 2,
         "agreementPct": 50,
         "chiefDirection": "SPLIT",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
+        "resolvedAgents": 4,
+        "realizedDirection": "FLAT",
         "consensusCorrect": null,
         "disagreement": true,
         "authority": "NONE"
@@ -1427,9 +1472,9 @@
         "sellVotes": 3,
         "agreementPct": 57.14,
         "chiefDirection": "BUY",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
-        "consensusCorrect": null,
+        "resolvedAgents": 7,
+        "realizedDirection": "SELL",
+        "consensusCorrect": false,
         "disagreement": true,
         "authority": "NONE"
       },
@@ -1442,9 +1487,9 @@
         "sellVotes": 0,
         "agreementPct": 100,
         "chiefDirection": "BUY",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
-        "consensusCorrect": null,
+        "resolvedAgents": 2,
+        "realizedDirection": "FLAT",
+        "consensusCorrect": false,
         "disagreement": false,
         "authority": "NONE"
       },
@@ -1457,8 +1502,8 @@
         "sellVotes": 3,
         "agreementPct": 50,
         "chiefDirection": "SPLIT",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
+        "resolvedAgents": 6,
+        "realizedDirection": "FLAT",
         "consensusCorrect": null,
         "disagreement": true,
         "authority": "NONE"
@@ -1472,8 +1517,8 @@
         "sellVotes": 3,
         "agreementPct": 50,
         "chiefDirection": "SPLIT",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
+        "resolvedAgents": 6,
+        "realizedDirection": "SELL",
         "consensusCorrect": null,
         "disagreement": true,
         "authority": "NONE"
@@ -1487,9 +1532,9 @@
         "sellVotes": 1,
         "agreementPct": 80,
         "chiefDirection": "BUY",
-        "resolvedAgents": 0,
-        "realizedDirection": null,
-        "consensusCorrect": null,
+        "resolvedAgents": 5,
+        "realizedDirection": "FLAT",
+        "consensusCorrect": false,
         "disagreement": true,
         "authority": "NONE"
       },
@@ -2857,51 +2902,6 @@
         "consensusCorrect": false,
         "disagreement": false,
         "authority": "NONE"
-      },
-      {
-        "market": "BTCUSD",
-        "forecastAt": "2026-11-16T21:35:00.000Z",
-        "participatingAgents": 8,
-        "directionalVotes": 8,
-        "buyVotes": 8,
-        "sellVotes": 0,
-        "agreementPct": 100,
-        "chiefDirection": "BUY",
-        "resolvedAgents": 8,
-        "realizedDirection": "FLAT",
-        "consensusCorrect": false,
-        "disagreement": false,
-        "authority": "NONE"
-      },
-      {
-        "market": "EURUSD",
-        "forecastAt": "2026-11-16T21:35:00.000Z",
-        "participatingAgents": 7,
-        "directionalVotes": 7,
-        "buyVotes": 1,
-        "sellVotes": 6,
-        "agreementPct": 85.71,
-        "chiefDirection": "SELL",
-        "resolvedAgents": 7,
-        "realizedDirection": "SELL",
-        "consensusCorrect": true,
-        "disagreement": true,
-        "authority": "NONE"
-      },
-      {
-        "market": "XAUUSD",
-        "forecastAt": "2026-11-16T21:30:00.000Z",
-        "participatingAgents": 7,
-        "directionalVotes": 7,
-        "buyVotes": 2,
-        "sellVotes": 5,
-        "agreementPct": 71.43,
-        "chiefDirection": "SELL",
-        "resolvedAgents": 7,
-        "realizedDirection": "BUY",
-        "consensusCorrect": false,
-        "disagreement": true,
-        "authority": "NONE"
       }
     ],
     "safeguards": {
@@ -2916,11 +2916,11 @@
   "agentAccountability": {
     "FxTT market scanner": {
       "BUY": {
-        "predictions": 18,
+        "predictions": 20,
         "correct": 4,
-        "falseSignals": 14,
-        "accuracyPct": 22.22,
-        "falseSignalRatePct": 77.78
+        "falseSignals": 16,
+        "accuracyPct": 20,
+        "falseSignalRatePct": 80
       },
       "SELL": {
         "predictions": 31,
@@ -2939,11 +2939,11 @@
         "falseSignalRatePct": 69.57
       },
       "SELL": {
-        "predictions": 67,
+        "predictions": 68,
         "correct": 39,
-        "falseSignals": 28,
-        "accuracyPct": 58.21,
-        "falseSignalRatePct": 41.79
+        "falseSignals": 29,
+        "accuracyPct": 57.35,
+        "falseSignalRatePct": 42.65
       }
     },
     "Higher-timeframe confluence analyst": {
@@ -2955,20 +2955,20 @@
         "falseSignalRatePct": null
       },
       "SELL": {
-        "predictions": 56,
-        "correct": 39,
-        "falseSignals": 17,
-        "accuracyPct": 69.64,
-        "falseSignalRatePct": 30.36
+        "predictions": 60,
+        "correct": 41,
+        "falseSignals": 19,
+        "accuracyPct": 68.33,
+        "falseSignalRatePct": 31.67
       }
     },
     "ICT/SMC structure": {
       "BUY": {
-        "predictions": 23,
+        "predictions": 24,
         "correct": 5,
-        "falseSignals": 18,
-        "accuracyPct": 21.74,
-        "falseSignalRatePct": 78.26
+        "falseSignals": 19,
+        "accuracyPct": 20.83,
+        "falseSignalRatePct": 79.17
       },
       "SELL": {
         "predictions": 17,
@@ -2996,11 +2996,11 @@
     },
     "M5 candle-quality analyst": {
       "BUY": {
-        "predictions": 54,
+        "predictions": 57,
         "correct": 11,
-        "falseSignals": 43,
-        "accuracyPct": 20.37,
-        "falseSignalRatePct": 79.63
+        "falseSignals": 46,
+        "accuracyPct": 19.3,
+        "falseSignalRatePct": 80.7
       },
       "SELL": {
         "predictions": 45,
@@ -3028,11 +3028,11 @@
     },
     "Momentum analyst": {
       "BUY": {
-        "predictions": 58,
+        "predictions": 64,
         "correct": 16,
-        "falseSignals": 42,
-        "accuracyPct": 27.59,
-        "falseSignalRatePct": 72.41
+        "falseSignals": 48,
+        "accuracyPct": 25,
+        "falseSignalRatePct": 75
       },
       "SELL": {
         "predictions": 61,
@@ -3044,11 +3044,11 @@
     },
     "Momentum exhaustion analyst": {
       "BUY": {
-        "predictions": 22,
+        "predictions": 23,
         "correct": 7,
-        "falseSignals": 15,
-        "accuracyPct": 31.82,
-        "falseSignalRatePct": 68.18
+        "falseSignals": 16,
+        "accuracyPct": 30.43,
+        "falseSignalRatePct": 69.57
       },
       "SELL": {
         "predictions": 26,
@@ -3083,20 +3083,20 @@
         "falseSignalRatePct": 88.89
       },
       "SELL": {
-        "predictions": 16,
-        "correct": 13,
+        "predictions": 17,
+        "correct": 14,
         "falseSignals": 3,
-        "accuracyPct": 81.25,
-        "falseSignalRatePct": 18.75
+        "accuracyPct": 82.35,
+        "falseSignalRatePct": 17.65
       }
     },
     "Quantitative agent 3 — Kalman filter": {
       "BUY": {
-        "predictions": 32,
+        "predictions": 34,
         "correct": 10,
-        "falseSignals": 22,
-        "accuracyPct": 31.25,
-        "falseSignalRatePct": 68.75
+        "falseSignals": 24,
+        "accuracyPct": 29.41,
+        "falseSignalRatePct": 70.59
       },
       "SELL": {
         "predictions": 41,
@@ -3108,11 +3108,11 @@
     },
     "Quantitative agent 4 — EWMA volatility": {
       "BUY": {
-        "predictions": 32,
+        "predictions": 34,
         "correct": 8,
-        "falseSignals": 24,
-        "accuracyPct": 25,
-        "falseSignalRatePct": 75
+        "falseSignals": 26,
+        "accuracyPct": 23.53,
+        "falseSignalRatePct": 76.47
       },
       "SELL": {
         "predictions": 35,
@@ -3124,11 +3124,11 @@
     },
     "Quantitative agent 5 — cycle model": {
       "BUY": {
-        "predictions": 16,
+        "predictions": 17,
         "correct": 5,
-        "falseSignals": 11,
-        "accuracyPct": 31.25,
-        "falseSignalRatePct": 68.75
+        "falseSignals": 12,
+        "accuracyPct": 29.41,
+        "falseSignalRatePct": 70.59
       },
       "SELL": {
         "predictions": 21,
@@ -3147,11 +3147,11 @@
         "falseSignalRatePct": 85.71
       },
       "SELL": {
-        "predictions": 41,
-        "correct": 21,
-        "falseSignals": 20,
-        "accuracyPct": 51.22,
-        "falseSignalRatePct": 48.78
+        "predictions": 43,
+        "correct": 22,
+        "falseSignals": 21,
+        "accuracyPct": 51.16,
+        "falseSignalRatePct": 48.84
       }
     },
     "SMC and liquidity analyst": {
@@ -3195,11 +3195,11 @@
         "falseSignalRatePct": 100
       },
       "SELL": {
-        "predictions": 79,
-        "correct": 51,
-        "falseSignals": 28,
-        "accuracyPct": 64.56,
-        "falseSignalRatePct": 35.44
+        "predictions": 83,
+        "correct": 53,
+        "falseSignals": 30,
+        "accuracyPct": 63.86,
+        "falseSignalRatePct": 36.14
       }
     },
     "Trading-session breakout analyst": {
