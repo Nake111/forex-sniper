@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-22T03:15:24.461Z",
+  "generatedAt": "2026-11-22T03:32:54.118Z",
   "mode": "PAPER_RESEARCH_ONLY",
   "methodology": "Only approved paper signals are included. Outcomes use subsequent closed M5 candle OHLC: first stop/target touch, ambiguous if both touch in one candle, or timeout after 180 bars at candle close. Net estimated R subtracts observed signal-time spread plus configured estimated slippage; commission is subtracted only when configured. When commission is not configured, the report falls back to net R excluding commission and flags that coverage. No broker fills are assumed. Drawdown is peak-to-trough cumulative resolved net estimated R, not account-currency or equity drawdown.",
   "totals": {
@@ -365,14 +365,14 @@
   },
   "phase2Intelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-11-22T03:15:24.461Z",
+    "generatedAt": "2026-11-22T03:32:54.118Z",
     "mode": "FORWARD_PAPER_DIAGNOSTICS_ONLY",
     "minimumResolvedForecastsForQualification": 30,
     "agentScorecards": {
       "FxTT market scanner": {
-        "forecasts": 55,
+        "forecasts": 56,
         "resolved": 54,
-        "pending": 1,
+        "pending": 2,
         "correct": 27,
         "incorrect": 27,
         "accuracyPct": 50,
@@ -420,9 +420,9 @@
         "votingWeight": 0
       },
       "Gann/Hurst trend": {
-        "forecasts": 106,
+        "forecasts": 108,
         "resolved": 104,
-        "pending": 2,
+        "pending": 4,
         "correct": 54,
         "incorrect": 50,
         "accuracyPct": 51.92,
@@ -475,9 +475,9 @@
         "votingWeight": 0
       },
       "Higher-timeframe confluence analyst": {
-        "forecasts": 63,
+        "forecasts": 64,
         "resolved": 62,
-        "pending": 1,
+        "pending": 2,
         "correct": 43,
         "incorrect": 19,
         "accuracyPct": 69.35,
@@ -625,9 +625,9 @@
         "votingWeight": 0
       },
       "M5 candle-quality analyst": {
-        "forecasts": 121,
+        "forecasts": 123,
         "resolved": 119,
-        "pending": 2,
+        "pending": 4,
         "correct": 42,
         "incorrect": 77,
         "accuracyPct": 35.29,
@@ -680,9 +680,9 @@
         "votingWeight": 0
       },
       "Momentum analyst": {
-        "forecasts": 144,
+        "forecasts": 146,
         "resolved": 143,
-        "pending": 1,
+        "pending": 3,
         "correct": 60,
         "incorrect": 83,
         "accuracyPct": 41.96,
@@ -840,9 +840,9 @@
         "votingWeight": 0
       },
       "Quantitative agent 3 — Kalman filter": {
-        "forecasts": 84,
+        "forecasts": 86,
         "resolved": 83,
-        "pending": 1,
+        "pending": 3,
         "correct": 41,
         "incorrect": 42,
         "accuracyPct": 49.4,
@@ -895,9 +895,9 @@
         "votingWeight": 0
       },
       "Quantitative agent 4 — EWMA volatility": {
-        "forecasts": 79,
+        "forecasts": 80,
         "resolved": 78,
-        "pending": 1,
+        "pending": 2,
         "correct": 37,
         "incorrect": 41,
         "accuracyPct": 47.44,
@@ -1000,9 +1000,9 @@
         "votingWeight": 0
       },
       "Quantitative agent 6 — analog search": {
-        "forecasts": 83,
+        "forecasts": 85,
         "resolved": 83,
-        "pending": 0,
+        "pending": 2,
         "correct": 31,
         "incorrect": 52,
         "accuracyPct": 37.35,
@@ -1160,9 +1160,9 @@
         "votingWeight": 0
       },
       "Technical analyst": {
-        "forecasts": 91,
+        "forecasts": 92,
         "resolved": 90,
-        "pending": 1,
+        "pending": 2,
         "correct": 55,
         "incorrect": 35,
         "accuracyPct": 61.11,
@@ -1396,18 +1396,63 @@
       }
     },
     "chiefConsensus": {
-      "cycles": 192,
+      "cycles": 195,
       "resolvedCycles": 170,
       "correctCycles": 74,
       "incorrectCycles": 96,
       "accuracyPct": 43.53,
-      "disagreementCycles": 109,
-      "averageAgreementPct": 83.942,
+      "disagreementCycles": 110,
+      "averageAgreementPct": 83.933,
       "authority": "NONE",
       "votingWeight": 0,
       "note": "Consensus accuracy is descriptive, not independent evidence of edge; correlated agents are not counted as independent votes."
     },
     "recentCycles": [
+      {
+        "market": "XAUUSD",
+        "forecastAt": "2026-11-22T03:25:00.000Z",
+        "participatingAgents": 1,
+        "directionalVotes": 1,
+        "buyVotes": 1,
+        "sellVotes": 0,
+        "agreementPct": 100,
+        "chiefDirection": "BUY",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": false,
+        "authority": "NONE"
+      },
+      {
+        "market": "BTCUSD",
+        "forecastAt": "2026-11-22T03:25:00.000Z",
+        "participatingAgents": 9,
+        "directionalVotes": 9,
+        "buyVotes": 0,
+        "sellVotes": 9,
+        "agreementPct": 100,
+        "chiefDirection": "SELL",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": false,
+        "authority": "NONE"
+      },
+      {
+        "market": "EURUSD",
+        "forecastAt": "2026-11-22T03:25:00.000Z",
+        "participatingAgents": 4,
+        "directionalVotes": 4,
+        "buyVotes": 2,
+        "sellVotes": 2,
+        "agreementPct": 50,
+        "chiefDirection": "SPLIT",
+        "resolvedAgents": 0,
+        "realizedDirection": null,
+        "consensusCorrect": null,
+        "disagreement": true,
+        "authority": "NONE"
+      },
       {
         "market": "XAUUSD",
         "forecastAt": "2026-11-22T03:10:00.000Z",
@@ -2860,51 +2905,6 @@
         "resolvedAgents": 6,
         "realizedDirection": "SELL",
         "consensusCorrect": true,
-        "disagreement": false,
-        "authority": "NONE"
-      },
-      {
-        "market": "BTCUSD",
-        "forecastAt": "2026-11-18T03:05:00.000Z",
-        "participatingAgents": 1,
-        "directionalVotes": 1,
-        "buyVotes": 1,
-        "sellVotes": 0,
-        "agreementPct": 100,
-        "chiefDirection": "BUY",
-        "resolvedAgents": 1,
-        "realizedDirection": "SELL",
-        "consensusCorrect": false,
-        "disagreement": false,
-        "authority": "NONE"
-      },
-      {
-        "market": "EURUSD",
-        "forecastAt": "2026-11-18T03:05:00.000Z",
-        "participatingAgents": 9,
-        "directionalVotes": 9,
-        "buyVotes": 1,
-        "sellVotes": 8,
-        "agreementPct": 88.89,
-        "chiefDirection": "SELL",
-        "resolvedAgents": 9,
-        "realizedDirection": "SELL",
-        "consensusCorrect": true,
-        "disagreement": true,
-        "authority": "NONE"
-      },
-      {
-        "market": "XAUUSD",
-        "forecastAt": "2026-11-17T23:00:00.000Z",
-        "participatingAgents": 6,
-        "directionalVotes": 6,
-        "buyVotes": 6,
-        "sellVotes": 0,
-        "agreementPct": 100,
-        "chiefDirection": "BUY",
-        "resolvedAgents": 6,
-        "realizedDirection": "SELL",
-        "consensusCorrect": false,
         "disagreement": false,
         "authority": "NONE"
       }
