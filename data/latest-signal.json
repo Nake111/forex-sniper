@@ -1,42 +1,42 @@
 {
   "schemaVersion": 2,
   "symbol": "BTCUSD",
-  "generatedAt": "2026-11-22T17:29:40.168Z",
+  "generatedAt": "2026-11-22T22:03:17.817Z",
   "dataSource": "Binance Spot BTCUSDT public API; not a direct Vantage feed",
   "onlineMarketSnapshot": {
     "schemaVersion": 1,
     "symbol": "BTCUSDT",
     "instrumentType": "spot",
-    "generatedAt": "2026-11-22T17:29:39.998Z",
+    "generatedAt": "2026-11-22T22:03:17.654Z",
     "source": "Binance Spot public market-data API",
     "sourceUrl": "https://data-api.binance.vision",
     "referenceOnly": "BTCUSDT spot is a market proxy, not Vantage BTCUSD CFD pricing",
-    "lastPrice": 60867.83,
-    "bid": 60867.82,
-    "ask": 60867.83,
-    "bidQty": 2.59809,
-    "askQty": 0.79724,
+    "lastPrice": 60864,
+    "bid": 60864,
+    "ask": 60864.01,
+    "bidQty": 3.37505,
+    "askQty": 0.26106,
     "spread": 0.010000000002037268,
-    "change24h": 558.73,
-    "changePercent24h": 0.926,
+    "change24h": 464.83,
+    "changePercent24h": 0.77,
     "high24h": 61669.99,
     "low24h": 58768.51,
-    "baseVolume24h": 20067.06726,
-    "quoteVolume24h": 1209437973.1714487,
-    "trades24h": 4145151,
+    "baseVolume24h": 19882.80075,
+    "quoteVolume24h": 1199316232.715687,
+    "trades24h": 4410418,
     "coinbaseBtcUsd": {
-      "price": 60781.71,
-      "bid": 60781.71,
-      "ask": 60781.72,
-      "time": "2026-11-22T17:29:38.138850602Z"
+      "price": 60746,
+      "bid": 60746,
+      "ask": 60746.01,
+      "time": "2026-11-22T22:03:16.509266236Z"
     },
     "candleLastTimes": {
-      "5m": "2026-11-22T17:20:00.000Z",
-      "15m": "2026-11-22T17:00:00.000Z",
-      "1h": "2026-11-22T16:00:00.000Z"
+      "5m": "2026-11-22T21:55:00.000Z",
+      "15m": "2026-11-22T21:45:00.000Z",
+      "1h": "2026-11-22T21:00:00.000Z"
     }
   },
-  "signalBarTime": "2026-11-22T17:20:00.000Z",
+  "signalBarTime": "2026-11-22T21:55:00.000Z",
   "candleCounts": {
     "M5": 300,
     "M15": 300,
@@ -51,45 +51,45 @@
   "combinedSignal": "HOLD",
   "confirmation": "NO TRADE",
   "scores": {
-    "bullish": 6,
-    "bearish": 6
+    "bullish": 8,
+    "bearish": 3
   },
   "reasons": [],
   "bullishEvidence": [
     "M15 EMA20/EMA50 alignment",
-    "M15 market-structure BOS",
-    "M15 unfilled fair-value-gap confluence",
+    "M15 RSI momentum",
+    "M15 MACD direction",
+    "M5 EMA20 trigger",
+    "M5 RSI entry filter",
+    "M5 MACD confirmation",
     "M5 Volume Profile POC position",
     "H1 TTM Squeeze momentum direction"
   ],
   "bearishEvidence": [
     "H1 EMA50/EMA200 trend",
-    "M15 MACD direction",
-    "M5 EMA20 trigger",
-    "M5 RSI entry filter",
-    "M5 MACD confirmation"
+    "M15 unfilled fair-value-gap confluence"
   ],
   "blockers": [
-    "Combined confirmation threshold not reached"
+    "No fresh M15 breakout or structure break"
   ],
   "marketContext": {
     "M5": {
-      "close": 60883.26,
-      "ema20": 61015.371684997124,
-      "ema50": 60930.921373951496,
-      "ema200": 60503.41931530395,
-      "rsi14": 44.4911505633088,
-      "macd": -0.45061986018845346,
-      "macdSignal": 52.29147351561412,
-      "atr14": 152.37857142857112,
+      "close": 60953.87,
+      "ema20": 60910.991704864246,
+      "ema50": 60854.27852270575,
+      "ema200": 60543.48439893483,
+      "rsi14": 55.5230769690851,
+      "macd": 62.05832208417996,
+      "macdSignal": 57.67636367626501,
+      "atr14": 103.22500000000115,
       "volumeProfile": {
-        "poc": 60279.6975,
-        "valueAreaHigh": 60944.619999999995,
-        "valueAreaLow": 59010.3
+        "poc": 60763.2775,
+        "valueAreaHigh": 61428.2,
+        "valueAreaLow": 59735.67
       },
       "structure": {
-        "swingHigh": 61411.34,
-        "swingLow": 60757.77,
+        "swingHigh": 61118.01,
+        "swingLow": 60581.04,
         "bos": "NONE",
         "bosLevel": null,
         "bosBarsAgo": null,
@@ -99,51 +99,51 @@
         "sweepConfirmed": false,
         "sweepConfirmationBarsAgo": null,
         "previousDayHigh": 60568.01,
-        "previousDayLow": 59921.06,
+        "previousDayLow": 59988,
         "sweep": "NONE"
       },
       "squeeze": {
         "state": "SQUEEZE_RELEASED",
-        "momentum": -24.771499999996948,
-        "previousMomentum": 41.370178571435325,
+        "momentum": 226.4518214285666,
+        "previousMomentum": 239.36414285713462,
         "releasedNow": false,
-        "direction": "BEARISH_STRENGTHENING"
+        "direction": "BULLISH_WEAKENING"
       },
       "smartMoney": {
         "swing": {
-          "direction": "BULLISH",
+          "direction": "BEARISH",
           "type": "BOS",
-          "level": 61068,
-          "barsAgo": 14
+          "level": 60625.85,
+          "barsAgo": 19
         },
         "internal": {
           "direction": "BULLISH",
           "type": "BOS",
-          "level": 61067.6,
-          "barsAgo": 14
+          "level": 60965.25,
+          "barsAgo": 11
         },
-        "swingHigh": 61068,
-        "swingLow": 60757.77,
+        "swingHigh": 61411.34,
+        "swingLow": 60581.04,
         "orderBlocks": [
           {
             "direction": "BULLISH",
             "high": 60850.48,
             "low": 60761.73,
             "midpoint": 60806.105,
-            "barsAgo": 20,
+            "barsAgo": 75,
             "displacement": 230.4699999999939,
             "touched": true,
             "mitigated": true,
-            "invalidated": false,
-            "status": "MITIGATED"
+            "invalidated": true,
+            "status": "INVALIDATED"
           },
           {
             "direction": "BEARISH",
-            "high": 59354.47,
-            "low": 59284.83,
-            "midpoint": 59319.65,
-            "barsAgo": 149,
-            "displacement": 306.52999999999884,
+            "high": 60759.71,
+            "low": 60727.4,
+            "midpoint": 60743.555,
+            "barsAgo": 23,
+            "displacement": 140.44000000000233,
             "touched": true,
             "mitigated": true,
             "invalidated": true,
@@ -153,60 +153,60 @@
         "fairValueGaps": [
           {
             "direction": "BEARISH",
-            "top": 61212.7,
-            "bottom": 60990.02,
-            "barsAgo": 3,
+            "top": 60994.11,
+            "bottom": 60978.45,
+            "barsAgo": 0,
             "touched": false,
             "filled": false
           },
           {
             "direction": "BULLISH",
-            "top": 60842.25,
-            "bottom": 60748.18,
-            "barsAgo": 31,
+            "top": 60906,
+            "bottom": 60866.01,
+            "barsAgo": 12,
             "touched": true,
             "filled": false
           },
           {
             "direction": "BULLISH",
-            "top": 60708.8,
-            "bottom": 60703.24,
-            "barsAgo": 32,
+            "top": 60798,
+            "bottom": 60668.77,
+            "barsAgo": 13,
             "touched": false,
             "filled": false
           }
         ],
         "equalHigh": null,
         "equalLow": null,
-        "rangeHigh": 61411.34,
-        "rangeLow": 60516.44,
-        "equilibrium": 60963.89,
-        "zone": "DISCOUNT"
+        "rangeHigh": 61118.01,
+        "rangeLow": 60537.43,
+        "equilibrium": 60827.72,
+        "zone": "PREMIUM"
       }
     },
     "M15": {
-      "close": 60789.8,
-      "ema20": 60895.46315231348,
-      "ema50": 60527.21062580606,
-      "ema200": 60288.19337813596,
-      "rsi14": 49.76226682818601,
-      "macd": 179.5441968180021,
-      "macdSignal": 199.36301012747987,
-      "atr14": 262.10499999999905,
+      "close": 60953.87,
+      "ema20": 60850.138451545216,
+      "ema50": 60682.78852280238,
+      "ema200": 60282.703478151656,
+      "rsi14": 55.697095755209375,
+      "macd": 46.967627557234664,
+      "macdSignal": 27.586612930658003,
+      "atr14": 144.39357142857105,
       "volumeProfile": {
-        "poc": 59036.879375000004,
-        "valueAreaHigh": 61827.5075,
-        "valueAreaLow": 57734.58625
+        "poc": 59186.08854166667,
+        "valueAreaHigh": 61944.22875,
+        "valueAreaLow": 57725.89666666667
       },
       "structure": {
-        "swingHigh": 61068,
-        "swingLow": 60757.77,
-        "bos": "BULLISH",
-        "bosLevel": 61068,
-        "bosBarsAgo": 4,
-        "liquiditySweep": "BEARISH",
-        "liquiditySweepLevel": 61068,
-        "liquiditySweepBarsAgo": 0,
+        "swingHigh": 61411.34,
+        "swingLow": 60581.04,
+        "bos": "NONE",
+        "bosLevel": null,
+        "bosBarsAgo": null,
+        "liquiditySweep": "NONE",
+        "liquiditySweepLevel": null,
+        "liquiditySweepBarsAgo": null,
         "sweepConfirmed": false,
         "sweepConfirmationBarsAgo": null,
         "previousDayHigh": 60996,
@@ -215,8 +215,8 @@
       },
       "squeeze": {
         "state": "SQUEEZE_ON",
-        "momentum": 135.23032142857494,
-        "previousMomentum": 113.1060714285754,
+        "momentum": 22.96567857142115,
+        "previousMomentum": -81.20728571428472,
         "releasedNow": false,
         "direction": "BULLISH_STRENGTHENING"
       },
@@ -225,23 +225,23 @@
           "direction": "BULLISH",
           "type": "CHoCH",
           "level": 60996,
-          "barsAgo": 29
+          "barsAgo": 48
         },
         "internal": {
-          "direction": "BULLISH",
-          "type": "BOS",
-          "level": 61068,
-          "barsAgo": 4
+          "direction": "BEARISH",
+          "type": "CHoCH",
+          "level": 60757.77,
+          "barsAgo": 15
         },
-        "swingHigh": 61669.99,
-        "swingLow": 58768.51,
+        "swingHigh": 61411.34,
+        "swingLow": 60537.43,
         "orderBlocks": [
           {
             "direction": "BULLISH",
             "high": 59848.01,
             "low": 59659.13,
             "midpoint": 59753.57,
-            "barsAgo": 32,
+            "barsAgo": 51,
             "displacement": 1271.979999999996,
             "touched": false,
             "mitigated": false,
@@ -253,7 +253,7 @@
             "high": 60215.44,
             "low": 60086.84,
             "midpoint": 60151.14,
-            "barsAgo": 61,
+            "barsAgo": 80,
             "displacement": 238.8199999999997,
             "touched": true,
             "mitigated": true,
@@ -264,9 +264,25 @@
         "fairValueGaps": [
           {
             "direction": "BULLISH",
+            "top": 60869.33,
+            "bottom": 60668.77,
+            "barsAgo": 3,
+            "touched": false,
+            "filled": false
+          },
+          {
+            "direction": "BEARISH",
+            "top": 61209.47,
+            "bottom": 60918,
+            "barsAgo": 18,
+            "touched": true,
+            "filled": false
+          },
+          {
+            "direction": "BULLISH",
             "top": 60819.86,
             "bottom": 60298.07,
-            "barsAgo": 28,
+            "barsAgo": 47,
             "touched": true,
             "filled": false
           },
@@ -274,7 +290,7 @@
             "direction": "BULLISH",
             "top": 60173.28,
             "bottom": 60130.01,
-            "barsAgo": 29,
+            "barsAgo": 48,
             "touched": false,
             "filled": false
           },
@@ -282,23 +298,7 @@
             "direction": "BULLISH",
             "top": 59915.62,
             "bottom": 59848.01,
-            "barsAgo": 30,
-            "touched": false,
-            "filled": false
-          },
-          {
-            "direction": "BULLISH",
-            "top": 59676.68,
-            "bottom": 59450,
-            "barsAgo": 34,
-            "touched": true,
-            "filled": false
-          },
-          {
-            "direction": "BULLISH",
-            "top": 59232.17,
-            "bottom": 59188.66,
-            "barsAgo": 35,
+            "barsAgo": 49,
             "touched": false,
             "filled": false
           }
@@ -306,28 +306,28 @@
         "equalHigh": null,
         "equalLow": null,
         "rangeHigh": 61669.99,
-        "rangeLow": 58768.51,
-        "equilibrium": 60219.25,
+        "rangeLow": 59915.62,
+        "equilibrium": 60792.805,
         "zone": "PREMIUM"
       }
     },
     "H1": {
-      "close": 61252.48,
-      "ema20": 60333.66100609368,
-      "ema50": 60223.07676247058,
-      "ema200": 63515.49230677701,
-      "rsi14": 63.52419441397326,
-      "macd": 389.1551912856012,
-      "macdSignal": 271.1387712277809,
-      "atr14": 636.8671428571423,
+      "close": 60953.87,
+      "ema20": 60536.27126656444,
+      "ema50": 60335.47616142602,
+      "ema200": 63371.16131507511,
+      "rsi14": 58.55834400572502,
+      "macd": 329.73949928215006,
+      "macdSignal": 319.8152984634716,
+      "atr14": 604.5157142857139,
       "volumeProfile": {
-        "poc": 64649.129791666666,
-        "valueAreaHigh": 67546.25624999999,
-        "valueAreaLow": 57613.25125
+        "poc": 64576.20541666667,
+        "valueAreaHigh": 67451.13750000001,
+        "valueAreaLow": 57594.2275
       },
       "structure": {
-        "swingHigh": 61669.99,
-        "swingLow": 58768.51,
+        "swingHigh": 61411.34,
+        "swingLow": 60537.43,
         "bos": "NONE",
         "bosLevel": null,
         "bosBarsAgo": null,
@@ -342,8 +342,8 @@
       },
       "squeeze": {
         "state": "SQUEEZE_RELEASED",
-        "momentum": 633.0785357142887,
-        "previousMomentum": 421.9063928571423,
+        "momentum": 1087.815321428569,
+        "previousMomentum": 1010.6503571428549,
         "releasedNow": false,
         "direction": "BULLISH_STRENGTHENING"
       },
@@ -352,13 +352,13 @@
           "direction": "BULLISH",
           "type": "CHoCH",
           "level": 60996,
-          "barsAgo": 7
+          "barsAgo": 12
         },
         "internal": {
           "direction": "BULLISH",
           "type": "BOS",
           "level": 60996,
-          "barsAgo": 7
+          "barsAgo": 12
         },
         "swingHigh": 60996,
         "swingLow": 58768.51,
@@ -368,7 +368,7 @@
             "high": 59327.46,
             "low": 58768.51,
             "midpoint": 59047.985,
-            "barsAgo": 11,
+            "barsAgo": 16,
             "displacement": 1792.5299999999988,
             "touched": false,
             "mitigated": false,
@@ -380,7 +380,7 @@
             "high": 63302.87,
             "low": 62662.19,
             "midpoint": 62982.53,
-            "barsAgo": 70,
+            "barsAgo": 75,
             "displacement": 1120.1800000000003,
             "touched": false,
             "mitigated": false,
@@ -391,9 +391,17 @@
         "fairValueGaps": [
           {
             "direction": "BULLISH",
+            "top": 60869.33,
+            "bottom": 60787.63,
+            "barsAgo": 0,
+            "touched": false,
+            "filled": false
+          },
+          {
+            "direction": "BULLISH",
             "top": 60702.15,
             "bottom": 60410,
-            "barsAgo": 6,
+            "barsAgo": 11,
             "touched": true,
             "filled": false
           },
@@ -401,7 +409,7 @@
             "direction": "BULLISH",
             "top": 59659.13,
             "bottom": 59235.71,
-            "barsAgo": 7,
+            "barsAgo": 12,
             "touched": false,
             "filled": false
           },
@@ -409,7 +417,7 @@
             "direction": "BULLISH",
             "top": 58803.45,
             "bottom": 58637.49,
-            "barsAgo": 27,
+            "barsAgo": 32,
             "touched": true,
             "filled": false
           },
@@ -417,16 +425,16 @@
             "direction": "BULLISH",
             "top": 57736.86,
             "bottom": 56504.01,
-            "barsAgo": 33,
+            "barsAgo": 38,
             "touched": true,
             "filled": false
           }
         ],
         "equalHigh": null,
         "equalLow": null,
-        "rangeHigh": 61950,
+        "rangeHigh": 61669.99,
         "rangeLow": 55130,
-        "equilibrium": 58540,
+        "equilibrium": 58399.994999999995,
         "zone": "PREMIUM"
       }
     }
