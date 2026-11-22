@@ -1,5 +1,6 @@
 import { readFile, mkdir, writeFile, rename } from "node:fs/promises";
 import { parseCandidateStrength, parseRiskReward, formatRiskReward } from "../src/signal-format.js";
+import { parseStatusEvidence } from "../src/report-status-evidence.js";
 
 const reportPath = process.argv[2];
 if (!reportPath) throw new Error("Usage: node scripts/publish-signal-controller.js <signal-report.txt>");
@@ -58,23 +59,10 @@ function jsonLineAny(section, labels) {
   if (!label) throw new Error(`Missing required report evidence: ${labels.join(" or ")}`);
   return jsonLine(section, label);
 }
-function statusEvidence(section, label, { statusKey, booleanKey, blockersKey }) {
+function statusEvidence(section, label, options) {
   const raw = lineValue(section, label);
   if (!raw) throw new Error(`Missing required report evidence: ${label}`);
-  const parts = raw.split("|").map(value => value.trim());
-  const result = {};
-  if (statusKey) result[statusKey] = parts[0].split(/\\s+/)[0] ?? "UNKNOWN";
-  for (const part of parts.slice(1)) {
-    const match = part.match(/^([a-zA-Z]+):\\s*(.*)$/);
-    if (!match) continue;
-    const [, key, value] = match;
-    if (key === "approved" && booleanKey) result[booleanKey] = value.toLowerCase() === "true";
-    if (key === "blockers" && blockersKey) {
-      try { result[blockersKey] = JSON.parse(value); } catch { result[blockersKey] = []; }
-    }
-  }
-  if (blockersKey && !Array.isArray(result[blockersKey])) result[blockersKey] = [];
-  return result;
+  return parseStatusEvidence(raw, options);
 }
 function optionalJsonLine(section, label, fallback = null) {
   const raw = lineValue(section, label);
