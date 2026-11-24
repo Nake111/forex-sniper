@@ -162,7 +162,7 @@ jobs:
         continue-on-error: true
         run: node scripts/refresh-publication-quotes.js
 
-      - name: Build strategy performance report from append-only paper journal
+      - name: Verify synchronized live quotes and closed M5 candles\n        continue-on-error: true\n        run: node scripts/verify-live-market-sync.js\n        env:\n          MAX_SYNC_QUOTE_AGE_MS: "15000"\n          MAX_SYNC_QUOTE_SKEW_MS: "15000"\n          MAX_SYNC_M5_AGE_MS: "600000"\n      - name: Build strategy performance report from append-only paper journal
         run: node scripts/publish-paper-performance.js
       - name: Validate and publish closed dashboard candles
         shell: bash
