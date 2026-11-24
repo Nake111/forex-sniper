@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-23T19:26:26.762Z",
-  "generatedAtSlovenia": "2026-11-23 20:26:26",
+  "generatedAt": "2026-11-24T01:50:03.774Z",
+  "generatedAtSlovenia": "2026-11-24 02:50:03",
   "timeZone": "Europe/Ljubljana",
   "analysisCycle": {
-    "id": "2026-11-23T19:25:48.000Z",
-    "timestampUtc": "2026-11-23T19:25:48.000Z",
-    "timestampSlovenia": "2026-11-23T20:25:48+01:00",
+    "id": "2026-11-24T01:49:32.000Z",
+    "timestampUtc": "2026-11-24T01:49:32.000Z",
+    "timestampSlovenia": "2026-11-24T02:49:32+01:00",
     "timeZone": "Europe/Ljubljana"
   },
-  "sourceReportGeneratedAt": "2026-11-23T19:25:48.000Z",
-  "sourceReportAgeSeconds": 39,
+  "sourceReportGeneratedAt": "2026-11-24T01:49:32.000Z",
+  "sourceReportAgeSeconds": 32,
   "refreshTarget": "5 minutes; GitHub Actions schedule can be delayed",
   "mode": "PAPER_RESEARCH_ONLY",
   "markets": {
@@ -22,19 +22,8 @@
       "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
       "signalGrade": "B",
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
-      "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_NOT_APPROVED",
-        "entry": 1.09005,
-        "signalReferenceEntry": 1.09006,
-        "entryReference": "ASK (validated executable-side quote)",
-        "stopLoss": 1.08959,
-        "takeProfit": 1.09099,
-        "riskReward": "1:2.07",
-        "riskRewardValue": 2.0656455142236347,
-        "entryTriggerConfirmed": true,
-        "stopMethod": "MARKET_SPECIFIC_ATR"
-      },
-      "m5Atr14": 0.0003335714285714727,
+      "candidatePlan": null,
+      "m5Atr14": 0.00033571428571428045,
       "marketDataQuality": {
         "market": "EURUSD",
         "volume": {
@@ -46,24 +35,24 @@
           "usableForVolumeProfile": false
         },
         "quoteCandleBasis": {
-          "status": "WITHIN_REVIEW_BAND",
-          "quoteVenue": "MetaTrader 5 (Broker 1)",
-          "quoteSource": "Biquote live bid/ask",
+          "status": "UNAVAILABLE",
+          "quoteVenue": null,
+          "quoteSource": null,
           "candleSource": "Twelve Data EUR/USD",
-          "sourceLabelsDiffer": true,
-          "quoteMidpoint": 1.09002,
-          "latestClosedCandleClose": 1.09006,
-          "difference": -0.000040000000000040004,
-          "differenceAtr": 0.1199,
+          "sourceLabelsDiffer": false,
+          "quoteMidpoint": null,
+          "latestClosedCandleClose": 1.0916,
+          "difference": null,
+          "differenceAtr": null,
           "diagnosticOnly": true,
           "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
         }
       },
-      "score": "50/100 candidate strength · 100% evidence coverage",
+      "score": "55/100 candidate strength · 90% evidence coverage",
       "candidateStrength": {
-        "score": 50,
+        "score": 55,
         "maxScore": 100,
-        "evidenceCoveragePct": 100,
+        "evidenceCoveragePct": 90,
         "label": "Candidate strength",
         "interpretation": "Heuristic points, not trade probability"
       },
@@ -84,22 +73,22 @@
       "riskReward": null,
       "quote": {
         "market": "EURUSD",
-        "bid": 1.09002,
-        "ask": 1.09008,
-        "timestamp": 1795461984000,
-        "receivedAt": 1795461987271,
+        "bid": 1.09154,
+        "ask": 1.0916,
+        "timestamp": 1795485000000,
+        "receivedAt": 1795485004310,
         "timestampQuality": "PROVIDER_TIMESTAMP",
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)",
         "tradeable": true,
-        "ageMs": 3328,
-        "receiveAgeMs": 57,
+        "ageMs": 4359,
+        "receiveAgeMs": 49,
         "validated": true,
-        "snapshotId": "EURUSD|1795461984000|1795461987271|1.09002|1.09008|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
+        "snapshotId": "EURUSD|1795485000000|1795485004310|1.09154|1.0916|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
       },
       "quantDesk": {
         "schemaVersion": 1,
-        "generatedAt": "2026-11-23T19:26:09.454Z",
+        "generatedAt": "2026-11-24T01:49:56.899Z",
         "market": "EURUSD",
         "mode": "PAPER_RESEARCH_ONLY",
         "roles": [
@@ -110,8 +99,8 @@
             "evidence": {
               "market": "EURUSD",
               "direction": "BUY",
-              "score": 50,
-              "scoreCoverage": 100
+              "score": 55,
+              "scoreCoverage": 90
             }
           },
           {
@@ -119,7 +108,7 @@
             "status": "BLOCKED",
             "detail": "One or more pre-checks failed.",
             "evidence": {
-              "quoteValid": true,
+              "quoteValid": false,
               "spreadVerified": false,
               "candlesFresh": true,
               "macroClear": true
@@ -127,10 +116,10 @@
           },
           {
             "name": "TRIGGER",
-            "status": "TRIGGER_CONFIRMED",
-            "detail": "The existing M5 trigger flag is confirmed.",
+            "status": "WAITING_FOR_M5",
+            "detail": "No confirmed M5 entry trigger; no entry is suggested.",
             "evidence": {
-              "entryTriggerConfirmed": true
+              "entryTriggerConfirmed": false
             }
           },
           {
@@ -139,11 +128,11 @@
             "detail": "Buyer/seller evidence is treated as a proxy, not full order-book or institutional flow.",
             "evidence": {
               "evidence": {
-                "direction": "BUY",
+                "direction": "SELL",
                 "strength": 1,
-                "buyEvidence": 1,
-                "sellEvidence": 0,
-                "closeLocation": 0.973,
+                "buyEvidence": 0,
+                "sellEvidence": 1,
+                "closeLocation": 0.095,
                 "source": "closed-candle location + CVD/OBV/MFI proxies (not exchange-wide executed volume)"
               },
               "limitations": "Spot FX has no consolidated exchange tape; do not invent smart-wallet data."
@@ -157,17 +146,17 @@
               "macroBlocked": false,
               "staleTimeframes": [],
               "spreadVerified": false,
-              "spread": 0.00005999999999994898
+              "spread": null
             }
           },
           {
             "name": "TRAIL",
-            "status": "PAPER_PLAN_MONITOR_ONLY",
+            "status": "NO_PLAN",
             "detail": "Tracks the existing paper plan for later review; does not move stops or manage live positions.",
             "evidence": {
-              "entry": 1.09005,
-              "stopLoss": 1.089593,
-              "takeProfit": 1.090994,
+              "entry": null,
+              "stopLoss": null,
+              "takeProfit": null,
               "stopManagement": "NO_AUTOMATIC_MODIFICATION"
             }
           },
@@ -191,6 +180,7 @@
           "specialistCount": 7,
           "blockedRoles": [
             "AUDITOR",
+            "TRIGGER",
             "WARDEN"
           ],
           "approvalAuthority": false,
@@ -215,7 +205,7 @@
               "votes": [
                 {
                   "timeframe": "M5",
-                  "trend": "SELL",
+                  "trend": "BUY",
                   "momentum": "BUY",
                   "tradeableVolatility": true
                 },
@@ -235,436 +225,6 @@
                   "timeframe": "H4",
                   "trend": "SELL",
                   "momentum": "SELL",
-                  "tradeableVolatility": true
-                }
-              ],
-              "higherTimeframeConfirmations": 2
-            },
-            "reason": "M5 trend and momentum must align, with at least one higher timeframe confirming both.",
-            "baseWeight": 1,
-            "calibration": {
-              "status": "BASELINE_UNCALIBRATED",
-              "sampleSize": 0,
-              "multiplier": 1
-            },
-            "weight": 1
-          },
-          {
-            "name": "ICT/SMC structure",
-            "signal": "BUY",
-            "direction": "BUY",
-            "status": "DIRECTIONAL_SIGNAL",
-            "evidence": {
-              "marketStructureShift": "BUY",
-              "fairValueGap": {
-                "direction": "BUY",
-                "lower": 1.08956,
-                "upper": 1.0897,
-                "index": 239
-              },
-              "gapUnfilled": true,
-              "swingHigh": 1.08921,
-              "swingLow": 1.08849
-            },
-            "reason": "Requires a confirmed break of structure and a same-direction unfilled fair-value gap.",
-            "baseWeight": 1,
-            "calibration": {
-              "status": "BASELINE_UNCALIBRATED",
-              "sampleSize": 0,
-              "multiplier": 1
-            },
-            "weight": 1
-          },
-          {
-            "name": "FxTT market scanner",
-            "signal": "NO_SIGNAL",
-            "direction": "NO_SIGNAL",
-            "status": "NO_SIGNAL",
-            "evidence": {
-              "spreadAtr": 0.17987152034243567,
-              "spreadLimit": 0.12,
-              "spreadPass": false,
-              "adx": 24.232248849619705,
-              "adxPass": true,
-              "rsi": 62.47554779997409,
-              "rsiDirection": "BUY",
-              "trendDirection": "SELL"
-            },
-            "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend.",
-            "baseWeight": 1,
-            "calibration": {
-              "status": "BASELINE_UNCALIBRATED",
-              "sampleSize": 0,
-              "multiplier": 1
-            },
-            "weight": 1
-          },
-          {
-            "name": "Gann/Hurst trend",
-            "signal": "SELL",
-            "direction": "SELL",
-            "status": "DIRECTIONAL_SIGNAL",
-            "evidence": {
-              "ma32": 1.0889221875000001,
-              "ma64": 1.09023265625,
-              "ma128": 1.09327125,
-              "octaveMidpoint": 1.091385,
-              "price": 1.09006,
-              "rangeLow": 1.08816,
-              "rangeHigh": 1.09461
-            },
-            "reason": "Trailing MA32/64/128 alignment plus price location relative to the 64-bar octave midpoint; no future-centred averages.",
-            "baseWeight": 1,
-            "calibration": {
-              "status": "BASELINE_UNCALIBRATED",
-              "sampleSize": 0,
-              "multiplier": 1
-            },
-            "weight": 1
-          },
-          {
-            "name": "Systematic breakout",
-            "signal": "NO_SIGNAL",
-            "direction": "NO_SIGNAL",
-            "status": "NO_SIGNAL",
-            "evidence": {
-              "close": 1.09006,
-              "prior20High": 1.0898,
-              "prior20Low": 1.08819,
-              "sma20": 1.0889775,
-              "sma50": 1.0893941999999999
-            },
-            "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
-            "baseWeight": 1,
-            "calibration": {
-              "status": "BASELINE_UNCALIBRATED",
-              "sampleSize": 0,
-              "multiplier": 1
-            },
-            "weight": 1
-          }
-        ],
-        "fiveAgentConsensus": {
-          "direction": "NO_SIGNAL",
-          "approved": false,
-          "requiredVotes": 3,
-          "totalAgents": 5,
-          "counts": {
-            "BUY": 1,
-            "SELL": 1,
-            "NO_SIGNAL": 3
-          },
-          "weightedScores": {
-            "BUY": 1,
-            "SELL": 1
-          },
-          "weightedAgreementPct": 0,
-          "agreementPct": 0,
-          "rule": "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
-        },
-        "fiveAgentValidationFramework": {
-          "status": "TRAINING_WINDOW_ONLY",
-          "totalClosedCandles": 240,
-          "trainingRange": {
-            "startIndex": 0,
-            "endIndexExclusive": 168,
-            "count": 168
-          },
-          "holdoutRange": {
-            "startIndex": 168,
-            "endIndexExclusive": 240,
-            "count": 72
-          },
-          "holdoutAccess": "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN",
-          "requiredValidation": [
-            "chronological walk-forward",
-            "realistic spread/commission/slippage",
-            "minimum 30 resolved trades",
-            "forward paper test"
-          ],
-          "optimizationApplied": false
-        },
-        "marketIntelligenceApproved": false,
-        "signalApprovalApproved": false,
-        "entryVerificationApproved": false
-      },
-      "verification": {
-        "layer2": "REJECTED",
-        "layer3": "REJECTED",
-        "blockers": [
-          "M5 closed candle does not confirm the higher-timeframe direction",
-          "EURUSD spread/ATR 0.1799 exceeds the 0.12 limit",
-          "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
-          "Insufficient forward-paper sample: 1/30 resolved trades",
-          "Forward-paper net expectancy is not positive",
-          "Forward-paper profit factor is below 1.1",
-          "Independent market-intelligence direction conflicts with candidate",
-          "Independent signal approval agent did not approve this direction",
-          "market-intelligence agent did not independently confirm this direction",
-          "Spread/ATR 0.1799 exceeds EURUSD limit 0.12",
-          "Five-agent confirmation quorum not met: {\"BUY\":1,\"SELL\":1,\"NO_SIGNAL\":3}",
-          "Fresh bid/ask and market-specific spread/ATR check did not pass",
-          "Required closed M5 entry trigger is not confirmed",
-          "Weighted evidence did not meet the candidate-advancement criteria",
-          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
-          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.17987152034243567,\"spreadAtrLimit\":0.12,\"passed\":false}",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
-        ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ]
-      },
-      "generatedAt": "2026-11-23T19:26:26.762Z",
-      "generatedAtSlovenia": "2026-11-23 20:26:26",
-      "analysisCycle": {
-        "id": "2026-11-23T19:25:48.000Z",
-        "timestampUtc": "2026-11-23T19:25:48.000Z",
-        "timestampSlovenia": "2026-11-23T20:25:48+01:00",
-        "timeZone": "Europe/Ljubljana"
-      },
-      "analysisQuote": {
-        "bid": 1.08999,
-        "ask": 1.09005,
-        "source": "Biquote live bid/ask",
-        "timestamp": 1795461969000,
-        "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 450,
-        "validated": true
-      },
-      "quoteRefresh": {
-        "status": "PASS",
-        "checkedAt": "2026-11-23T19:26:27.328Z",
-        "providerTimestamp": "2026-11-23T19:26:24.000Z",
-        "ageMs": 3328,
-        "source": "Biquote live bid/ask",
-        "venue": "MetaTrader 5 (Broker 1)"
-      }
-    },
-    "BTCUSD": {
-      "label": "BTC/USD",
-      "decision": "NO APPROVED TRADE",
-      "status": "REJECTED_OR_UNVERIFIED",
-      "candidate": "SELL",
-      "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
-      "signalGrade": "B",
-      "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
-      "candidatePlan": {
-        "status": "INDICATIVE_LIVE_QUOTE_PLAN_BELOW_1_TO_2",
-        "entry": 61454.64,
-        "signalReferenceEntry": 61460.8,
-        "entryReference": "BID (validated executable-side quote)",
-        "stopLoss": 61736.02,
-        "takeProfit": 60910.35,
-        "riskReward": "1:1.93",
-        "riskRewardValue": 1.934324390599253,
-        "entryTriggerConfirmed": true,
-        "stopMethod": "MARKET_STRUCTURE"
-      },
-      "m5Atr14": 162.35000000000062,
-      "marketDataQuality": {
-        "market": "BTCUSD",
-        "volume": {
-          "status": "REPORTED",
-          "candleCount": 240,
-          "candlesWithPositiveVolume": 240,
-          "candlesWithoutPositiveVolume": 0,
-          "coveragePct": 100,
-          "usableForVolumeProfile": true
-        },
-        "quoteCandleBasis": {
-          "status": "WITHIN_REVIEW_BAND",
-          "quoteVenue": "Coinbase Exchange",
-          "quoteSource": "Coinbase Exchange BTC-USD ticker REST",
-          "candleSource": "Kraken XBT/USD spot",
-          "sourceLabelsDiffer": true,
-          "quoteMidpoint": 61454.645000000004,
-          "latestClosedCandleClose": 61460.8,
-          "difference": -6.154999999998836,
-          "differenceAtr": 0.0379,
-          "diagnosticOnly": true,
-          "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
-        }
-      },
-      "score": "65/100 candidate strength · 100% evidence coverage",
-      "candidateStrength": {
-        "score": 65,
-        "maxScore": 100,
-        "evidenceCoveragePct": 100,
-        "label": "Candidate strength",
-        "interpretation": "Heuristic points, not trade probability"
-      },
-      "paperApproval": {
-        "status": "NOT_APPROVED",
-        "approved": false,
-        "decision": "NO APPROVED TRADE"
-      },
-      "brokerExecution": {
-        "status": "NOT_CONNECTED_PAPER_ONLY",
-        "connected": false,
-        "executable": false,
-        "blockers": []
-      },
-      "entry": null,
-      "stopLoss": null,
-      "takeProfit": null,
-      "riskReward": null,
-      "quote": {
-        "market": "BTCUSD",
-        "bid": 61450.67,
-        "ask": 61450.68,
-        "timestamp": 1795461986766,
-        "receivedAt": 1795461987328,
-        "timestampQuality": "PROVIDER_TIMESTAMP",
-        "source": "Coinbase Exchange BTC-USD ticker REST",
-        "venue": "Coinbase Exchange",
-        "tradeable": true,
-        "ageMs": 562,
-        "receiveAgeMs": 0,
-        "validated": true,
-        "snapshotId": "BTCUSD|1795461986766|1795461987328|61450.67|61450.68|Coinbase Exchange BTC-USD ticker REST|Coinbase Exchange"
-      },
-      "quantDesk": {
-        "schemaVersion": 1,
-        "generatedAt": "2026-11-23T19:26:18.379Z",
-        "market": "BTCUSD",
-        "mode": "PAPER_RESEARCH_ONLY",
-        "roles": [
-          {
-            "name": "SCOUT",
-            "status": "SHORTLISTED",
-            "detail": "Found a directional candidate for review.",
-            "evidence": {
-              "market": "BTCUSD",
-              "direction": "SELL",
-              "score": 65,
-              "scoreCoverage": 100
-            }
-          },
-          {
-            "name": "AUDITOR",
-            "status": "CHECKS_PASSED",
-            "detail": "Research data and risk pre-checks passed; this is not trade approval.",
-            "evidence": {
-              "quoteValid": true,
-              "spreadVerified": true,
-              "candlesFresh": true,
-              "macroClear": true
-            }
-          },
-          {
-            "name": "TRIGGER",
-            "status": "TRIGGER_CONFIRMED",
-            "detail": "The existing M5 trigger flag is confirmed.",
-            "evidence": {
-              "entryTriggerConfirmed": true
-            }
-          },
-          {
-            "name": "TRACKER",
-            "status": "PROXY_EVIDENCE_AVAILABLE",
-            "detail": "Buyer/seller evidence is treated as a proxy, not full order-book or institutional flow.",
-            "evidence": {
-              "evidence": {
-                "direction": "SELL",
-                "strength": 2,
-                "buyEvidence": 1,
-                "sellEvidence": 2,
-                "closeLocation": 0.521,
-                "source": "closed-candle location + CVD/OBV/MFI proxies (not exchange-wide executed volume)"
-              },
-              "limitations": "Spot FX has no consolidated exchange tape; do not invent smart-wallet data."
-            }
-          },
-          {
-            "name": "WARDEN",
-            "status": "NO_PRECHECK_WARNING",
-            "detail": "Monitors spread, data freshness and macro/news risk. Core gates remain authoritative.",
-            "evidence": {
-              "macroBlocked": false,
-              "staleTimeframes": [],
-              "spreadVerified": true,
-              "spread": 0.010000000002037268
-            }
-          },
-          {
-            "name": "TRAIL",
-            "status": "PAPER_PLAN_MONITOR_ONLY",
-            "detail": "Tracks the existing paper plan for later review; does not move stops or manage live positions.",
-            "evidence": {
-              "entry": 61454.64,
-              "stopLoss": 61736.023,
-              "takeProfit": 60910.35400000001,
-              "stopManagement": "NO_AUTOMATIC_MODIFICATION"
-            }
-          },
-          {
-            "name": "PULSE",
-            "status": "SENTIMENT_UNVERIFIED",
-            "detail": "Measures available headline context only; no social-mention velocity feed is assumed.",
-            "evidence": {
-              "headlineCount": 0,
-              "eventRisk": "NORMAL",
-              "sentiment": "NOT_COMPUTED",
-              "mentionVelocity": null
-            }
-          }
-        ],
-        "chief": {
-          "name": "CHIEF",
-          "status": "RESEARCH_COORDINATED",
-          "detail": "Seven specialist roles reviewed the same market snapshot. Chief has zero voting weight and cannot approve a trade.",
-          "researchDirection": "SELL",
-          "specialistCount": 7,
-          "blockedRoles": [],
-          "approvalAuthority": false,
-          "signalWeight": 0,
-          "finalTradeDecision": "DEFER_TO_EXISTING_FOREX_SNIPER_APPROVAL_CHAIN"
-        },
-        "userHandoff": "Review the research desk; manually decide whether to act on an independently approved paper signal.",
-        "safety": {
-          "signalWeight": 0,
-          "canApproveTrade": false,
-          "canPlaceOrders": false
-        }
-      },
-      "agents": {
-        "fiveDirectionalAgents": [
-          {
-            "name": "hpFX multi-timeframe",
-            "signal": "NO_SIGNAL",
-            "direction": "NO_SIGNAL",
-            "status": "NO_SIGNAL",
-            "evidence": {
-              "votes": [
-                {
-                  "timeframe": "M5",
-                  "trend": "SELL",
-                  "momentum": "BUY",
-                  "tradeableVolatility": true
-                },
-                {
-                  "timeframe": "M15",
-                  "trend": "BUY",
-                  "momentum": "SELL",
-                  "tradeableVolatility": true
-                },
-                {
-                  "timeframe": "H1",
-                  "trend": "BUY",
-                  "momentum": "SELL",
-                  "tradeableVolatility": true
-                },
-                {
-                  "timeframe": "H4",
-                  "trend": "SELL",
-                  "momentum": "BUY",
                   "tradeableVolatility": true
                 }
               ],
@@ -688,13 +248,13 @@
               "marketStructureShift": "NO_SIGNAL",
               "fairValueGap": {
                 "direction": "BUY",
-                "lower": 61387,
-                "upper": 61464.1,
+                "lower": 1.0912,
+                "upper": 1.09155,
                 "index": 236
               },
-              "gapUnfilled": false,
-              "swingHigh": 61706.8,
-              "swingLow": 61253.2
+              "gapUnfilled": true,
+              "swingHigh": 1.09205,
+              "swingLow": 1.09088
             },
             "reason": "Requires a confirmed break of structure and a same-direction unfilled fair-value gap.",
             "baseWeight": 1,
@@ -707,18 +267,18 @@
           },
           {
             "name": "FxTT market scanner",
-            "signal": "SELL",
-            "direction": "SELL",
-            "status": "DIRECTIONAL_SIGNAL",
+            "signal": "NO_SIGNAL",
+            "direction": "NO_SIGNAL",
+            "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.00006159531876832294,
-              "spreadLimit": 0.18,
-              "spreadPass": true,
-              "adx": 28.513635638390117,
+              "spreadAtr": null,
+              "spreadLimit": 0.12,
+              "spreadPass": false,
+              "adx": 27.324413625076954,
               "adxPass": true,
-              "rsi": 44.10418758437329,
-              "rsiDirection": "SELL",
-              "trendDirection": "SELL"
+              "rsi": 63.375954560981484,
+              "rsiDirection": "BUY",
+              "trendDirection": "BUY"
             },
             "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend.",
             "baseWeight": 1,
@@ -731,17 +291,17 @@
           },
           {
             "name": "Gann/Hurst trend",
-            "signal": "NO_SIGNAL",
-            "direction": "NO_SIGNAL",
-            "status": "NO_SIGNAL",
+            "signal": "BUY",
+            "direction": "BUY",
+            "status": "DIRECTIONAL_SIGNAL",
             "evidence": {
-              "ma32": 61629.665625,
-              "ma64": 62311.685937499984,
-              "ma128": 61854.31484374998,
-              "octaveMidpoint": 62865.15,
-              "price": 61460.8,
-              "rangeLow": 61210,
-              "rangeHigh": 64520.3
+              "ma32": 1.0909065625,
+              "ma64": 1.0905853125,
+              "ma128": 1.0900837500000002,
+              "octaveMidpoint": 1.09076,
+              "price": 1.0916,
+              "rangeLow": 1.08947,
+              "rangeHigh": 1.09205
             },
             "reason": "Trailing MA32/64/128 alignment plus price location relative to the 64-bar octave midpoint; no future-centred averages.",
             "baseWeight": 1,
@@ -758,11 +318,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 61460.8,
-              "prior20High": 61779.9,
-              "prior20Low": 61210,
-              "sma20": 61489.26000000001,
-              "sma50": 62050.83
+              "close": 1.0916,
+              "prior20High": 1.09205,
+              "prior20Low": 1.09043,
+              "sma20": 1.0910454999999997,
+              "sma50": 1.0906803999999999
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
             "baseWeight": 1,
@@ -780,13 +340,13 @@
           "requiredVotes": 3,
           "totalAgents": 5,
           "counts": {
-            "BUY": 0,
-            "SELL": 1,
+            "BUY": 1,
+            "SELL": 0,
             "NO_SIGNAL": 4
           },
           "weightedScores": {
-            "BUY": 0,
-            "SELL": 1
+            "BUY": 1,
+            "SELL": 0
           },
           "weightedAgreementPct": 100,
           "agreementPct": 20,
@@ -822,58 +382,61 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
-          "H1 squeeze momentum is not strengthening in a clear direction",
-          "Insufficient forward-paper sample: 2/30 resolved trades",
+          "EURUSD spread/ATR cannot be verified from a valid quote and M5 ATR",
+          "No fresh, valid bid/ask quote within the market-specific spread/ATR limit",
+          "Insufficient forward-paper sample: 1/30 resolved trades",
           "Forward-paper net expectancy is not positive",
           "Forward-paper profit factor is below 1.1",
-          "Risk/reward is below 1:2",
+          "Independent market-intelligence direction conflicts with candidate",
+          "Entry/stop/target plan is incomplete",
+          "Quote market does not match requested market; A positive, uncrossed bid/ask pair is required; Provider timestamp and local receive timestamp are required; Provider-supplied quote timestamp is required; receive-time-only quotes are not sufficient; Quote provider source and venue are required",
+          "Quote snapshot identity is missing or inconsistent",
+          "Quote snapshot expired or lacks a fresh provider-supplied timestamp at approval",
+          "Bid/ask quote missing",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Live-quote risk/reward is below 1:2",
-          "Five-agent confirmation quorum not met: {\"BUY\":0,\"SELL\":1,\"NO_SIGNAL\":4}",
+          "A positive, uncrossed live bid/ask pair is required",
+          "Entry, stop-loss or take-profit is missing",
+          "Spread-to-ATR cannot be independently verified",
+          "Five-agent confirmation quorum not met: {\"BUY\":1,\"SELL\":0,\"NO_SIGNAL\":4}",
+          "Fresh bid/ask and market-specific spread/ATR check did not pass",
+          "Spread/ATR could not be calculated from a valid quote and M5 ATR",
           "Weighted evidence did not meet the candidate-advancement criteria",
-          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"BUY\",\"H4\":\"UNAVAILABLE\"}",
-          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":32.174931667318205,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":9.523809523764209,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
+          "quote_and_spread: UNAVAILABLE — {\"spread\":null,\"spreadAtr\":null,\"spreadAtrLimit\":0.12,\"passed\":false}"
         ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ]
+        "watchdog": "PASS",
+        "watchdogFailures": []
       },
-      "generatedAt": "2026-11-23T19:26:26.762Z",
-      "generatedAtSlovenia": "2026-11-23 20:26:26",
+      "generatedAt": "2026-11-24T01:50:03.774Z",
+      "generatedAtSlovenia": "2026-11-24 02:50:03",
       "analysisCycle": {
-        "id": "2026-11-23T19:25:48.000Z",
-        "timestampUtc": "2026-11-23T19:25:48.000Z",
-        "timestampSlovenia": "2026-11-23T20:25:48+01:00",
+        "id": "2026-11-24T01:49:32.000Z",
+        "timestampUtc": "2026-11-24T01:49:32.000Z",
+        "timestampSlovenia": "2026-11-24T02:49:32+01:00",
         "timeZone": "Europe/Ljubljana"
       },
       "analysisQuote": {
-        "bid": 61454.64,
-        "ask": 61454.65,
-        "source": "Coinbase Exchange BTC-USD ticker REST",
-        "timestamp": 1795461977191,
+        "bid": null,
+        "ask": null,
+        "source": "unavailable",
+        "timestamp": null,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1184,
-        "validated": true
+        "ageMs": 0,
+        "validated": false
       },
       "quoteRefresh": {
         "status": "PASS",
-        "checkedAt": "2026-11-23T19:26:27.328Z",
-        "providerTimestamp": "2026-11-23T19:26:26.766Z",
-        "ageMs": 562,
-        "source": "Coinbase Exchange BTC-USD ticker REST",
-        "venue": "Coinbase Exchange"
+        "checkedAt": "2026-11-24T01:50:04.359Z",
+        "providerTimestamp": "2026-11-24T01:50:00.000Z",
+        "ageMs": 4359,
+        "source": "Biquote live bid/ask",
+        "venue": "MetaTrader 5 (Broker 1)"
       }
     },
-    "XAUUSD": {
-      "label": "XAU/USD (Gold)",
+    "BTCUSD": {
+      "label": "BTC/USD",
       "decision": "NO APPROVED TRADE",
       "status": "REJECTED_OR_UNVERIFIED",
       "candidate": "BUY",
@@ -882,37 +445,37 @@
       "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
       "candidatePlan": {
         "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
-        "entry": 3652.91,
-        "signalReferenceEntry": 3653.39,
+        "entry": 61136.95,
+        "signalReferenceEntry": 61395.9,
         "entryReference": "ASK (validated executable-side quote)",
-        "stopLoss": 3645.64,
-        "takeProfit": 3668.89,
-        "riskReward": "1:2.20",
-        "riskRewardValue": 2.196089240271117,
+        "stopLoss": 61002.05,
+        "takeProfit": 62183.61,
+        "riskReward": "1:7.76",
+        "riskRewardValue": 7.7585455038352515,
         "entryTriggerConfirmed": false,
         "stopMethod": "MARKET_STRUCTURE"
       },
-      "m5Atr14": 4.134253571428546,
+      "m5Atr14": 127.5214285714267,
       "marketDataQuality": {
-        "market": "XAUUSD",
+        "market": "BTCUSD",
         "volume": {
-          "status": "UNAVAILABLE",
+          "status": "REPORTED",
           "candleCount": 240,
-          "candlesWithPositiveVolume": 0,
-          "candlesWithoutPositiveVolume": 240,
-          "coveragePct": 0,
-          "usableForVolumeProfile": false
+          "candlesWithPositiveVolume": 240,
+          "candlesWithoutPositiveVolume": 0,
+          "coveragePct": 100,
+          "usableForVolumeProfile": true
         },
         "quoteCandleBasis": {
-          "status": "WITHIN_REVIEW_BAND",
-          "quoteVenue": "MetaTrader 5 (Broker 1)",
-          "quoteSource": "Biquote live bid/ask",
-          "candleSource": "Twelve Data XAU/USD",
+          "status": "DIVERGENCE_REVIEW",
+          "quoteVenue": "Coinbase Exchange",
+          "quoteSource": "Coinbase Exchange BTC-USD ticker REST",
+          "candleSource": "Kraken XBT/USD spot",
           "sourceLabelsDiffer": true,
-          "quoteMidpoint": 3652.8289999999997,
-          "latestClosedCandleClose": 3653.38843,
-          "difference": -0.5594300000002477,
-          "differenceAtr": 0.1353,
+          "quoteMidpoint": 61136.945,
+          "latestClosedCandleClose": 61395.9,
+          "difference": -258.95500000000175,
+          "differenceAtr": 2.0307,
           "diagnosticOnly": true,
           "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
         }
@@ -941,24 +504,24 @@
       "takeProfit": null,
       "riskReward": null,
       "quote": {
-        "market": "XAUUSD",
-        "bid": 3652.745,
-        "ask": 3652.913,
-        "timestamp": 1795461985000,
-        "receivedAt": 1795461987238,
+        "market": "BTCUSD",
+        "bid": 61124.25,
+        "ask": 61124.26,
+        "timestamp": 1795485003055,
+        "receivedAt": 1795485004359,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "source": "Biquote live bid/ask",
-        "venue": "MetaTrader 5 (Broker 1)",
+        "source": "Coinbase Exchange BTC-USD ticker REST",
+        "venue": "Coinbase Exchange",
         "tradeable": true,
-        "ageMs": 2328,
-        "receiveAgeMs": 90,
+        "ageMs": 1304,
+        "receiveAgeMs": 0,
         "validated": true,
-        "snapshotId": "XAUUSD|1795461985000|1795461987238|3652.745|3652.913|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
+        "snapshotId": "BTCUSD|1795485003055|1795485004359|61124.25|61124.26|Coinbase Exchange BTC-USD ticker REST|Coinbase Exchange"
       },
       "quantDesk": {
         "schemaVersion": 1,
-        "generatedAt": "2026-11-23T19:26:26.537Z",
-        "market": "XAUUSD",
+        "generatedAt": "2026-11-24T01:49:59.567Z",
+        "market": "BTCUSD",
         "mode": "PAPER_RESEARCH_ONLY",
         "roles": [
           {
@@ -966,7 +529,7 @@
             "status": "SHORTLISTED",
             "detail": "Found a directional candidate for review.",
             "evidence": {
-              "market": "XAUUSD",
+              "market": "BTCUSD",
               "direction": "BUY",
               "score": 50,
               "scoreCoverage": 100
@@ -997,11 +560,11 @@
             "detail": "Buyer/seller evidence is treated as a proxy, not full order-book or institutional flow.",
             "evidence": {
               "evidence": {
-                "direction": "SELL",
-                "strength": 1,
-                "buyEvidence": 0,
+                "direction": "BUY",
+                "strength": 2,
+                "buyEvidence": 2,
                 "sellEvidence": 1,
-                "closeLocation": 0.034,
+                "closeLocation": 0.217,
                 "source": "closed-candle location + CVD/OBV/MFI proxies (not exchange-wide executed volume)"
               },
               "limitations": "Spot FX has no consolidated exchange tape; do not invent smart-wallet data."
@@ -1015,7 +578,7 @@
               "macroBlocked": false,
               "staleTimeframes": [],
               "spreadVerified": true,
-              "spread": 0.16800000000012005
+              "spread": 0.00999999999476131
             }
           },
           {
@@ -1023,19 +586,19 @@
             "status": "PAPER_PLAN_MONITOR_ONLY",
             "detail": "Tracks the existing paper plan for later review; does not move stops or manage live positions.",
             "evidence": {
-              "entry": 3652.913,
-              "stopLoss": 3645.639321964286,
-              "takeProfit": 3668.886646071428,
+              "entry": 61136.95,
+              "stopLoss": 61002.04614285714,
+              "takeProfit": 62183.60771428572,
               "stopManagement": "NO_AUTOMATIC_MODIFICATION"
             }
           },
           {
             "name": "PULSE",
-            "status": "HEADLINES_PRESENT",
+            "status": "SENTIMENT_UNVERIFIED",
             "detail": "Measures available headline context only; no social-mention velocity feed is assumed.",
             "evidence": {
-              "headlineCount": 1,
-              "eventRisk": "HIGH",
+              "headlineCount": 0,
+              "eventRisk": "NORMAL",
               "sentiment": "NOT_COMPUTED",
               "mentionVelocity": null
             }
@@ -1072,20 +635,20 @@
               "votes": [
                 {
                   "timeframe": "M5",
-                  "trend": "SELL",
+                  "trend": "BUY",
                   "momentum": "BUY",
-                  "tradeableVolatility": false
+                  "tradeableVolatility": true
                 },
                 {
                   "timeframe": "M15",
-                  "trend": "BUY",
-                  "momentum": "SELL",
+                  "trend": "SELL",
+                  "momentum": "BUY",
                   "tradeableVolatility": true
                 },
                 {
                   "timeframe": "H1",
                   "trend": "BUY",
-                  "momentum": "BUY",
+                  "momentum": "SELL",
                   "tradeableVolatility": true
                 },
                 {
@@ -1115,13 +678,13 @@
               "marketStructureShift": "NO_SIGNAL",
               "fairValueGap": {
                 "direction": "BUY",
-                "lower": 3651.76746,
-                "upper": 3652.64859,
-                "index": 236
+                "lower": 61363.6,
+                "upper": 61400.4,
+                "index": 233
               },
-              "gapUnfilled": true,
-              "swingHigh": 3659.11669,
-              "swingLow": 3646.25946
+              "gapUnfilled": false,
+              "swingHigh": 61535.2,
+              "swingLow": 61115.9
             },
             "reason": "Requires a confirmed break of structure and a same-direction unfilled fair-value gap.",
             "baseWeight": 1,
@@ -1138,14 +701,14 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "spreadAtr": 0.04063611413706041,
-              "spreadLimit": 0.15,
+              "spreadAtr": 0.00007841819297970111,
+              "spreadLimit": 0.18,
               "spreadPass": true,
-              "adx": 13.482336101364336,
+              "adx": 16.733026407206914,
               "adxPass": false,
-              "rsi": 45.86929532043896,
-              "rsiDirection": "NO_SIGNAL",
-              "trendDirection": "SELL"
+              "rsi": 55.40999096062951,
+              "rsiDirection": "BUY",
+              "trendDirection": "BUY"
             },
             "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend.",
             "baseWeight": 1,
@@ -1162,13 +725,13 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "ma32": 3656.9732268750004,
-              "ma64": 3663.7825284374994,
-              "ma128": 3641.9007007031223,
-              "octaveMidpoint": 3667.67173,
-              "price": 3653.38843,
-              "rangeLow": 3646.25946,
-              "rangeHigh": 3689.084
+              "ma32": 61284.1375,
+              "ma64": 61236.328125,
+              "ma128": 61573.24531250001,
+              "octaveMidpoint": 61283.649999999994,
+              "price": 61395.9,
+              "rangeLow": 60975.1,
+              "rangeHigh": 61592.2
             },
             "reason": "Trailing MA32/64/128 alignment plus price location relative to the 64-bar octave midpoint; no future-centred averages.",
             "baseWeight": 1,
@@ -1185,11 +748,11 @@
             "direction": "NO_SIGNAL",
             "status": "NO_SIGNAL",
             "evidence": {
-              "close": 3653.38843,
-              "prior20High": 3661.18965,
-              "prior20Low": 3646.25946,
-              "sma20": 3653.169113,
-              "sma50": 3662.1042413999994
+              "close": 61395.9,
+              "prior20High": 61592.2,
+              "prior20Low": 60975.1,
+              "sma20": 61286.625000000015,
+              "sma50": 61246.43999999997
             },
             "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
             "baseWeight": 1,
@@ -1249,6 +812,430 @@
         "layer2": "REJECTED",
         "layer3": "REJECTED",
         "blockers": [
+          "H1 EMA/regime trend does not agree with squeeze momentum",
+          "M15 buyer/seller pressure proxy conflicts with H1 release",
+          "Insufficient forward-paper sample: 2/30 resolved trades",
+          "Forward-paper net expectancy is not positive",
+          "Forward-paper profit factor is below 1.1",
+          "Independent market-intelligence direction conflicts with candidate",
+          "Closed M5 entry trigger is not confirmed",
+          "Current executable-side quote has moved more than 0.25 ATR from the planned entry",
+          "Independent signal approval agent did not approve this direction",
+          "market-intelligence agent did not independently confirm this direction",
+          "Executable-side quote is 2.031 ATR from signal reference entry; maximum is 0.25",
+          "Five-agent confirmation quorum not met: {\"BUY\":0,\"SELL\":0,\"NO_SIGNAL\":5}",
+          "Required closed M5 entry trigger is not confirmed",
+          "Weighted evidence did not meet the candidate-advancement criteria",
+          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"BUY\",\"H4\":\"SELL\"}",
+          "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":41.18421052631962,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}"
+        ],
+        "watchdog": "PASS",
+        "watchdogFailures": []
+      },
+      "generatedAt": "2026-11-24T01:50:03.774Z",
+      "generatedAtSlovenia": "2026-11-24 02:50:03",
+      "analysisCycle": {
+        "id": "2026-11-24T01:49:32.000Z",
+        "timestampUtc": "2026-11-24T01:49:32.000Z",
+        "timestampSlovenia": "2026-11-24T02:49:32+01:00",
+        "timeZone": "Europe/Ljubljana"
+      },
+      "analysisQuote": {
+        "bid": 61136.94,
+        "ask": 61136.95,
+        "source": "Coinbase Exchange BTC-USD ticker REST",
+        "timestamp": 1795484998616,
+        "timestampQuality": "PROVIDER_TIMESTAMP",
+        "ageMs": 949,
+        "validated": true
+      },
+      "quoteRefresh": {
+        "status": "PASS",
+        "checkedAt": "2026-11-24T01:50:04.359Z",
+        "providerTimestamp": "2026-11-24T01:50:03.055Z",
+        "ageMs": 1304,
+        "source": "Coinbase Exchange BTC-USD ticker REST",
+        "venue": "Coinbase Exchange"
+      }
+    },
+    "XAUUSD": {
+      "label": "XAU/USD (Gold)",
+      "decision": "NO APPROVED TRADE",
+      "status": "REJECTED_OR_UNVERIFIED",
+      "candidate": "BUY",
+      "candidateStatus": "DIRECTIONAL_RESEARCH_ONLY_NOT_APPROVED",
+      "signalGrade": "B",
+      "signalGradeMeaning": "Directional research candidate only; one or more approval gates failed",
+      "candidatePlan": {
+        "status": "INDICATIVE_LIVE_QUOTE_PLAN_TRIGGER_NOT_CONFIRMED",
+        "entry": 3668.43,
+        "signalReferenceEntry": 3669.21,
+        "entryReference": "ASK (validated executable-side quote)",
+        "stopLoss": 3651.35,
+        "takeProfit": 3704.95,
+        "riskReward": "1:2.14",
+        "riskRewardValue": 2.1373729257649776,
+        "entryTriggerConfirmed": false,
+        "stopMethod": "MARKET_STRUCTURE"
+      },
+      "m5Atr14": 8.497585714285767,
+      "marketDataQuality": {
+        "market": "XAUUSD",
+        "volume": {
+          "status": "UNAVAILABLE",
+          "candleCount": 240,
+          "candlesWithPositiveVolume": 0,
+          "candlesWithoutPositiveVolume": 240,
+          "coveragePct": 0,
+          "usableForVolumeProfile": false
+        },
+        "quoteCandleBasis": {
+          "status": "WITHIN_REVIEW_BAND",
+          "quoteVenue": "MetaTrader 5 (Broker 1)",
+          "quoteSource": "Biquote live bid/ask",
+          "candleSource": "Twelve Data XAU/USD",
+          "sourceLabelsDiffer": true,
+          "quoteMidpoint": 3668.348,
+          "latestClosedCandleClose": 3669.21439,
+          "difference": -0.8663900000001377,
+          "differenceAtr": 0.102,
+          "diagnosticOnly": true,
+          "note": "Compare venue/source labels and price basis. Existing executable-side entry-drift and quote validation gates remain authoritative."
+        }
+      },
+      "score": "50/100 candidate strength · 100% evidence coverage",
+      "candidateStrength": {
+        "score": 50,
+        "maxScore": 100,
+        "evidenceCoveragePct": 100,
+        "label": "Candidate strength",
+        "interpretation": "Heuristic points, not trade probability"
+      },
+      "paperApproval": {
+        "status": "NOT_APPROVED",
+        "approved": false,
+        "decision": "NO APPROVED TRADE"
+      },
+      "brokerExecution": {
+        "status": "NOT_CONNECTED_PAPER_ONLY",
+        "connected": false,
+        "executable": false,
+        "blockers": []
+      },
+      "entry": null,
+      "stopLoss": null,
+      "takeProfit": null,
+      "riskReward": null,
+      "quote": {
+        "market": "XAUUSD",
+        "bid": 3668.557,
+        "ask": 3668.725,
+        "timestamp": 1795485003000,
+        "receivedAt": 1795485004311,
+        "timestampQuality": "PROVIDER_TIMESTAMP",
+        "source": "Biquote live bid/ask",
+        "venue": "MetaTrader 5 (Broker 1)",
+        "tradeable": true,
+        "ageMs": 1359,
+        "receiveAgeMs": 48,
+        "validated": true,
+        "snapshotId": "XAUUSD|1795485003000|1795485004311|3668.557|3668.725|Biquote live bid/ask|MetaTrader 5 (Broker 1)"
+      },
+      "quantDesk": {
+        "schemaVersion": 1,
+        "generatedAt": "2026-11-24T01:50:03.620Z",
+        "market": "XAUUSD",
+        "mode": "PAPER_RESEARCH_ONLY",
+        "roles": [
+          {
+            "name": "SCOUT",
+            "status": "SHORTLISTED",
+            "detail": "Found a directional candidate for review.",
+            "evidence": {
+              "market": "XAUUSD",
+              "direction": "BUY",
+              "score": 50,
+              "scoreCoverage": 100
+            }
+          },
+          {
+            "name": "AUDITOR",
+            "status": "CHECKS_PASSED",
+            "detail": "Research data and risk pre-checks passed; this is not trade approval.",
+            "evidence": {
+              "quoteValid": true,
+              "spreadVerified": true,
+              "candlesFresh": true,
+              "macroClear": true
+            }
+          },
+          {
+            "name": "TRIGGER",
+            "status": "WAITING_FOR_M5",
+            "detail": "No confirmed M5 entry trigger; no entry is suggested.",
+            "evidence": {
+              "entryTriggerConfirmed": false
+            }
+          },
+          {
+            "name": "TRACKER",
+            "status": "PROXY_EVIDENCE_AVAILABLE",
+            "detail": "Buyer/seller evidence is treated as a proxy, not full order-book or institutional flow.",
+            "evidence": {
+              "evidence": {
+                "direction": "SELL",
+                "strength": 1,
+                "buyEvidence": 0,
+                "sellEvidence": 1,
+                "closeLocation": 0.11,
+                "source": "closed-candle location + CVD/OBV/MFI proxies (not exchange-wide executed volume)"
+              },
+              "limitations": "Spot FX has no consolidated exchange tape; do not invent smart-wallet data."
+            }
+          },
+          {
+            "name": "WARDEN",
+            "status": "NO_PRECHECK_WARNING",
+            "detail": "Monitors spread, data freshness and macro/news risk. Core gates remain authoritative.",
+            "evidence": {
+              "macroBlocked": false,
+              "staleTimeframes": [],
+              "spreadVerified": true,
+              "spread": 0.1679999999996653
+            }
+          },
+          {
+            "name": "TRAIL",
+            "status": "PAPER_PLAN_MONITOR_ONLY",
+            "detail": "Tracks the existing paper plan for later review; does not move stops or manage live positions.",
+            "evidence": {
+              "entry": 3668.432,
+              "stopLoss": 3651.345882142857,
+              "takeProfit": 3704.951405714286,
+              "stopManagement": "NO_AUTOMATIC_MODIFICATION"
+            }
+          },
+          {
+            "name": "PULSE",
+            "status": "HEADLINES_PRESENT",
+            "detail": "Measures available headline context only; no social-mention velocity feed is assumed.",
+            "evidence": {
+              "headlineCount": 1,
+              "eventRisk": "HIGH",
+              "sentiment": "NOT_COMPUTED",
+              "mentionVelocity": null
+            }
+          }
+        ],
+        "chief": {
+          "name": "CHIEF",
+          "status": "RESEARCH_COORDINATED",
+          "detail": "Seven specialist roles reviewed the same market snapshot. Chief has zero voting weight and cannot approve a trade.",
+          "researchDirection": "BUY",
+          "specialistCount": 7,
+          "blockedRoles": [
+            "TRIGGER"
+          ],
+          "approvalAuthority": false,
+          "signalWeight": 0,
+          "finalTradeDecision": "DEFER_TO_EXISTING_FOREX_SNIPER_APPROVAL_CHAIN"
+        },
+        "userHandoff": "Review the research desk; manually decide whether to act on an independently approved paper signal.",
+        "safety": {
+          "signalWeight": 0,
+          "canApproveTrade": false,
+          "canPlaceOrders": false
+        }
+      },
+      "agents": {
+        "fiveDirectionalAgents": [
+          {
+            "name": "hpFX multi-timeframe",
+            "signal": "BUY",
+            "direction": "BUY",
+            "status": "DIRECTIONAL_SIGNAL",
+            "evidence": {
+              "votes": [
+                {
+                  "timeframe": "M5",
+                  "trend": "BUY",
+                  "momentum": "BUY",
+                  "tradeableVolatility": true
+                },
+                {
+                  "timeframe": "M15",
+                  "trend": "BUY",
+                  "momentum": "BUY",
+                  "tradeableVolatility": true
+                },
+                {
+                  "timeframe": "H1",
+                  "trend": "BUY",
+                  "momentum": "SELL",
+                  "tradeableVolatility": true
+                },
+                {
+                  "timeframe": "H4",
+                  "trend": "SELL",
+                  "momentum": "BUY",
+                  "tradeableVolatility": true
+                }
+              ],
+              "higherTimeframeConfirmations": 1
+            },
+            "reason": "M5 trend and momentum must align, with at least one higher timeframe confirming both.",
+            "baseWeight": 1,
+            "calibration": {
+              "status": "BASELINE_UNCALIBRATED",
+              "sampleSize": 0,
+              "multiplier": 1
+            },
+            "weight": 1
+          },
+          {
+            "name": "ICT/SMC structure",
+            "signal": "NO_SIGNAL",
+            "direction": "NO_SIGNAL",
+            "status": "NO_SIGNAL",
+            "evidence": {
+              "marketStructureShift": "NO_SIGNAL",
+              "fairValueGap": {
+                "direction": "BUY",
+                "lower": 3669.19526,
+                "upper": 3673.63433,
+                "index": 238
+              },
+              "gapUnfilled": false,
+              "swingHigh": 3671.70313,
+              "swingLow": 3652.62052
+            },
+            "reason": "Requires a confirmed break of structure and a same-direction unfilled fair-value gap.",
+            "baseWeight": 1,
+            "calibration": {
+              "status": "BASELINE_UNCALIBRATED",
+              "sampleSize": 0,
+              "multiplier": 1
+            },
+            "weight": 1
+          },
+          {
+            "name": "FxTT market scanner",
+            "signal": "BUY",
+            "direction": "BUY",
+            "status": "DIRECTIONAL_SIGNAL",
+            "evidence": {
+              "spreadAtr": 0.0197703213181164,
+              "spreadLimit": 0.15,
+              "spreadPass": true,
+              "adx": 44.76712886615597,
+              "adxPass": true,
+              "rsi": 61.64945433660092,
+              "rsiDirection": "BUY",
+              "trendDirection": "BUY"
+            },
+            "reason": "Requires valid quote cost, acceptable spread/ATR, ADX >= 18 and aligned RSI/trend.",
+            "baseWeight": 1,
+            "calibration": {
+              "status": "BASELINE_UNCALIBRATED",
+              "sampleSize": 0,
+              "multiplier": 1
+            },
+            "weight": 1
+          },
+          {
+            "name": "Gann/Hurst trend",
+            "signal": "NO_SIGNAL",
+            "direction": "NO_SIGNAL",
+            "status": "NO_SIGNAL",
+            "evidence": {
+              "ma32": 3647.9335140625003,
+              "ma64": 3641.686177812501,
+              "ma128": 3649.860799218749,
+              "octaveMidpoint": 3650.8807500000003,
+              "price": 3669.21439,
+              "rangeLow": 3620.56481,
+              "rangeHigh": 3681.19669
+            },
+            "reason": "Trailing MA32/64/128 alignment plus price location relative to the 64-bar octave midpoint; no future-centred averages.",
+            "baseWeight": 1,
+            "calibration": {
+              "status": "BASELINE_UNCALIBRATED",
+              "sampleSize": 0,
+              "multiplier": 1
+            },
+            "weight": 1
+          },
+          {
+            "name": "Systematic breakout",
+            "signal": "NO_SIGNAL",
+            "direction": "NO_SIGNAL",
+            "status": "NO_SIGNAL",
+            "evidence": {
+              "close": 3669.21439,
+              "prior20High": 3677.14653,
+              "prior20Low": 3626.47325,
+              "sma20": 3658.7635959999993,
+              "sma50": 3643.1184169999997
+            },
+            "reason": "Requires a closed-candle 20-bar range breakout aligned with trailing SMA20/SMA50 trend.",
+            "baseWeight": 1,
+            "calibration": {
+              "status": "BASELINE_UNCALIBRATED",
+              "sampleSize": 0,
+              "multiplier": 1
+            },
+            "weight": 1
+          }
+        ],
+        "fiveAgentConsensus": {
+          "direction": "NO_SIGNAL",
+          "approved": false,
+          "requiredVotes": 3,
+          "totalAgents": 5,
+          "counts": {
+            "BUY": 2,
+            "SELL": 0,
+            "NO_SIGNAL": 3
+          },
+          "weightedScores": {
+            "BUY": 2,
+            "SELL": 0
+          },
+          "weightedAgreementPct": 100,
+          "agreementPct": 40,
+          "rule": "At least 3 of 5 independent agents and at least 60% of directional reliability-weighted support must agree; otherwise NO_SIGNAL."
+        },
+        "fiveAgentValidationFramework": {
+          "status": "TRAINING_WINDOW_ONLY",
+          "totalClosedCandles": 240,
+          "trainingRange": {
+            "startIndex": 0,
+            "endIndexExclusive": 168,
+            "count": 168
+          },
+          "holdoutRange": {
+            "startIndex": 168,
+            "endIndexExclusive": 240,
+            "count": 72
+          },
+          "holdoutAccess": "LOCKED_UNTIL_CANDIDATE_SETTINGS_FROZEN",
+          "requiredValidation": [
+            "chronological walk-forward",
+            "realistic spread/commission/slippage",
+            "minimum 30 resolved trades",
+            "forward paper test"
+          ],
+          "optimizationApplied": false
+        },
+        "marketIntelligenceApproved": false,
+        "signalApprovalApproved": false,
+        "entryVerificationApproved": false
+      },
+      "verification": {
+        "layer2": "REJECTED",
+        "layer3": "REJECTED",
+        "blockers": [
           "Gold M5 trigger candle does not confirm H1/M15 direction",
           "Economic/news risk is HIGH",
           "Insufficient forward-paper sample: 0/30 resolved trades",
@@ -1257,46 +1244,38 @@
           "Closed M5 entry trigger is not confirmed",
           "Independent signal approval agent did not approve this direction",
           "market-intelligence agent did not independently confirm this direction",
-          "Five-agent confirmation quorum not met: {\"BUY\":0,\"SELL\":0,\"NO_SIGNAL\":5}",
+          "Five-agent confirmation quorum not met: {\"BUY\":2,\"SELL\":0,\"NO_SIGNAL\":3}",
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"BUY\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"SELL\"}],\"aligned\":1,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":22.01918868877072,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":47.05525526417389,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}"
         ],
-        "watchdog": "BLOCKED",
-        "watchdogFailures": [
-          "Signal publication is missing, stale, or future-dated",
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ]
+        "watchdog": "PASS",
+        "watchdogFailures": []
       },
-      "generatedAt": "2026-11-23T19:26:26.762Z",
-      "generatedAtSlovenia": "2026-11-23 20:26:26",
+      "generatedAt": "2026-11-24T01:50:03.774Z",
+      "generatedAtSlovenia": "2026-11-24 02:50:03",
       "analysisCycle": {
-        "id": "2026-11-23T19:25:48.000Z",
-        "timestampUtc": "2026-11-23T19:25:48.000Z",
-        "timestampSlovenia": "2026-11-23T20:25:48+01:00",
+        "id": "2026-11-24T01:49:32.000Z",
+        "timestampUtc": "2026-11-24T01:49:32.000Z",
+        "timestampSlovenia": "2026-11-24T02:49:32+01:00",
         "timeZone": "Europe/Ljubljana"
       },
       "analysisQuote": {
-        "bid": 3652.745,
-        "ask": 3652.913,
+        "bid": 3668.264,
+        "ask": 3668.432,
         "source": "Biquote live bid/ask",
-        "timestamp": 1795461985000,
+        "timestamp": 1795485003000,
         "timestampQuality": "PROVIDER_TIMESTAMP",
-        "ageMs": 1536,
+        "ageMs": 619,
         "validated": true
       },
       "quoteRefresh": {
         "status": "PASS",
-        "checkedAt": "2026-11-23T19:26:27.328Z",
-        "providerTimestamp": "2026-11-23T19:26:25.000Z",
-        "ageMs": 2328,
+        "checkedAt": "2026-11-24T01:50:04.359Z",
+        "providerTimestamp": "2026-11-24T01:50:03.000Z",
+        "ageMs": 1359,
         "source": "Biquote live bid/ask",
         "venue": "MetaTrader 5 (Broker 1)"
       }
@@ -1304,45 +1283,34 @@
   },
   "quoteRefresh": {
     "status": "PASS",
-    "checkedAt": "2026-11-23T19:26:27.328Z",
+    "checkedAt": "2026-11-24T01:50:04.359Z",
     "provider": "Biquote EURUSD/XAUUSD + Coinbase BTCUSD (Twelve Data timestamped fallback; no Railway dependency)",
     "failures": []
   },
   "watchdog": {
-    "checkedAt": "2026-11-23T19:46:12.434Z",
-    "status": "BLOCKED",
+    "checkedAt": "2026-11-24T01:50:04.702Z",
+    "status": "PASS",
     "thresholds": {
       "maxSignalAgeMs": 600000,
       "maxCandleAgeMs": 600000,
       "maxQuoteAgeMs": 15000
     },
-    "globalFailures": [
-      "Signal publication is missing, stale, or future-dated"
-    ],
+    "globalFailures": [],
     "markets": {
       "EURUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 1272434,
-        "quoteAgeMs": 1188434
+        "issues": [],
+        "candleAgeMs": 4702,
+        "quoteAgeMs": 4702
       },
       "BTCUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 1272434,
-        "quoteAgeMs": 1185668
+        "issues": [],
+        "candleAgeMs": 4702,
+        "quoteAgeMs": 1647
       },
       "XAUUSD": {
-        "issues": [
-          "M5 provider candle is missing, failed, or stale",
-          "Live provider bid/ask is missing, invalid, or stale"
-        ],
-        "candleAgeMs": 1272434,
-        "quoteAgeMs": 1187434
+        "issues": [],
+        "candleAgeMs": 4702,
+        "quoteAgeMs": 1702
       }
     }
   }
