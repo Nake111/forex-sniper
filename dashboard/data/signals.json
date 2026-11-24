@@ -416,10 +416,16 @@
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"UNAVAILABLE\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"SELL\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":1,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":32.2033898304887,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
-          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.13003095975220874,\"spreadAtrLimit\":0.12,\"passed\":false}"
+          "quote_and_spread: FAIL — {\"spread\":0.00005999999999994898,\"spreadAtr\":0.13003095975220874,\"spreadAtrLimit\":0.12,\"passed\":false}",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-24T15:03:25.911Z",
       "generatedAtSlovenia": "2026-11-24 16:03:25",
@@ -838,10 +844,16 @@
           "Five-agent confirmation quorum not met: {\"BUY\":0,\"SELL\":0,\"NO_SIGNAL\":5}",
           "Macro/event-risk hard gate is active",
           "Weighted evidence did not meet the candidate-advancement criteria",
-          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}"
+          "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-24T15:03:25.911Z",
       "generatedAtSlovenia": "2026-11-24 16:03:25",
@@ -1256,10 +1268,16 @@
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"BUY\",\"H4\":\"SELL\"}",
           "M15_momentum: FAIL — {\"rsi14\":48.89444582000939,\"macdHistogram\":-0.3395174723122356}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":0,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":44.72958785925455,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}"
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"BUY\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":0,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":44.72958785925455,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-24T15:03:25.911Z",
       "generatedAtSlovenia": "2026-11-24 16:03:25",
@@ -1295,8 +1313,8 @@
     "failures": []
   },
   "watchdog": {
-    "checkedAt": "2026-11-24T15:03:26.961Z",
-    "status": "PASS",
+    "checkedAt": "2026-11-24T15:12:32.332Z",
+    "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
       "maxCandleAgeMs": 600000,
@@ -1305,19 +1323,28 @@
     "globalFailures": [],
     "markets": {
       "EURUSD": {
-        "issues": [],
-        "candleAgeMs": 206961,
-        "quoteAgeMs": 1961
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 752332,
+        "quoteAgeMs": 547332
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 206961,
-        "quoteAgeMs": 1056
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 752332,
+        "quoteAgeMs": 546427
       },
       "XAUUSD": {
-        "issues": [],
-        "candleAgeMs": 206961,
-        "quoteAgeMs": 961
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 752332,
+        "quoteAgeMs": 546332
       }
     }
   }
