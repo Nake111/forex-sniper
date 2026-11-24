@@ -821,10 +821,14 @@
           "Five-agent confirmation quorum not met: {\"BUY\":1,\"SELL\":1,\"NO_SIGNAL\":3}",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"SELL\",\"H4\":\"SELL\"}",
-          "M15_momentum: FAIL — {\"rsi14\":40.56749235833386,\"macdHistogram\":-54.1057036017375}"
+          "M15_momentum: FAIL — {\"rsi14\":40.56749235833386,\"macdHistogram\":-54.1057036017375}",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-24T04:22:54.975Z",
       "generatedAtSlovenia": "2026-11-24 05:22:54",
@@ -1236,10 +1240,14 @@
           "Weighted evidence did not meet the candidate-advancement criteria",
           "higher_timeframe_trend_and_structure: FAIL — {\"H1\":\"BUY\",\"H4\":\"SELL\"}",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":55.096260968616356,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}"
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":55.096260968616356,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-24T04:22:54.975Z",
       "generatedAtSlovenia": "2026-11-24 05:22:54",
@@ -1277,7 +1285,7 @@
     ]
   },
   "watchdog": {
-    "checkedAt": "2026-11-24T04:22:57.125Z",
+    "checkedAt": "2026-11-24T04:27:55.459Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -1290,18 +1298,22 @@
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 177125,
-        "quoteAgeMs": 1795494177125
+        "candleAgeMs": 475459,
+        "quoteAgeMs": 1795494475459
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 177125,
-        "quoteAgeMs": 2051
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 475459,
+        "quoteAgeMs": 300385
       },
       "XAUUSD": {
-        "issues": [],
-        "candleAgeMs": 177125,
-        "quoteAgeMs": 3125
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 475459,
+        "quoteAgeMs": 301459
       }
     }
   }
