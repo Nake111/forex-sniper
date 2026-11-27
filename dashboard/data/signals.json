@@ -405,10 +405,14 @@
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
           "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"BUY\"},{\"name\":\"Stochastic\",\"direction\":\"SELL\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":44.44444444441703,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
-          "quote_and_spread: UNAVAILABLE — {\"spread\":null,\"spreadAtr\":null,\"spreadAtrLimit\":0.12,\"passed\":false}"
+          "quote_and_spread: UNAVAILABLE — {\"spread\":null,\"spreadAtr\":null,\"spreadAtrLimit\":0.12,\"passed\":false}",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-27T21:06:11.554Z",
       "generatedAtSlovenia": "2026-11-27 22:06:11",
@@ -824,10 +828,14 @@
           "Required closed M5 entry trigger is not confirmed",
           "Weighted evidence did not meet the candidate-advancement criteria",
           "M5_closed_candle_trigger: FAIL — {\"confirmed\":false}",
-          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"SELL\"},{\"name\":\"Stochastic\",\"direction\":\"BUY\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":97.02823179791989,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}"
+          "pocket_option_style_indicator_confluence: FAIL — {\"votes\":[{\"name\":\"RSI\",\"direction\":\"SELL\"},{\"name\":\"MACD\",\"direction\":\"SELL\"},{\"name\":\"Stochastic\",\"direction\":\"BUY\"},{\"name\":\"Candle streak\",\"direction\":\"NEUTRAL\"}],\"aligned\":2,\"required\":3,\"rsiWick\":{\"direction\":\"NONE\",\"wickPercent\":97.02823179791989,\"confirmed\":false},\"note\":\"Research-only confluence adapted from RSI/MACD/Stochastic/Candle Streak; no order execution authority\"}",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-27T21:06:11.554Z",
       "generatedAtSlovenia": "2026-11-27 22:06:11",
@@ -1276,7 +1284,7 @@
     ]
   },
   "watchdog": {
-    "checkedAt": "2026-11-27T21:06:12.864Z",
+    "checkedAt": "2026-11-27T21:06:45.512Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -1286,21 +1294,25 @@
     "globalFailures": [],
     "markets": {
       "EURUSD": {
-        "issues": [],
-        "candleAgeMs": 72864,
-        "quoteAgeMs": 11864
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 105512,
+        "quoteAgeMs": 44512
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 72864,
-        "quoteAgeMs": 1497
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 105512,
+        "quoteAgeMs": 34145
       },
       "XAUUSD": {
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 72864,
-        "quoteAgeMs": 1795813572864
+        "candleAgeMs": 105512,
+        "quoteAgeMs": 1795813605512
       }
     }
   }
