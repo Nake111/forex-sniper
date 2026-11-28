@@ -145,7 +145,9 @@ export function createOrderFlowServer({
     const setReconnect = value => { if (kind === "coinbase") coinbaseReconnect = value; else krakenReconnect = value; };
     setSocket(socket);
     socket.on("open", () => {
-      socket.send(JSON.stringify(subscriptions));
+      for (const subscription of (Array.isArray(subscriptions) ? subscriptions : [subscriptions])) {
+        socket.send(JSON.stringify(subscription));
+      }
       setAttempt(0);
       setReconnect(null);
       console.log(kind.toUpperCase() + " public market-data stream connected");
@@ -238,20 +240,10 @@ export function createOrderFlowServer({
         server.listen(port, "0.0.0.0", resolve);
       });
       connect(COINBASE_URL, { type: "subscribe", product_ids: [COINBASE_PRODUCT], channel: "market_trades" }, acceptCoinbase, "coinbase");
-      connect(KRAKEN_URL, { event: "subscribe", feed: "trade", product_ids: [KRAKEN_PRODUCT] }, acceptKraken, "kraken");
-      // The second Kraken subscription is sent on the same connection after it opens.
-      const subscribeTicker = () => {
-        if (krakenSocket?.readyState === WebSocketImpl.OPEN) {
-          krakenSocket.send(JSON.stringify({ event: "subscribe", feed: "ticker", product_ids: [KRAKEN_PRODUCT] }));
-        }
-      };
-      const waitForKraken = setInterval(() => {
-        if (krakenSocket?.readyState === WebSocketImpl.OPEN) {
-          clearInterval(waitForKraken);
-          subscribeTicker();
-        }
-      }, 100);
-      waitForKraken.unref?.();
+      connect(KRAKEN_URL, [
+        { event: "subscribe", feed: "trade", product_ids: [KRAKEN_PRODUCT] },
+        { event: "subscribe", feed: "ticker", product_ids: [KRAKEN_PRODUCT] }
+      ], acceptKraken, "kraken");
       refreshTimer = setInterval(refresh, REFRESH_MS);
       refreshTimer.unref?.();
       return server.address();
