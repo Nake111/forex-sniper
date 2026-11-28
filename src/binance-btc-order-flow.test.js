@@ -6,6 +6,10 @@ import { buildBinanceBtcOrderFlow, isDirectExecution } from "./binance-btc-order
 
 const now = 1_800_000_000_000;
 
+function assertApprox(actual, expected) {
+  assert.ok(Math.abs(actual - expected) < 1e-9, `Expected ${actual} to be close to ${expected}`);
+}
+
 function mockFetch() {
   const routes = [
     {
@@ -125,12 +129,12 @@ test("paginates capped spot and perpetual aggregate-trade windows without trunca
     now,
     baselineOpenInterest: { value: 100, timestamp: now - 60_000 }
   });
-  assert.equal(result.snapshot.spot.buyVolume, 1);
-  assert.equal(result.snapshot.spot.sellVolume, 0.002);
-  assert.equal(result.snapshot.spot.cvd, 0.998);
-  assert.equal(result.snapshot.perpetual.buyVolume, 1);
-  assert.equal(result.snapshot.perpetual.sellVolume, 0.003);
-  assert.equal(result.snapshot.perpetual.cvd, 0.997);
+  assertApprox(result.snapshot.spot.buyVolume, 1);
+  assertApprox(result.snapshot.spot.sellVolume, 0.002);
+  assertApprox(result.snapshot.spot.cvd, 0.998);
+  assertApprox(result.snapshot.perpetual.buyVolume, 1);
+  assertApprox(result.snapshot.perpetual.sellVolume, 0.003);
+  assertApprox(result.snapshot.perpetual.cvd, 0.997);
   assert.equal(urls.filter(url => url.includes("fromId=")).length, 2);
   assert.ok(urls.filter(url => url.includes("fromId=")).every(url => !url.includes("startTime=") && !url.includes("endTime=")));
 });
