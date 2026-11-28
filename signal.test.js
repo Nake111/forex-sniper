@@ -17,6 +17,7 @@ function frame(side = "BULLISH") {
     structure: { bos: bullish ? "BULLISH" : "BEARISH", sweep: "NONE" },
     squeeze: {
       state: "SQUEEZE_RELEASED",
+      previousState: "SQUEEZE_ON",
       momentum: bullish ? 1 : -1,
       direction: bullish ? "BULLISH_STRENGTHENING" : "BEARISH_STRENGTHENING"
     }
@@ -65,10 +66,16 @@ test("H1 momentum confirms BUY when squeeze is released", () => {
   assert.equal(confirmSignal("BUY", frame()).status, "H1 ALIGNED");
 });
 
-test("H1 momentum also confirms BUY when no squeeze is active", () => {
+test("H1 momentum rejects a no-squeeze state without a fresh release transition", () => {
   const h1 = frame();
   h1.squeeze.state = "NO_SQUEEZE";
-  assert.equal(confirmSignal("BUY", h1).status, "H1 ALIGNED");
+  assert.equal(confirmSignal("BUY", h1).status, "WAIT");
+});
+
+test("H1 momentum rejects a release that is not strengthening", () => {
+  const h1 = frame();
+  h1.squeeze.direction = "BULLISH_WEAKENING";
+  assert.equal(confirmSignal("BUY", h1).status, "WAIT");
 });
 
 test("missing H1 momentum blocks entry", () => {
