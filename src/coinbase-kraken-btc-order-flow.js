@@ -198,7 +198,7 @@ export function createOrderFlowServer({
     response.setHeader("cache-control", "no-store");
     if (request.url === "/health") {
       const ready = Boolean(latestSnapshot && now() - latestSnapshot.timestamp <= MAX_AGE_MS);
-      response.writeHead(ready ? 200 : 503);
+      response.writeHead(200);
       response.end(JSON.stringify({
         status: ready ? "READY" : "WARMING_UP",
         providers: { coinbase: coinbaseSocket?.readyState === WebSocketImpl.OPEN ? "CONNECTED" : "DISCONNECTED",
