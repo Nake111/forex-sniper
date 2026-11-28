@@ -210,7 +210,19 @@ export function createOrderFlowServer({
         providers: { coinbase: coinbaseSocket?.readyState === WebSocketImpl.OPEN ? "CONNECTED" : "DISCONNECTED",
           kraken: krakenSocket?.readyState === WebSocketImpl.OPEN ? "CONNECTED" : "DISCONNECTED" },
         lastError,
-        snapshotTimestamp: latestSnapshot?.timestamp ?? null
+        snapshotTimestamp: latestSnapshot?.timestamp ?? null,
+        spotTradeCount: spotTrades.length,
+        perpetualTradeCount: perpetualTrades.length,
+        lastSpotTradeAt: spotTrades.at(-1)?.timestamp ?? null,
+        lastPerpetualTradeAt: perpetualTrades.at(-1)?.timestamp ?? null,
+        krakenTicker: ticker ? {
+          openInterest: ticker.openInterest,
+          fundingRate: ticker.fundingRate,
+          openInterestChangePct: ticker.openInterestChangePct ?? null,
+          providerTimestamp: ticker.timestamp,
+          receivedAt: ticker.receivedAt
+        } : null,
+        openInterestBaseline: oiBaseline
       }));
       return;
     }
