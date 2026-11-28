@@ -38,6 +38,8 @@ on:
       - "src/btc-live-microstructure.js"
       - "src/binance-btc-order-flow.js"
       - "src/binance-btc-order-flow.test.js"
+      - "src/coinbase-kraken-btc-order-flow.js"
+      - "src/coinbase-kraken-btc-order-flow.test.js"
       - "src/btc-signal-quality.js"
       - "src/btc-signal-quality.test.js"
       - "src/signal.js"
@@ -135,7 +137,7 @@ jobs:
           console.log('Approved cutoff verified:', actual);
           console.log('Holdout protection: final 30% remains locked; no holdout optimization or outcome reads.');
           NODE
-      - name: Preflight Binance BTC order-flow (BTC-only fail-closed)
+      - name: Preflight Coinbase spot + Kraken Futures BTC order-flow (BTC-only fail-closed)
         continue-on-error: true
         run: |
           node --input-type=module <<'NODE'
