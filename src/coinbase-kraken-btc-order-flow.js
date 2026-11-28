@@ -31,6 +31,24 @@ export function normalizeKrakenTrade(trade) {
   return { id: String(trade.uid ?? ""), timestamp, quantity, side: side.toUpperCase() };
 }
 
+export function normalizeKrakenTicker(message, receivedAt = Date.now()) {
+  if (message?.feed !== "ticker" || message?.product_id !== KRAKEN_PRODUCT) return null;
+  const openInterest = Number(message.openInterest);
+  // Kraken Futures documents funding_rate in snake_case. When omitted, the
+  // exchange documents that as a zero rate for the current period.
+  const rawFundingRate = message.funding_rate ?? message.fundingRate;
+  const fundingRate = rawFundingRate === undefined ? 0 : Number(rawFundingRate);
+  const providerTime = typeof message.time === "number"
+    ? message.time : Date.parse(message.time ?? message.serverTime ?? "");
+  if (!Number.isFinite(openInterest) || openInterest <= 0 || !Number.isFinite(fundingRate)) return null;
+  return {
+    openInterest,
+    fundingRate,
+    timestamp: Number.isFinite(providerTime) ? providerTime : receivedAt,
+    receivedAt
+  };
+}
+
 export function summarizeAggressorTrades(trades, now = Date.now()) {
   const recent = trades.filter(trade => trade.timestamp >= now - WINDOW_MS && trade.timestamp <= now + 2_000);
   if (!recent.length) throw new Error("No trades in the latest 60-second order-flow window");
@@ -116,21 +134,13 @@ export function createOrderFlowServer({
         addTrade(perpetualTrades, seenPerpetual, normalizeKrakenTrade(rawTrade));
       }
     } else if (message.feed === "ticker" && message.product_id === KRAKEN_PRODUCT) {
-      const openInterest = Number(message.openInterest);
-      const fundingRate = Number(message.fundingRate);
-      if (Number.isFinite(openInterest) && openInterest > 0 && Number.isFinite(fundingRate)) {
-        const providerTime = typeof message.time === "number" ? message.time
-          : Date.parse(message.time ?? message.serverTime ?? "");
-        ticker = {
-          openInterest,
-          fundingRate,
-          timestamp: Number.isFinite(providerTime) ? providerTime : receivedAt,
-          receivedAt
-        };
-        if (!oiBaseline) oiBaseline = { value: openInterest, timestamp: receivedAt };
+      const normalizedTicker = normalizeKrakenTicker(message, receivedAt);
+      if (normalizedTicker) {
+        ticker = normalizedTicker;
+        if (!oiBaseline) oiBaseline = { value: ticker.openInterest, timestamp: receivedAt };
         else if (receivedAt - oiBaseline.timestamp >= WINDOW_MS) {
-          ticker.openInterestChangePct = ((openInterest - oiBaseline.value) / oiBaseline.value) * 100;
-          oiBaseline = { value: openInterest, timestamp: receivedAt };
+          ticker.openInterestChangePct = ((ticker.openInterest - oiBaseline.value) / oiBaseline.value) * 100;
+          oiBaseline = { value: ticker.openInterest, timestamp: receivedAt };
         }
       }
     }
