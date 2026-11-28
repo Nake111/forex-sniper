@@ -11,15 +11,15 @@ function mockFetch() {
     {
       match: "/api/v3/aggTrades",
       body: [
-        { q: "2", T: now - 2_000, m: false },
-        { q: "1", T: now - 1_000, m: true }
+        { a: 1, q: "2", T: now - 2_000, m: false },
+        { a: 2, q: "1", T: now - 1_000, m: true }
       ]
     },
     {
       match: "/fapi/v1/aggTrades",
       body: [
-        { q: "4", T: now - 2_000, m: false },
-        { q: "3", T: now - 1_000, m: true }
+        { a: 1, q: "4", T: now - 2_000, m: false },
+        { a: 2, q: "3", T: now - 1_000, m: true }
       ]
     },
     { match: "/fapi/v1/openInterest", body: { openInterest: "101", time: now - 500 } },
@@ -63,10 +63,10 @@ test("fails closed while the open-interest baseline is warming up", async () => 
 test("rejects malformed trades rather than guessing aggressor direction", async () => {
   const fetchImpl = async url => {
     if (url.includes("/api/v3/aggTrades")) {
-      return { ok: true, json: async () => [{ q: "1", T: now - 1_000 }] };
+      return { ok: true, json: async () => [{ a: 1, q: "1", T: now - 1_000 }] };
     }
     if (url.includes("/fapi/v1/aggTrades")) {
-      return { ok: true, json: async () => [{ q: "1", T: now - 1_000, m: false }] };
+      return { ok: true, json: async () => [{ a: 1, q: "1", T: now - 1_000, m: false }] };
     }
     if (url.includes("/fapi/v1/openInterest")) {
       return { ok: true, json: async () => ({ openInterest: "100", time: now }) };
