@@ -150,7 +150,7 @@ jobs:
               const healthUrl = endpoint.replace(/\/order-flow$/, '/health');
               const healthResponse = await fetch(healthUrl, { signal: AbortSignal.timeout(5000), headers: { accept: 'application/json' } });
               const health = await healthResponse.json();
-              if (!healthResponse.ok || health.status !== 'READY') throw new Error('adapter health=' + (health.status ?? healthResponse.status) + ': ' + (health.lastError ?? 'not ready'));
+              if (!healthResponse.ok || health.status !== 'READY') throw new Error('adapter health=' + JSON.stringify(health));
               const response = await fetch(endpoint, { signal: AbortSignal.timeout(5000), headers: { accept: 'application/json' } });
               if (!response.ok) throw new Error('order-flow HTTP ' + response.status);
               const data = await response.json();
