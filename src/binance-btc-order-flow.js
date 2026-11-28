@@ -1,12 +1,13 @@
 import http from "node:http";
+import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 const SPOT_BASE = "https://api.binance.com";
 const FUTURES_BASE = "https://fapi.binance.com";
 const WINDOW_MS = 60_000;
 const REFRESH_MS = 5_000;
 const MAX_SNAPSHOT_AGE_MS = 30_000;
-
-const finite = value => Number.isFinite(Number(value));
+const MAX_AGG_TRADES_PER_REQUEST = 1_000;
 
 async function getJson(fetchImpl, url) {
   const response = await fetchImpl(url, {
@@ -20,6 +21,9 @@ async function getJson(fetchImpl, url) {
 function summarizeAggTrades(trades) {
   if (!Array.isArray(trades) || trades.length === 0) {
     throw new Error("Binance returned no trades for the 60-second order-flow window");
+  }
+  if (trades.length >= MAX_AGG_TRADES_PER_REQUEST) {
+    throw new Error("Binance aggregate-trade response reached the 1,000-record limit; refusing potentially incomplete CVD");
   }
 
   let buyVolume = 0;
@@ -79,7 +83,7 @@ export async function buildBinanceBtcOrderFlow({
   if (openInterestChangePct === null) {
     throw Object.assign(new Error("Open-interest baseline is warming up; wait for a full 60-second observation"), {
       code: "WARMING_UP",
-      baseline
+      baselineOpenInterest: baseline
     });
   }
 
@@ -190,12 +194,16 @@ export function createOrderFlowServer({
   };
 }
 
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+export function isDirectExecution(moduleUrl, argvPath) {
+  return Boolean(argvPath) && fileURLToPath(moduleUrl) === resolve(argvPath);
+}
+
+if (isDirectExecution(import.meta.url, process.argv[1])) {
   const app = createOrderFlowServer();
   app.start().then(address => {
-    process.stdout.write(`Binance BTC order-flow adapter listening on ${JSON.stringify(address)}\\n`);
+    process.stdout.write(`Binance BTC order-flow adapter listening on ${JSON.stringify(address)}\n`);
   }).catch(error => {
-    process.stderr.write(`Unable to start Binance BTC order-flow adapter: ${error.message}\\n`);
+    process.stderr.write(`Unable to start Binance BTC order-flow adapter: ${error.message}\n`);
     process.exitCode = 1;
   });
 }
