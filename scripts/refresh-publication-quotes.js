@@ -20,7 +20,8 @@ for (const market of markets) {
   signal.analysisQuote ??= signal.quote ?? null;
   const snapshot = createQuoteSnapshot(feed.quotes?.[market] ?? null, market, checkedAt);
   if (!snapshot.valid) {
-    const reason = snapshot.blockers.join("; ") || feed.errors?.join("; ") || "No fresh provider quote";
+    const providerErrors = (feed.errors ?? []).filter(error => String(error).startsWith(market + ":"));
+    const reason = providerErrors.join("; ") || snapshot.blockers.join("; ") || "No fresh provider quote";
     signal.quoteRefresh = { status: "BLOCKED", checkedAt: new Date(checkedAt).toISOString(), reason };
     signal.quote = {
       bid: null, ask: null, timestamp: null, timestampQuality: null,
