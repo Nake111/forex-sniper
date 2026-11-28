@@ -55,6 +55,23 @@ export function normalizeKrakenTicker(message, receivedAt = Date.now()) {
   };
 }
 
+export function updateOpenInterestBaseline(current, baseline, previousChange, receivedAt) {
+  if (!Number.isFinite(current) || current <= 0 || !Number.isFinite(receivedAt)) {
+    throw new Error("Kraken open-interest observation is invalid");
+  }
+  if (!baseline || !Number.isFinite(baseline.value) || baseline.value <= 0 ||
+      !Number.isFinite(baseline.timestamp)) {
+    return { baseline: { value: current, timestamp: receivedAt }, changePct: previousChange ?? null };
+  }
+  if (receivedAt - baseline.timestamp >= WINDOW_MS) {
+    return {
+      baseline: { value: current, timestamp: receivedAt },
+      changePct: ((current - baseline.value) / baseline.value) * 100
+    };
+  }
+  return { baseline, changePct: previousChange ?? null };
+}
+
 export function summarizeAggressorTrades(trades, now = Date.now()) {
   const recent = trades.filter(trade => trade.timestamp >= now - WINDOW_MS && trade.timestamp <= now + 2_000);
   if (!recent.length) throw new Error("No trades in the latest 60-second order-flow window");
@@ -142,12 +159,14 @@ export function createOrderFlowServer({
     } else if (message.feed === "ticker" && message.product_id === KRAKEN_PRODUCT) {
       const normalizedTicker = normalizeKrakenTicker(message, receivedAt);
       if (normalizedTicker) {
-        ticker = normalizedTicker;
-        if (!oiBaseline) oiBaseline = { value: ticker.openInterest, timestamp: receivedAt };
-        else if (receivedAt - oiBaseline.timestamp >= WINDOW_MS) {
-          ticker.openInterestChangePct = ((ticker.openInterest - oiBaseline.value) / oiBaseline.value) * 100;
-          oiBaseline = { value: ticker.openInterest, timestamp: receivedAt };
-        }
+        const oi = updateOpenInterestBaseline(
+          normalizedTicker.openInterest,
+          oiBaseline,
+          ticker?.openInterestChangePct ?? null,
+          receivedAt
+        );
+        oiBaseline = oi.baseline;
+        ticker = { ...normalizedTicker, openInterestChangePct: oi.changePct };
       }
     }
   }
