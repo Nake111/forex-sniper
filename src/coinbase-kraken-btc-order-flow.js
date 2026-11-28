@@ -144,7 +144,12 @@ export function createOrderFlowServer({
     const setAttempt = value => { if (kind === "coinbase") coinbaseAttempt = value; else krakenAttempt = value; };
     const setReconnect = value => { if (kind === "coinbase") coinbaseReconnect = value; else krakenReconnect = value; };
     setSocket(socket);
+    let heartbeatTimer = null;
     socket.on("open", () => {
+      heartbeatTimer = setInterval(() => {
+        if (socket.readyState === WebSocketImpl.OPEN) socket.ping();
+      }, 20_000);
+      heartbeatTimer.unref?.();
       for (const subscription of (Array.isArray(subscriptions) ? subscriptions : [subscriptions])) {
         socket.send(JSON.stringify(subscription));
       }
@@ -158,6 +163,7 @@ export function createOrderFlowServer({
       console.error(lastError);
     });
     socket.on("close", () => {
+      clearInterval(heartbeatTimer);
       if (stopping) return;
       const delay = Math.min(1_000 * (2 ** getAttempt()), RECONNECT_MAX_MS);
       setAttempt(getAttempt() + 1);
