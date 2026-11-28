@@ -7,7 +7,8 @@ const FUTURES_BASE = "https://fapi.binance.com";
 const WINDOW_MS = 60_000;
 const REFRESH_MS = 5_000;
 const MAX_SNAPSHOT_AGE_MS = 30_000;
-const MAX_AGG_TRADES_PER_REQUEST = 1_000;
+const AGG_TRADE_PAGE_SIZE = 1_000;
+const MAX_AGG_TRADE_PAGES = 20;
 
 async function getJson(fetchImpl, url) {
   const response = await fetchImpl(url, {
@@ -18,12 +19,49 @@ async function getJson(fetchImpl, url) {
   return response.json();
 }
 
+async function getAggTradesInWindow(fetchImpl, baseUrl, path, startTime, endTime) {
+  const initialUrl = `${baseUrl}${path}?symbol=BTCUSDT&startTime=${startTime}&endTime=${endTime}&limit=${AGG_TRADE_PAGE_SIZE}`;
+  let page = await getJson(fetchImpl, initialUrl);
+  const trades = [];
+  let lastTradeId = null;
+
+  for (let pageNumber = 0; pageNumber < MAX_AGG_TRADE_PAGES; pageNumber += 1) {
+    if (!Array.isArray(page)) throw new Error("Binance aggregate-trade response is not an array");
+    if (page.length === 0) return trades;
+
+    for (const trade of page) {
+      const tradeId = Number(trade.a);
+      const tradeTime = Number(trade.T);
+      if (!Number.isSafeInteger(tradeId) || tradeId < 0 || !Number.isFinite(tradeTime)) {
+        throw new Error("Binance aggregate-trade page contains an invalid trade ID or timestamp");
+      }
+      if (lastTradeId !== null && tradeId <= lastTradeId) {
+        throw new Error("Binance aggregate-trade pagination returned duplicate or out-of-order IDs");
+      }
+      lastTradeId = tradeId;
+      if (tradeTime > endTime) return trades;
+      if (tradeTime >= startTime) trades.push(trade);
+    }
+
+    if (page.length < AGG_TRADE_PAGE_SIZE) return trades;
+    if (pageNumber === MAX_AGG_TRADE_PAGES - 1) {
+      throw new Error(`Binance aggregate-trade window exceeded the ${MAX_AGG_TRADE_PAGES}-page safety limit; refusing incomplete CVD`);
+    }
+
+    // Binance does not allow fromId together with startTime/endTime. The first
+    // request is time-bounded; subsequent pages continue by inclusive trade ID.
+    page = await getJson(
+      fetchImpl,
+      `${baseUrl}${path}?symbol=BTCUSDT&fromId=${lastTradeId + 1}&limit=${AGG_TRADE_PAGE_SIZE}`
+    );
+  }
+
+  return trades;
+}
+
 function summarizeAggTrades(trades) {
   if (!Array.isArray(trades) || trades.length === 0) {
     throw new Error("Binance returned no trades for the 60-second order-flow window");
-  }
-  if (trades.length >= MAX_AGG_TRADES_PER_REQUEST) {
-    throw new Error("Binance aggregate-trade response reached the 1,000-record limit; refusing potentially incomplete CVD");
   }
 
   let buyVolume = 0;
@@ -52,10 +90,9 @@ export async function buildBinanceBtcOrderFlow({
 } = {}) {
   if (typeof fetchImpl !== "function") throw new Error("Fetch is unavailable");
   const startTime = now - WINDOW_MS;
-  const query = `symbol=BTCUSDT&startTime=${startTime}&endTime=${now}&limit=1000`;
   const [spotTrades, perpetualTrades, openInterest, premiumIndex] = await Promise.all([
-    getJson(fetchImpl, `${SPOT_BASE}/api/v3/aggTrades?${query}`),
-    getJson(fetchImpl, `${FUTURES_BASE}/fapi/v1/aggTrades?${query}`),
+    getAggTradesInWindow(fetchImpl, SPOT_BASE, "/api/v3/aggTrades", startTime, now),
+    getAggTradesInWindow(fetchImpl, FUTURES_BASE, "/fapi/v1/aggTrades", startTime, now),
     getJson(fetchImpl, `${FUTURES_BASE}/fapi/v1/openInterest?symbol=BTCUSDT`),
     getJson(fetchImpl, `${FUTURES_BASE}/fapi/v1/premiumIndex?symbol=BTCUSDT`)
   ]);
