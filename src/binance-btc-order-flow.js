@@ -201,7 +201,7 @@ export function isDirectExecution(moduleUrl, argvPath) {
 if (isDirectExecution(import.meta.url, process.argv[1])) {
   const app = createOrderFlowServer();
   app.start().then(address => {
-    process.stdout.write(`Binance BTC order-flow adapter listening on ${JSON.stringify(address)}\\n`);
+    process.stdout.write(`Binance BTC order-flow adapter listening on ${JSON.stringify(address)}\n`);
   }).catch(error => {
     process.stderr.write(`Unable to start Binance BTC order-flow adapter: ${error.message}\\n`);
     process.exitCode = 1;
