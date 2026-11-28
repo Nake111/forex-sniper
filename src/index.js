@@ -20,6 +20,7 @@ import { runIndependentLlmAgents } from "./llm-agents.js";
 import { getPolymarketBtcContext } from "./polymarket-quant.js";
 import { updateSecondBrain } from "./second-brain.js";
 import { getBtcLiveMicrostructure } from "./btc-live-microstructure.js";
+import { fetchBtcOrderFlowEvidence, evaluateBtcSignalQuality } from "./btc-signal-quality.js";
 import { fetchBidAskQuotes } from "./bid-ask-quotes.js";
 import { createQuoteSnapshot } from "./quote-snapshot.js";
 import { runMarketIntelligenceAgent } from "./market-intelligence-agent.js";
@@ -487,13 +488,18 @@ async function analyseMarket(market, macroContext) {
 
   // Coinbase 10-second spot tape is a final BTC entry-timing veto only.
   // It cannot create/promote a signal or replace the validated M5-H4 analysis.
+  let btcMicrostructure = null;
+  let btcOrderFlow = null;
   if (market.symbol === "BTCUSD") {
-    const micro = await getBtcLiveMicrostructure();
+    btcMicrostructure = await getBtcLiveMicrostructure();
+    btcOrderFlow = await fetchBtcOrderFlowEvidence();
+    const micro = btcMicrostructure;
     console.log("COINBASE BTC 10-SECOND MICROSTRUCTURE:", JSON.stringify({
       status: micro.status, direction: micro.direction, ageMs: micro.ageMs,
       netChange: micro.netChange, upCandles: micro.upCandles,
       downCandles: micro.downCandles, source: micro.source, reason: micro.reason
     }));
+    console.log("BTC SPOT/FUTURES ORDER-FLOW EVIDENCE:", JSON.stringify(btcOrderFlow));
     if (candidate !== "HOLD" && micro.status !== "LIVE") {
       executionBlockers.push("BTC 10-second microstructure feed: " + (micro.reason ?? "not live"));
       console.log("BTC LIVE-FEED SAFETY GATE: HOLD —", micro.reason ?? "10-second feed is not live.");
@@ -558,6 +564,19 @@ async function analyseMarket(market, macroContext) {
   const plan = pricePlanAtExecutableQuote(
     candleClosePlan, directionalCandidate, spreadQuote, quoteValidation, results.M5.atr14
   );
+  const btcSignalQuality = market.symbol === "BTCUSD" ? evaluateBtcSignalQuality({
+    direction: directionalCandidate,
+    frames: results,
+    microstructure: btcMicrostructure,
+    orderFlow: btcOrderFlow,
+    quoteValidation,
+    quote: spreadQuote,
+    plan
+  }) : null;
+  if (btcSignalQuality) {
+    console.log("BTC SIX-FACTOR SIGNAL QUALITY GATE:", JSON.stringify(btcSignalQuality));
+    if (!btcSignalQuality.approved) executionBlockers.push(...btcSignalQuality.blockers);
+  }
   if (candleClosePlan && !plan) executionBlockers.push("No fresh validated executable-side quote could price the candidate plan");
   if (plan && !plan.entryTriggerConfirmed) executionBlockers.push("M5 trigger candle is not confirmed; quote-priced levels are indicative only");
   const spreadVerified = Boolean(quoteValidation.valid &&
@@ -646,6 +665,7 @@ async function analyseMarket(market, macroContext) {
     quoteSource: spreadQuote?.source ?? "unavailable",
     quoteValidation: quoteValidation.valid ? "VALID" : "INVALID_OR_UNAVAILABLE",
     marketSurveillance: results.M5.surveillance ?? null,
+    btcSignalQuality,
     alphaPipResearch: results.M5.alphaPip ?? null,
     githubResearchAgents: githubResearch.agents,
     githubResearchConsensus: githubResearch.consensus,
@@ -685,6 +705,7 @@ async function analyseMarket(market, macroContext) {
   const approvalBlockers = executionBlockers.filter(reason =>
     /calendar|economic|news window|stale|bid\/ask|spread|BTC 10-second|Coinbase/i.test(reason)
   );
+  if (btcSignalQuality && !btcSignalQuality.approved) approvalBlockers.push(...btcSignalQuality.blockers);
   // Keep the immutable Layer 1 direction through independent approval.
   // The old flow replaced a valid BUY/SELL discovery with HOLD whenever the
   // weighted score was below threshold, then passed HOLD to both agents. This
@@ -757,7 +778,7 @@ async function analyseMarket(market, macroContext) {
       macro: macroContext,
       frames: results,
       marketIntelligence: marketReview,
-      decisionLayers: { discovery: discoveryLayer, weightedScore, verification: verificationLayer, execution: executionLayer },
+      decisionLayers: { discovery: discoveryLayer, weightedScore, verification: verificationLayer, execution: executionLayer, btcSignalQuality },
       approval,
       verification,
       githubAgentEvidence: githubResearch,
