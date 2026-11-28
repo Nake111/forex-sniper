@@ -88,7 +88,7 @@ jobs:
       BTC_DATA_PREFIX: "kraken-btcusd"
       LLM_TIMEOUT_MS: "5000"
       GEMINI_MODEL: "gemini-3.5-flash-lite"
-      BTC_ORDER_FLOW_FEED_URL: "https://coinbase-kraken-btc-order-flow-production.up.railway.app/order-flow"
+      BTC_ORDER_FLOW_FEED_URL: "https://binance-btc-order-flow-production.up.railway.app/order-flow"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,7 +138,7 @@ jobs:
           console.log('Approved cutoff verified:', actual);
           console.log('Holdout protection: final 30% remains locked; no holdout optimization or outcome reads.');
           NODE
-      - name: Preflight Coinbase spot + Kraken Futures BTC order-flow (BTC-only fail-closed)
+      - name: Preflight Binance Spot + USD-M Futures BTC order-flow (BTC-only fail-closed)
         continue-on-error: true
         run: |
           node --input-type=module <<'NODE'
@@ -168,11 +168,11 @@ jobs:
               process.exit(0);
             } catch (error) {
               lastError = error.message;
-              console.log('Waiting for fresh Coinbase/Kraken order-flow: ' + lastError);
+              console.log('Waiting for fresh Binance order-flow: ' + lastError);
               await new Promise(resolve => setTimeout(resolve, 5000));
             }
           }
-          throw new Error('Coinbase/Kraken BTC order-flow did not become ready within 90 seconds: ' + lastError);
+          throw new Error('Binance BTC order-flow did not become ready within 90 seconds: ' + lastError);
           NODE
       - name: Generate timestamped three-market signal report
         id: signal_report
