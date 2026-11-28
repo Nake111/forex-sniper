@@ -56,7 +56,7 @@ test("fails closed while the open-interest baseline is warming up", async () => 
       now,
       baselineOpenInterest: { value: 100, timestamp: now - 20_000 }
     }),
-    error => error.code === "WARMING_UP" && error.baselineOpenInterest.value === 101
+    error => error.code === "WARMING_UP" && error.baselineOpenInterest.value === 100
   );
 });
 
