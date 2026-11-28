@@ -403,10 +403,14 @@
           "XAUUSD: Final publication quote refresh did not PASS",
           "Live market synchronization fail-closed protection",
           "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "Watchdog fail-closed protection",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale"
         ],
         "watchdog": "BLOCKED",
         "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
@@ -833,10 +837,18 @@
           "XAUUSD: M5 latest-closed candle is future-dated or stale",
           "XAUUSD: Provider-timestamped bid/ask is missing, invalid, or stale",
           "XAUUSD: Final publication quote refresh did not PASS",
-          "Live market synchronization fail-closed protection"
+          "Live market synchronization fail-closed protection",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-28T10:23:37.128Z",
       "generatedAtSlovenia": "2026-11-28 11:23:37",
@@ -1253,10 +1265,14 @@
           "XAUUSD: Final publication quote refresh did not PASS",
           "Live market synchronization fail-closed protection",
           "Live provider bid/ask is missing, invalid, or stale",
-          "Watchdog fail-closed protection"
+          "Watchdog fail-closed protection",
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale"
         ],
         "watchdog": "BLOCKED",
         "watchdogFailures": [
+          "Signal publication is missing, stale, or future-dated",
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ]
       },
@@ -1346,32 +1362,39 @@
     }
   },
   "watchdog": {
-    "checkedAt": "2026-11-28T10:23:38.282Z",
+    "checkedAt": "2026-11-28T10:57:15.447Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
       "maxCandleAgeMs": 600000,
       "maxQuoteAgeMs": 15000
     },
-    "globalFailures": [],
+    "globalFailures": [
+      "Signal publication is missing, stale, or future-dated"
+    ],
     "markets": {
       "EURUSD": {
         "issues": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 218282,
+        "candleAgeMs": 2235447,
         "quoteAgeMs": null
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 218282,
-        "quoteAgeMs": 1421
+        "issues": [
+          "M5 provider candle is missing, failed, or stale",
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 2235447,
+        "quoteAgeMs": 2018586
       },
       "XAUUSD": {
         "issues": [
+          "M5 provider candle is missing, failed, or stale",
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 218282,
+        "candleAgeMs": 2235447,
         "quoteAgeMs": null
       }
     }
