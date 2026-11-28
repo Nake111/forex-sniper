@@ -69,7 +69,7 @@ export async function buildBinanceBtcOrderFlow({
   let baseline = baselineOpenInterest;
   let openInterestChangePct = null;
   if (!baseline || !Number.isFinite(baseline.value) || baseline.value <= 0 ||
-      !Number.isFinite(baseline.timestamp) || now - baseline.timestamp >= WINDOW_MS) {
+      !Number.isFinite(baseline.timestamp)) {
     baseline = { value: currentOi, timestamp: now };
   } else if (now - baseline.timestamp >= WINDOW_MS) {
     openInterestChangePct = ((currentOi - baseline.value) / baseline.value) * 100;
