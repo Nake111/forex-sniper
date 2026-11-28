@@ -83,6 +83,7 @@ jobs:
       BTC_DATA_PREFIX: "kraken-btcusd"
       LLM_TIMEOUT_MS: "5000"
       GEMINI_MODEL: "gemini-3.5-flash-lite"
+      BTC_ORDER_FLOW_FEED_URL: "https://binance-btc-order-flow-production.up.railway.app/order-flow"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -112,6 +113,7 @@ jobs:
           DATA_OVERLAP_DAYS: "1"
           DOWNLOAD_CONCURRENCY: "6"
           BTC_DATA_PREFIX: "kraken-btcusd"
+          BTC_ORDER_FLOW_FEED_URL: ${{ env.BTC_ORDER_FLOW_FEED_URL }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           FDN_API_KEY: ${{ secrets.FDN_API_KEY }}
           FDN_MAX_PAGES: "1"
@@ -130,6 +132,41 @@ jobs:
           if (actual !== expected) throw new Error('AGENT_TRAINING_CUTOFF is missing or differs from the approved frozen boundary.');
           console.log('Approved cutoff verified:', actual);
           console.log('Holdout protection: final 30% remains locked; no holdout optimization or outcome reads.');
+          NODE
+      - name: Require fresh Binance BTC spot and perpetual order-flow
+        run: |
+          node --input-type=module <<'NODE'
+          const endpoint = process.env.BTC_ORDER_FLOW_FEED_URL;
+          if (!endpoint) throw new Error('BTC_ORDER_FLOW_FEED_URL is not configured');
+          const deadline = Date.now() + 180_000;
+          let lastError = 'feed has not returned a ready snapshot';
+          while (Date.now() < deadline) {
+            try {
+              const healthUrl = endpoint.replace(/\/order-flow$/, '/health');
+              const healthResponse = await fetch(healthUrl, { signal: AbortSignal.timeout(5000), headers: { accept: 'application/json' } });
+              const health = await healthResponse.json();
+              if (!healthResponse.ok || health.status !== 'READY') throw new Error('adapter health=' + (health.status ?? healthResponse.status) + ': ' + (health.lastError ?? 'not ready'));
+              const response = await fetch(endpoint, { signal: AbortSignal.timeout(5000), headers: { accept: 'application/json' } });
+              if (!response.ok) throw new Error('order-flow HTTP ' + response.status);
+              const data = await response.json();
+              const ageMs = Date.now() - Number(data.timestamp);
+              const finite = value => Number.isFinite(Number(value));
+              const valid = data.symbol === 'BTC-USD' && typeof data.source === 'string' && data.source.length > 0 &&
+                finite(data.timestamp) && ageMs >= -2000 && ageMs <= 30_000 &&
+                ['spot', 'perpetual'].every(key => data[key] && ['buyVolume', 'sellVolume', 'cvd'].every(field => finite(data[key][field]))) &&
+                finite(data.perpetual.openInterestChangePct) && finite(data.perpetual.fundingRate);
+              if (!valid) throw new Error('order-flow snapshot is incomplete, stale or invalid');
+              console.log(JSON.stringify({ status: 'READY', source: data.source, symbol: data.symbol, ageMs,
+                spotCvd: data.spot.cvd, perpetualCvd: data.perpetual.cvd,
+                openInterestChangePct: data.perpetual.openInterestChangePct, fundingRate: data.perpetual.fundingRate }));
+              process.exit(0);
+            } catch (error) {
+              lastError = error.message;
+              console.log('Waiting for fresh Binance order-flow: ' + lastError);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+          throw new Error('Binance BTC order-flow did not become ready within 180 seconds: ' + lastError);
           NODE
       - name: Generate timestamped three-market signal report
         id: signal_report
