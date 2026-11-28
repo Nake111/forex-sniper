@@ -129,10 +129,17 @@ export function evaluateSignal({ M5, M15, H1 }, profile = "baseline", macro = {}
 export function confirmSignal(signal, H1) {
   if (signal === "HOLD") return { status: "NO TRADE" };
   const squeeze = H1?.squeeze;
-  if (!squeeze || !Number.isFinite(squeeze.momentum)) return { status: "WAIT", reason: "Missing H1 momentum confirmation" };
-  if (squeeze.state === "SQUEEZE_ON") return { status: "WAIT", reason: "H1 volatility squeeze is still active" };
+  if (!squeeze || !Number.isFinite(squeeze.momentum)) {
+    return { status: "WAIT", reason: "Missing H1 momentum confirmation" };
+  }
+  if (squeeze.state === "SQUEEZE_ON") {
+    return { status: "WAIT", reason: "H1 volatility squeeze is still active" };
+  }
+  if (squeeze.state !== "SQUEEZE_RELEASED" || squeeze.previousState !== "SQUEEZE_ON") {
+    return { status: "WAIT", reason: "No fresh H1 squeeze-release transition is confirmed" };
+  }
   const aligned = signal === "BUY"
-    ? squeeze.momentum > 0 && squeeze.direction?.startsWith("BULLISH")
-    : squeeze.momentum < 0 && squeeze.direction?.startsWith("BEARISH");
-  return aligned ? { status: "H1 ALIGNED" } : { status: "WAIT", reason: "H1 momentum does not confirm direction" };
+    ? squeeze.momentum > 0 && squeeze.direction === "BULLISH_STRENGTHENING"
+    : squeeze.momentum < 0 && squeeze.direction === "BEARISH_STRENGTHENING";
+  return aligned ? { status: "H1 ALIGNED" } : { status: "WAIT", reason: "H1 squeeze momentum is not strengthening in the candidate direction" };
 }
