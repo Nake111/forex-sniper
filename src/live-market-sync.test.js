@@ -31,7 +31,8 @@ test("passes one synchronized three-market snapshot", () => {
 
 test("blocks quote timestamps outside the synchronization window", () => {
   const input = fixture();
-  input.signals.markets.XAUUSD.quote.timestamp = now - 25_000;
+  input.signals.markets.EURUSD.quote.timestamp = now - 15_000;
+  input.signals.markets.XAUUSD.quote.timestamp = now + 1_000;
   const result = evaluateLiveMarketSync({ ...input, now, maxQuoteSkewMs: 15_000 });
   assert.equal(result.status, "BLOCKED");
   assert.ok(result.failures.some(x => x.includes("not synchronized")));
