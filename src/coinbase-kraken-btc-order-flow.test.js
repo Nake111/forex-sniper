@@ -56,16 +56,19 @@ test("normalizes Kraken Futures ticker funding_rate snake_case and zero-omission
     product_id: "PF_XBTUSD",
     time: now - 250,
     openInterest: 2150.25,
-    funding_rate: 0.00012
+    funding_rate: 0.13599,
+    relative_funding_rate: 0.00000412
   }, now), {
     openInterest: 2150.25,
-    fundingRate: 0.00012,
-    timestamp: now - 250,
+    fundingRate: 0.00000412,
+    absoluteFundingRate: 0.13599,
+    providerTimestamp: now - 250,
     receivedAt: now
   });
   assert.equal(normalizeKrakenTicker({
     feed: "ticker", product_id: "PF_XBTUSD", time: now,
-    openInterest: 2150.25
+    openInterest: 2150.25,
+    funding_rate: 0.13599
   }, now).fundingRate, 0);
   assert.equal(normalizeKrakenTicker({
     feed: "ticker", product_id: "PI_XBTUSD", time: now,
