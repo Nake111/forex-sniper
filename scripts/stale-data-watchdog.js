@@ -42,7 +42,11 @@ for (const id of EXPECTED) {
   if (signal && signal.analysisCycle?.id !== signalCycle) issues.push("Market signal has a mismatched analysis cycle");
 
   const quote = signal?.quote;
-  const quoteTime = Number(quote?.timestamp);
+  // Quote timestamps are serialized as ISO-8601 strings in published JSON,
+  // while in-process providers supply epoch milliseconds. Accept both.
+  const quoteTime = typeof quote?.timestamp === "number"
+    ? quote.timestamp
+    : Date.parse(quote?.timestamp ?? "");
   const quoteAge = Number.isFinite(quoteTime) ? now - quoteTime : Infinity;
   if (quote?.validated !== true || quote?.timestampQuality !== "PROVIDER_TIMESTAMP" ||
       !(Number(quote?.bid) > 0) || !(Number(quote?.ask) > Number(quote?.bid)) ||
