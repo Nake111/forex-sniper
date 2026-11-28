@@ -1,4 +1,4 @@
-const DEFAULT_URL = "https://btc-10-second-feed-production.up.railway.app/latest";
+const DEFAULT_URL = "https://btc-10-second-market-tape-production.up.railway.app/latest";
 const MAX_AGE_MS = 30_000;
 const INTERVAL_MS = 10_000;
 
