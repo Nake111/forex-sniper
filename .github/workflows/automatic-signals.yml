@@ -74,6 +74,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.5-flash-lite
           LLM_TIMEOUT_MS: "8000"
+          BTC_ORDER_FLOW_FEED_URL: "https://binance-btc-order-flow-production.up.railway.app/order-flow"
 
       - name: Upload latest signal report
         if: always()
