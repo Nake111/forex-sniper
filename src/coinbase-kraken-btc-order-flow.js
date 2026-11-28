@@ -9,6 +9,7 @@ const COINBASE_PRODUCT = "BTC-USD";
 const KRAKEN_PRODUCT = "PF_XBTUSD";
 const WINDOW_MS = 60_000;
 const MAX_AGE_MS = 30_000;
+const MAX_TICKER_AGE_MS = 90_000;
 const REFRESH_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 
@@ -34,17 +35,22 @@ export function normalizeKrakenTrade(trade) {
 export function normalizeKrakenTicker(message, receivedAt = Date.now()) {
   if (message?.feed !== "ticker" || message?.product_id !== KRAKEN_PRODUCT) return null;
   const openInterest = Number(message.openInterest);
-  // Kraken Futures documents funding_rate in snake_case. When omitted, the
-  // exchange documents that as a zero rate for the current period.
-  const rawFundingRate = message.funding_rate ?? message.fundingRate;
-  const fundingRate = rawFundingRate === undefined ? 0 : Number(rawFundingRate);
+  // Kraken's funding_rate is an absolute contract-unit amount. The
+  // relative_funding_rate is the comparable fractional rate used by the
+  // signal gate. Kraken omits either field when its value is zero.
+  const rawAbsoluteFundingRate = message.funding_rate ?? message.fundingRate;
+  const rawRelativeFundingRate = message.relative_funding_rate ?? message.relativeFundingRate;
+  const absoluteFundingRate = rawAbsoluteFundingRate === undefined ? 0 : Number(rawAbsoluteFundingRate);
+  const fundingRate = rawRelativeFundingRate === undefined ? 0 : Number(rawRelativeFundingRate);
   const providerTime = typeof message.time === "number"
     ? message.time : Date.parse(message.time ?? message.serverTime ?? "");
-  if (!Number.isFinite(openInterest) || openInterest <= 0 || !Number.isFinite(fundingRate)) return null;
+  if (!Number.isFinite(openInterest) || openInterest <= 0 ||
+      !Number.isFinite(fundingRate) || !Number.isFinite(absoluteFundingRate)) return null;
   return {
     openInterest,
     fundingRate,
-    timestamp: Number.isFinite(providerTime) ? providerTime : receivedAt,
+    absoluteFundingRate,
+    providerTimestamp: Number.isFinite(providerTime) ? providerTime : null,
     receivedAt
   };
 }
@@ -189,22 +195,26 @@ export function createOrderFlowServer({
     if (!ticker || !Number.isFinite(ticker.openInterestChangePct)) {
       throw new Error("Kraken perpetual open-interest baseline is warming up; wait for 60 seconds of live observations");
     }
-    const tickerAge = currentTime - ticker.timestamp;
-    const ageMs = currentTime - Math.min(spot.timestamp, perpetual.timestamp, ticker.timestamp);
-    if (tickerAge < -2_000 || tickerAge > MAX_AGE_MS || ageMs < -2_000 || ageMs > MAX_AGE_MS) {
-      throw new Error("Coinbase or Kraken order-flow evidence is stale or has a future timestamp");
+    const tickerAge = currentTime - ticker.receivedAt;
+    const ageMs = currentTime - Math.min(spot.timestamp, perpetual.timestamp);
+    if (tickerAge < -2_000 || tickerAge > MAX_TICKER_AGE_MS ||
+        ageMs < -2_000 || ageMs > MAX_AGE_MS) {
+      throw new Error("Coinbase/Kraken trades or Kraken ticker evidence is stale or has a future timestamp");
     }
     return {
       symbol: "BTC-USD",
       source: "Coinbase Advanced Trade BTC-USD spot + Kraken Futures PF_XBTUSD perpetual",
-      timestamp: Math.min(spot.timestamp, perpetual.timestamp, ticker.timestamp),
+      timestamp: Math.min(spot.timestamp, perpetual.timestamp),
       spot: { buyVolume: spot.buyVolume, sellVolume: spot.sellVolume, cvd: spot.cvd },
       perpetual: {
         buyVolume: perpetual.buyVolume,
         sellVolume: perpetual.sellVolume,
         cvd: perpetual.cvd,
         openInterestChangePct: ticker.openInterestChangePct,
-        fundingRate: ticker.fundingRate
+        fundingRate: ticker.fundingRate,
+        absoluteFundingRate: ticker.absoluteFundingRate,
+        openInterestProviderTimestamp: ticker.providerTimestamp,
+        openInterestReceivedAt: ticker.receivedAt
       }
     };
   }
@@ -228,8 +238,9 @@ export function createOrderFlowServer({
         krakenTicker: ticker ? {
           openInterest: ticker.openInterest,
           fundingRate: ticker.fundingRate,
+          absoluteFundingRate: ticker.absoluteFundingRate,
           openInterestChangePct: ticker.openInterestChangePct ?? null,
-          providerTimestamp: ticker.timestamp,
+          providerTimestamp: ticker.providerTimestamp,
           receivedAt: ticker.receivedAt
         } : null,
         openInterestBaseline: oiBaseline
