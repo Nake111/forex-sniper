@@ -834,10 +834,14 @@
           "EURUSD: Final publication quote refresh did not PASS",
           "XAUUSD: Provider-timestamped bid/ask is missing, invalid, or stale",
           "XAUUSD: Final publication quote refresh did not PASS",
-          "Live market synchronization fail-closed protection"
+          "Live market synchronization fail-closed protection",
+          "Live provider bid/ask is missing, invalid, or stale",
+          "Watchdog fail-closed protection"
         ],
-        "watchdog": "PASS",
-        "watchdogFailures": []
+        "watchdog": "BLOCKED",
+        "watchdogFailures": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ]
       },
       "generatedAt": "2026-11-28T06:17:58.081Z",
       "generatedAtSlovenia": "2026-11-28 07:17:58",
@@ -1341,7 +1345,7 @@
     }
   },
   "watchdog": {
-    "checkedAt": "2026-11-28T06:17:59.197Z",
+    "checkedAt": "2026-11-28T06:24:00.629Z",
     "status": "BLOCKED",
     "thresholds": {
       "maxSignalAgeMs": 600000,
@@ -1354,20 +1358,22 @@
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 179197,
-        "quoteAgeMs": 1795846679197
+        "candleAgeMs": 540629,
+        "quoteAgeMs": null
       },
       "BTCUSD": {
-        "issues": [],
-        "candleAgeMs": 179197,
-        "quoteAgeMs": 1354
+        "issues": [
+          "Live provider bid/ask is missing, invalid, or stale"
+        ],
+        "candleAgeMs": 540629,
+        "quoteAgeMs": 362786
       },
       "XAUUSD": {
         "issues": [
           "Live provider bid/ask is missing, invalid, or stale"
         ],
-        "candleAgeMs": 179197,
-        "quoteAgeMs": 1795846679197
+        "candleAgeMs": 540629,
+        "quoteAgeMs": null
       }
     }
   }
