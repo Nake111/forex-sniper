@@ -83,7 +83,7 @@ export async function buildBinanceBtcOrderFlow({
   if (openInterestChangePct === null) {
     throw Object.assign(new Error("Open-interest baseline is warming up; wait for a full 60-second observation"), {
       code: "WARMING_UP",
-      baseline
+      baselineOpenInterest: baseline
     });
   }
 
