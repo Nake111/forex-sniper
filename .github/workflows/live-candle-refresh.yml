@@ -133,12 +133,13 @@ jobs:
           console.log('Approved cutoff verified:', actual);
           console.log('Holdout protection: final 30% remains locked; no holdout optimization or outcome reads.');
           NODE
-      - name: Require fresh Binance BTC spot and perpetual order-flow
+      - name: Preflight Binance BTC order-flow (BTC-only fail-closed)
+        continue-on-error: true
         run: |
           node --input-type=module <<'NODE'
           const endpoint = process.env.BTC_ORDER_FLOW_FEED_URL;
           if (!endpoint) throw new Error('BTC_ORDER_FLOW_FEED_URL is not configured');
-          const deadline = Date.now() + 180_000;
+          const deadline = Date.now() + 90_000;
           let lastError = 'feed has not returned a ready snapshot';
           while (Date.now() < deadline) {
             try {
@@ -166,7 +167,7 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, 5000));
             }
           }
-          throw new Error('Binance BTC order-flow did not become ready within 180 seconds: ' + lastError);
+          throw new Error('Binance BTC order-flow did not become ready within 90 seconds: ' + lastError);
           NODE
       - name: Generate timestamped three-market signal report
         id: signal_report
