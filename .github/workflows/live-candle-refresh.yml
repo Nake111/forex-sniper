@@ -167,11 +167,11 @@ jobs:
               process.exit(0);
             } catch (error) {
               lastError = error.message;
-              console.log('Waiting for fresh Binance order-flow: ' + lastError);
+              console.log('Waiting for fresh Coinbase/Kraken order-flow: ' + lastError);
               await new Promise(resolve => setTimeout(resolve, 5000));
             }
           }
-          throw new Error('Binance BTC order-flow did not become ready within 90 seconds: ' + lastError);
+          throw new Error('Coinbase/Kraken BTC order-flow did not become ready within 90 seconds: ' + lastError);
           NODE
       - name: Generate timestamped three-market signal report
         id: signal_report
