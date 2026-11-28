@@ -4,6 +4,7 @@ import {
   normalizeCoinbaseTrade,
   normalizeKrakenTrade,
   normalizeKrakenTicker,
+  updateOpenInterestBaseline,
   summarizeAggressorTrades
 } from "./coinbase-kraken-btc-order-flow.js";
 
@@ -78,4 +79,20 @@ test("normalizes Kraken Futures ticker funding_rate snake_case and zero-omission
     feed: "ticker", product_id: "PF_XBTUSD", time: now,
     openInterest: "not-a-number", funding_rate: 0.0001
   }, now), null);
+});
+
+test("persists the latest open-interest change across ticker updates", () => {
+  const first = updateOpenInterestBaseline(100, null, null, now);
+  assert.deepEqual(first, {
+    baseline: { value: 100, timestamp: now },
+    changePct: null
+  });
+  const second = updateOpenInterestBaseline(101, first.baseline, first.changePct, now + 30_000);
+  assert.deepEqual(second, first);
+  const third = updateOpenInterestBaseline(99, second.baseline, second.changePct, now + 60_000);
+  assert.equal(third.baseline.value, 99);
+  assert.ok(Math.abs(third.changePct - (-1)) < 1e-10);
+  const fourth = updateOpenInterestBaseline(98, third.baseline, third.changePct, now + 61_000);
+  assert.equal(fourth.baseline.value, 99);
+  assert.equal(fourth.changePct, third.changePct);
 });
