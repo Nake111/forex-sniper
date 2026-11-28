@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   normalizeCoinbaseTrade,
   normalizeKrakenTrade,
+  normalizeKrakenTicker,
   summarizeAggressorTrades
 } from "./coinbase-kraken-btc-order-flow.js";
 
@@ -47,4 +48,31 @@ test("fails closed when the rolling order-flow window has no recent trades", () 
   assert.throws(() => summarizeAggressorTrades([
     { id: "old", timestamp: now - 90_000, quantity: 1, side: "BUY" }
   ], now), /No trades in the latest 60-second/);
+});
+
+test("normalizes Kraken Futures ticker funding_rate snake_case and zero-omission semantics", () => {
+  assert.deepEqual(normalizeKrakenTicker({
+    feed: "ticker",
+    product_id: "PF_XBTUSD",
+    time: now - 250,
+    openInterest: 2150.25,
+    funding_rate: 0.00012
+  }, now), {
+    openInterest: 2150.25,
+    fundingRate: 0.00012,
+    timestamp: now - 250,
+    receivedAt: now
+  });
+  assert.equal(normalizeKrakenTicker({
+    feed: "ticker", product_id: "PF_XBTUSD", time: now,
+    openInterest: 2150.25
+  }, now).fundingRate, 0);
+  assert.equal(normalizeKrakenTicker({
+    feed: "ticker", product_id: "PI_XBTUSD", time: now,
+    openInterest: 2150.25, funding_rate: 0.0001
+  }, now), null);
+  assert.equal(normalizeKrakenTicker({
+    feed: "ticker", product_id: "PF_XBTUSD", time: now,
+    openInterest: "not-a-number", funding_rate: 0.0001
+  }, now), null);
 });
